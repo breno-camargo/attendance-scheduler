@@ -7,8 +7,9 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 /// Técnico responsável pela execução das visitas e testes.
@@ -53,6 +54,9 @@ model Contract {
   appointments   Appointment[]
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
+
+  @@index([professionalId])
+  @@index([clientId])
 }
 
 /// Janela de disponibilidade semanal do técnico.
@@ -81,13 +85,18 @@ model Appointment {
   status         String        @default("SCHEDULED") /// SCHEDULED | COMPLETED | CANCELLED
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
+
+  @@index([professionalId, date])
+  @@index([clientId, date])
+  @@index([status])
 }
 
 /// Feriados cadastrados para evitar agendamentos.
 model Holiday {
-  id   String   @id @default(cuid())
-  date DateTime
-  name String
+  id    String   @id @default(cuid())
+  date  DateTime
+  name  String
+  fixed Boolean  @default(false) /// true = feriado nacional fixo (não pode ser excluído)
 }
 
 /// Contatos internos permanentes da CompaSSS (Gerente, Diretor, Comercial, Coordenador)
@@ -97,6 +106,17 @@ model InternalContact {
   role      String?
   phone     String?
   email     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// Usuário do sistema com senha hash (bcrypt).
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  password  String
+  name      String
+  active    Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

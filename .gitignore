@@ -1,5 +1,5 @@
 # dependencies
-/node_modules
+node_modules
 /.pnp
 .pnp.js
 
@@ -34,6 +34,16 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# tool configs with secrets
+opencode.json
+
+# AI tooling
+.agents/
+.claude/
+skills-lock.json
+
 # prisma - sqlite db
 /prisma/dev.db
 /prisma/dev.db-journal
+test-results/
+.auth/

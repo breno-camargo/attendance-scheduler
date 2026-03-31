@@ -6,23 +6,69 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "eslint \"src/**/*.{ts,tsx}\" \"tests/**/*.{ts,tsx}\"",
+    "lint:fix": "eslint \"src/**/*.{ts,tsx}\" \"tests/**/*.{ts,tsx}\" --fix",
+    "format": "prettier --write \"src/**/*.{ts,tsx,json,css,md}\" \"tests/**/*.{ts,tsx}\" \"*.{json,js,mjs,md}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,json,css,md}\" \"tests/**/*.{ts,tsx}\" \"*.{json,js,mjs,md}\"",
+    "postinstall": "prisma generate",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:all": "vitest run && playwright test",
+    "seed:admin": "npx tsx prisma/seed-admin.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
+    "@upstash/ratelimit": "^2.0.8",
+    "@upstash/redis": "^1.37.0",
+    "@vercel/analytics": "^2.0.1",
+    "bcryptjs": "^3.0.3",
     "next": "14.2.3",
+    "next-auth": "^4.24.13",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@playwright/test": "^1.59.1",
+    "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20.19.37",
     "@types/prop-types": "^15.7.15",
     "@types/react": "^18.3.28",
     "@types/react-dom": "^18.3.7",
-    "eslint": "^8",
+    "@typescript-eslint/eslint-plugin": "^8.58.0",
+    "@typescript-eslint/parser": "^8.58.0",
+    "@vitest/coverage-v8": "^4.1.2",
+    "eslint": "^8.57.1",
     "eslint-config-next": "14.2.3",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-prettier": "^5.5.5",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "prettier": "^3.8.1",
     "prisma": "^5.13.0",
-    "typescript": "^5.9.3"
-  }
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.2",
+    "vitest-mock-extended": "^3.1.1"
+  },
+  "description": "[![Status](https://img.shields.io/badge/Status-Em%20Desenvolvimento-green?style=for-the-badge)]() [![Next.js](https://img.shields.io/badge/Next.js-14-black?style=for-the-badge&logo=next.js)]() [![Prisma](https://img.shields.io/badge/Prisma-ORM-5a67d8?style=for-the-badge&logo=prisma)]() [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-DB-336791?style=for-the-badge&logo=postgresql)]() [![Vercel](https://img.shields.io/badge/Deploy-Vercel-000?style=for-the-badge&logo=vercel)]()",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/breno-camargo/attendance-scheduler.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/breno-camargo/attendance-scheduler/issues"
+  },
+  "homepage": "https://github.com/breno-camargo/attendance-scheduler#readme"
 }
