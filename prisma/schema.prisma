@@ -1,0 +1,102 @@
+// ─────────────────────────────────────────────────────────────
+// Prisma Schema — Sistema de Agendamento CompaSSS
+// ─────────────────────────────────────────────────────────────
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+/// Técnico responsável pela execução das visitas e testes.
+model Professional {
+  id             String         @id @default(cuid())
+  name           String
+  email          String         @unique
+  phone          String?
+  availabilities Availability[]
+  appointments   Appointment[]
+  contracts      Contract[]
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+}
+
+/// Cliente (prédio, shopping, condomínio) que recebe manutenção.
+model Client {
+  id           String        @id @default(cuid())
+  name         String
+  phone        String?
+  contracts    Contract[]
+  appointments Appointment[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+/// Contrato que define as regras de manutenção de um cliente.
+/// Cada cliente pode ter múltiplos contratos (um por técnico).
+model Contract {
+  id             String        @id @default(cuid())
+  clientId       String
+  client         Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  professionalId String?
+  professional   Professional? @relation(fields: [professionalId], references: [id])
+  systemTypes    String?       /// Sistemas mantidos: "SDAI,CFTV,SAP" (separados por vírgula)
+  visitsPerMonth Int           @default(2)
+  frequency      String?       @default("MONTHLY") /// MONTHLY | BIMONTHLY | QUARTERLY | SEMIANNUAL | ANNUAL
+  targetMonths   String?       /// Índices dos meses ativos: "0,2,4,6,8,10"
+  preferredDays  String?       /// Dias da semana preferidos: "1,3,5" (1=Seg, 5=Sex)
+  active         Boolean       @default(true)
+  contactsJson   String?       /// JSON com lista de contatos editáveis (manutenção + escalonamento)
+  appointments   Appointment[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+}
+
+/// Janela de disponibilidade semanal do técnico.
+model Availability {
+  id             String       @id @default(cuid())
+  professionalId String
+  professional   Professional @relation(fields: [professionalId], references: [id])
+  dayOfWeek      Int          /// 0=Dom, 1=Seg, ..., 6=Sáb
+  startTime      String       /// Formato "HH:mm"
+  endTime        String       /// Formato "HH:mm"
+}
+
+/// Agendamento de visita técnica ou teste SDAI.
+model Appointment {
+  id             String        @id @default(cuid())
+  clientId       String
+  client         Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  professionalId String?
+  professional   Professional? @relation(fields: [professionalId], references: [id])
+  contractId     String?
+  contract       Contract?     @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  date           DateTime
+  duration       Int           @default(120) /// Duração em minutos
+  type           String        @default("VISITA_TECNICA") /// VISITA_TECNICA | TESTE_SDAI
+  observation    String?
+  status         String        @default("SCHEDULED") /// SCHEDULED | COMPLETED | CANCELLED
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+}
+
+/// Feriados cadastrados para evitar agendamentos.
+model Holiday {
+  id   String   @id @default(cuid())
+  date DateTime
+  name String
+}
+
+/// Contatos internos permanentes da CompaSSS (Gerente, Diretor, Comercial, Coordenador)
+model InternalContact {
+  id        String   @id @default(cuid())
+  name      String
+  role      String?
+  phone     String?
+  email     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
