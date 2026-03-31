@@ -1,23 +1,28 @@
-import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import { ApiUtils, requireAuth } from '@/lib/api-utils';
+import prisma from '@/lib/prisma';
+import { appointmentPatchSchema } from '@/lib/schemas';
 
 /**
  * DELETE /api/schedule/[id]
  * Remove um agendamento específico.
  */
-export async function DELETE(
-  _request: Request,
-  { params }: { params: { id: string } },
-) {
+export async function DELETE(_request: Request, { params }: { params: { id: string } }) {
+  const authError = await requireAuth();
+  if (authError) return authError;
+
   try {
     const { id } = params;
+    if (!id || !/^c[a-z0-9]{24}$/.test(id)) {
+      return ApiUtils.error('ID inválido', null, 400);
+    }
+    const existing = await prisma.appointment.findUnique({ where: { id } });
+    if (!existing) {
+      return ApiUtils.error('Agendamento não encontrado', null, 404);
+    }
     await prisma.appointment.delete({ where: { id } });
-    return NextResponse.json({ success: true });
-  } catch (error: any) {
-    return NextResponse.json(
-      { error: "Erro ao excluir agendamento", details: error.message },
-      { status: 500 },
-    );
+    return ApiUtils.success({ success: true });
+  } catch (error: unknown) {
+    return ApiUtils.error('Erro ao excluir agendamento', error);
   }
 }
 
@@ -25,28 +30,35 @@ export async function DELETE(
  * PATCH /api/schedule/[id]
  * Atualiza parcialmente um agendamento (tipo, observação ou data).
  */
-export async function PATCH(
-  request: Request,
-  { params }: { params: { id: string } },
-) {
+export async function PATCH(request: Request, { params }: { params: { id: string } }) {
+  const authError = await requireAuth();
+  if (authError) return authError;
+
   try {
     const { id } = params;
-    const { type, observation, date } = await request.json();
+    if (!id || !/^c[a-z0-9]{24}$/.test(id)) {
+      return ApiUtils.error('ID inválido', null, 400);
+    }
+    const body = await request.json();
+
+    const validation = appointmentPatchSchema.safeParse(body);
+    if (!validation.success) {
+      return ApiUtils.error('Dados inválidos', validation.error.format(), 400);
+    }
+
+    const { type, observation, date } = validation.data;
 
     const updated = await prisma.appointment.update({
       where: { id },
       data: {
-        ...(type && { type }),
-        ...(observation && { observation }),
-        ...(date && { date: new Date(date) }),
+        ...(type !== undefined && { type }),
+        ...(observation !== undefined && { observation }),
+        ...(date !== undefined && { date: new Date(date) }),
       },
     });
 
-    return NextResponse.json(updated);
-  } catch (error: any) {
-    return NextResponse.json(
-      { error: "Erro ao atualizar agendamento", details: error.message },
-      { status: 500 },
-    );
+    return ApiUtils.success(updated);
+  } catch (error: unknown) {
+    return ApiUtils.error('Erro ao atualizar agendamento', error);
   }
 }

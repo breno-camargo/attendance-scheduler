@@ -1,30 +1,38 @@
-import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import { ApiUtils, requireAuth } from '@/lib/api-utils';
+import prisma from '@/lib/prisma';
+import { appointmentSchema } from '@/lib/schemas';
 
 /**
  * POST /api/schedule
  * Cria um agendamento manual (visita técnica ou teste SDAI).
  */
 export async function POST(request: Request) {
+  const authError = await requireAuth();
+  if (authError) return authError;
+
   try {
-    const data = await request.json();
+    const body = await request.json();
+
+    const validation = appointmentSchema.safeParse(body);
+    if (!validation.success) {
+      return ApiUtils.error('Dados inválidos', validation.error.format(), 400);
+    }
+
+    const data = validation.data;
 
     const appointment = await prisma.appointment.create({
       data: {
         clientId: data.clientId,
         professionalId: data.professionalId,
-        contractId: data.contractId,
+        contractId: data.contractId || null,
         date: new Date(data.date),
-        type: data.type || "VISITA_TECNICA",
-        observation: data.observation || "",
+        type: data.type,
+        observation: data.observation || '',
       },
     });
 
-    return NextResponse.json(appointment, { status: 201 });
-  } catch (error: any) {
-    return NextResponse.json(
-      { error: "Erro ao criar agendamento", details: error.message },
-      { status: 500 },
-    );
+    return ApiUtils.success(appointment, 201);
+  } catch (error: unknown) {
+    return ApiUtils.error('Erro ao criar agendamento', error);
   }
 }

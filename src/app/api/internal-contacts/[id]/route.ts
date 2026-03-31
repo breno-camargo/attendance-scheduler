@@ -1,43 +1,74 @@
-import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import { ApiUtils, requireAuth } from '@/lib/api-utils';
+import { UNIQUE_ROLES } from '@/lib/constants';
+import prisma from '@/lib/prisma';
+import { internalContactSchema } from '@/lib/schemas';
 
-export async function PUT(
-  request: Request,
-  { params }: { params: { id: string } },
-) {
+export async function PUT(request: Request, { params }: { params: { id: string } }) {
+  const authError = await requireAuth();
+  if (authError) return authError;
+
   try {
-    const data = await request.json();
-    const contact = await prisma.internalContact.update({
-      where: { id: params.id },
-      data: {
-        name: data.name,
-        role: data.role || null,
-        phone: data.phone || null,
-        email: data.email || null,
-      },
+    if (!params.id || !/^c[a-z0-9]{24}$/.test(params.id)) {
+      return ApiUtils.error('ID inválido', null, 400);
+    }
+    const body = await request.json();
+
+    const validation = internalContactSchema.safeParse(body);
+    if (!validation.success) {
+      return ApiUtils.error('Dados inválidos', validation.error.format(), 400);
+    }
+
+    const data = validation.data;
+
+    // Transaction para garantir atomicidade na validação de cargo único
+    const contact = await prisma.$transaction(async (tx) => {
+      if (data.role && UNIQUE_ROLES.includes(data.role)) {
+        const existing = await tx.internalContact.findFirst({
+          where: {
+            role: data.role,
+            id: { not: params.id },
+          },
+        });
+        if (existing) {
+          throw new Error(
+            `UNIQUE_ROLE:O cargo de '${data.role}' já está ocupado por ${existing.name}.`,
+          );
+        }
+      }
+
+      return tx.internalContact.update({
+        where: { id: params.id },
+        data: {
+          name: ApiUtils.capitalizeName(data.name),
+          role: data.role || null,
+          phone: data.phone || null,
+          email: data.email || null,
+        },
+      });
     });
-    return NextResponse.json(contact);
-  } catch (error: any) {
-    return NextResponse.json(
-      { error: "Erro ao atualizar contato", details: error.message },
-      { status: 500 },
-    );
+    return ApiUtils.success(contact);
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : '';
+    if (msg.startsWith('UNIQUE_ROLE:')) {
+      return ApiUtils.error(msg.replace('UNIQUE_ROLE:', ''), null, 400);
+    }
+    return ApiUtils.error('Erro ao atualizar contato', error);
   }
 }
 
-export async function DELETE(
-  request: Request,
-  { params }: { params: { id: string } },
-) {
+export async function DELETE(_request: Request, { params }: { params: { id: string } }) {
+  const authError = await requireAuth();
+  if (authError) return authError;
+
   try {
+    if (!params.id || !/^c[a-z0-9]{24}$/.test(params.id)) {
+      return ApiUtils.error('ID inválido', null, 400);
+    }
     await prisma.internalContact.delete({
       where: { id: params.id },
     });
-    return NextResponse.json({ success: true });
-  } catch (error: any) {
-    return NextResponse.json(
-      { error: "Erro ao excluir contato", details: error.message },
-      { status: 500 },
-    );
+    return ApiUtils.success({ success: true });
+  } catch (error: unknown) {
+    return ApiUtils.error('Erro ao excluir contato', error);
   }
 }

@@ -1,18 +1,29 @@
-import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import { ApiUtils, requireAuth } from '@/lib/api-utils';
+import prisma from '@/lib/prisma';
+import { clientSchema } from '@/lib/schemas';
 
 /**
  * PUT /api/clients/[id]
  * Atualiza o nome do cliente e os dados do seu contrato principal.
  * Se o contrato não existir, cria um novo automaticamente.
  */
-export async function PUT(
-  request: Request,
-  { params }: { params: { id: string } },
-) {
+export async function PUT(request: Request, { params }: { params: { id: string } }) {
+  const authError = await requireAuth();
+  if (authError) return authError;
+
   try {
     const { id } = params;
-    const data = await request.json();
+    if (!id || !/^c[a-z0-9]{24}$/.test(id)) {
+      return ApiUtils.error('ID inválido', null, 400);
+    }
+    const body = await request.json();
+
+    const validation = clientSchema.safeParse(body);
+    if (!validation.success) {
+      return ApiUtils.error('Dados inválidos', validation.error.format(), 400);
+    }
+
+    const data = validation.data;
 
     const client = await prisma.client.findUnique({
       where: { id },
@@ -20,10 +31,7 @@ export async function PUT(
     });
 
     if (!client) {
-      return NextResponse.json(
-        { error: "Cliente não encontrado" },
-        { status: 404 },
-      );
+      return ApiUtils.error('Cliente não encontrado', null, 404);
     }
 
     const contractId = client.contracts[0]?.id;
@@ -31,16 +39,17 @@ export async function PUT(
     const updatedClient = await prisma.client.update({
       where: { id },
       data: {
-        name: data.name,
+        name: ApiUtils.capitalizeName(data.name),
+        phone: data.phone || null,
         contracts: contractId
           ? {
               update: {
                 where: { id: contractId },
                 data: {
                   professionalId: data.professionalId || null,
-                  systemTypes: data.systemTypes,
-                  visitsPerMonth: parseInt(data.visitsPerMonth) || 2,
-                  frequency: data.frequency || "MONTHLY",
+                  systemTypes: data.systemTypes || null,
+                  visitsPerMonth: data.visitsPerMonth,
+                  frequency: data.frequency || 'MONTHLY',
                   targetMonths: data.targetMonths || null,
                   preferredDays: data.preferredDays || null,
                 },
@@ -49,9 +58,9 @@ export async function PUT(
           : {
               create: {
                 professionalId: data.professionalId || null,
-                systemTypes: data.systemTypes || "SDAI",
-                visitsPerMonth: parseInt(data.visitsPerMonth) || 2,
-                frequency: data.frequency || "MONTHLY",
+                systemTypes: data.systemTypes || 'SDAI',
+                visitsPerMonth: data.visitsPerMonth,
+                frequency: data.frequency || 'MONTHLY',
                 targetMonths: data.targetMonths || null,
                 preferredDays: data.preferredDays || null,
               },
@@ -60,31 +69,27 @@ export async function PUT(
       include: { contracts: { include: { professional: true } } },
     });
 
-    return NextResponse.json(updatedClient);
-  } catch (error: any) {
-    return NextResponse.json(
-      { error: "Erro ao atualizar cliente", details: error.message },
-      { status: 500 },
-    );
+    return ApiUtils.success(updatedClient);
+  } catch (error: unknown) {
+    return ApiUtils.error('Erro ao atualizar cliente', error);
   }
 }
 
 /**
  * DELETE /api/clients/[id]
- * Remove o cliente e todos os dados vinculados (contratos, agendamentos).
  */
-export async function DELETE(
-  _request: Request,
-  { params }: { params: { id: string } },
-) {
+export async function DELETE(_request: Request, { params }: { params: { id: string } }) {
+  const authError = await requireAuth();
+  if (authError) return authError;
+
   try {
     const { id } = params;
+    if (!id || !/^c[a-z0-9]{24}$/.test(id)) {
+      return ApiUtils.error('ID inválido', null, 400);
+    }
     await prisma.client.delete({ where: { id } });
-    return NextResponse.json({ success: true });
-  } catch (error: any) {
-    return NextResponse.json(
-      { error: "Erro ao excluir cliente", details: error.message },
-      { status: 500 },
-    );
+    return ApiUtils.success({ success: true });
+  } catch (error: unknown) {
+    return ApiUtils.error('Erro ao excluir cliente', error);
   }
 }

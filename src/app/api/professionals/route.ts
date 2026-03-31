@@ -1,24 +1,28 @@
-import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
-import { professionalSchema } from "@/lib/schemas";
+import { ApiUtils, parsePagination, requireAuth } from '@/lib/api-utils';
+import prisma from '@/lib/prisma';
+import { professionalSchema } from '@/lib/schemas';
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic';
 
 /**
- * GET /api/professionals
- * Retorna todos os técnicos cadastrados.
+ * GET /api/professionals?page=1&limit=200
+ * Retorna técnicos cadastrados.
  */
-export async function GET() {
+export async function GET(request: Request) {
+  const authError = await requireAuth();
+  if (authError) return authError;
+
   try {
+    const { skip, take } = parsePagination(request.url);
     const professionals = await prisma.professional.findMany({
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take,
     });
-    return NextResponse.json(professionals);
-  } catch (error: any) {
-    return NextResponse.json(
-      { error: "Erro ao listar técnicos", details: error.message },
-      { status: 500 },
-    );
+
+    return ApiUtils.success(professionals);
+  } catch (error: unknown) {
+    return ApiUtils.error('Falha ao listar técnicos', error);
   }
 }
 
@@ -27,52 +31,41 @@ export async function GET() {
  * Cria um novo técnico com validação de dados (Ponto 3 da Auditoria).
  */
 export async function POST(request: Request) {
+  const authError = await requireAuth();
+  if (authError) return authError;
+
   try {
     const body = await request.json();
 
     // Validação com Zod
     const validation = professionalSchema.safeParse(body);
     if (!validation.success) {
-      return NextResponse.json(
-        { error: "Dados inválidos", details: validation.error.format() },
-        { status: 400 },
-      );
+      return ApiUtils.error('Dados inválidos', validation.error.format(), 400);
     }
 
     const data = validation.data;
 
     // Lógica de e-mail automático (se enviado apenas o prefixo)
-    const emailPrefix = data.email || "";
+    const emailPrefix = data.email || '';
     const email =
-      emailPrefix && !emailPrefix.includes("@")
-        ? `${emailPrefix}@compasss.com.br`
+      emailPrefix && !emailPrefix.includes('@')
+        ? `${emailPrefix}@${process.env.EMAIL_DOMAIN || 'compasss.com.br'}`
         : emailPrefix;
 
     if (!email) {
-      return NextResponse.json(
-        { error: "E-mail é obrigatório" },
-        { status: 400 },
-      );
+      return ApiUtils.error('E-mail é obrigatório', null, 400);
     }
 
-    const professional = await prisma.professional.create({
+    const prof = await prisma.professional.create({
       data: {
-        name: data.name,
-        email,
+        name: ApiUtils.capitalizeName(data.name),
+        email: email,
         phone: data.phone || null,
       },
     });
 
-    return NextResponse.json(professional, { status: 201 });
-  } catch (error: any) {
-    console.error("Erro na rota POST /api/professionals:", error);
-    return NextResponse.json(
-      {
-        error: "Erro interno ao criar técnico",
-        details: error.message,
-        code: error.code,
-      },
-      { status: 500 },
-    );
+    return ApiUtils.success(prof, 201);
+  } catch (error: unknown) {
+    return ApiUtils.error('Erro interno ao criar técnico', error);
   }
 }

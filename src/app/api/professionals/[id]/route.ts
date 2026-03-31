@@ -1,51 +1,60 @@
-import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import { ApiUtils, requireAuth } from '@/lib/api-utils';
+import prisma from '@/lib/prisma';
+import { professionalSchema } from '@/lib/schemas';
 
 /**
  * PUT /api/professionals/[id]
  * Atualiza os dados de um técnico existente.
  */
-export async function PUT(
-  request: Request,
-  { params }: { params: { id: string } },
-) {
+export async function PUT(request: Request, { params }: { params: { id: string } }) {
+  const authError = await requireAuth();
+  if (authError) return authError;
+
   try {
     const { id } = params;
-    const data = await request.json();
+    if (!id || !/^c[a-z0-9]{24}$/.test(id)) {
+      return ApiUtils.error('ID inválido', null, 400);
+    }
+    const body = await request.json();
 
-    const email = data.email?.includes("@")
+    const validation = professionalSchema.safeParse(body);
+    if (!validation.success) {
+      return ApiUtils.error('Dados inválidos', validation.error.format(), 400);
+    }
+
+    const data = validation.data;
+
+    const email = data.email.includes('@')
       ? data.email
-      : `${data.email}@compasss.com.br`;
+      : `${data.email}@${process.env.EMAIL_DOMAIN || 'compasss.com.br'}`;
 
     const updated = await prisma.professional.update({
       where: { id },
       data: {
-        name: data.name,
+        name: ApiUtils.capitalizeName(data.name),
         email,
         phone: data.phone || null,
       },
     });
 
-    return NextResponse.json(updated);
-  } catch (error: any) {
-    return NextResponse.json(
-      { error: "Erro ao editar técnico", details: error.message },
-      { status: 500 },
-    );
+    return ApiUtils.success(updated);
+  } catch (error: unknown) {
+    return ApiUtils.error('Erro ao editar técnico', error);
   }
 }
 
 /**
  * DELETE /api/professionals/[id]
- * Remove um técnico e limpa todos os vínculos (disponibilidades, contratos, agendamentos).
- * Usa uma transação para garantir consistência.
  */
-export async function DELETE(
-  _request: Request,
-  { params }: { params: { id: string } },
-) {
+export async function DELETE(_request: Request, { params }: { params: { id: string } }) {
+  const authError = await requireAuth();
+  if (authError) return authError;
+
   try {
     const { id } = params;
+    if (!id || !/^c[a-z0-9]{24}$/.test(id)) {
+      return ApiUtils.error('ID inválido', null, 400);
+    }
 
     await prisma.$transaction([
       prisma.availability.deleteMany({ where: { professionalId: id } }),
@@ -60,11 +69,8 @@ export async function DELETE(
       prisma.professional.delete({ where: { id } }),
     ]);
 
-    return NextResponse.json({ success: true });
-  } catch (error: any) {
-    return NextResponse.json(
-      { error: "Erro ao excluir técnico", details: error.message },
-      { status: 500 },
-    );
+    return ApiUtils.success({ success: true });
+  } catch (error: unknown) {
+    return ApiUtils.error('Erro ao excluir técnico', error);
   }
 }

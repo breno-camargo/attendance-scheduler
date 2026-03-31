@@ -1,41 +1,35 @@
-import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import { ApiUtils, requireAuth } from '@/lib/api-utils';
+import prisma from '@/lib/prisma';
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic';
 
-export async function GET(
-  request: Request,
-  { params }: { params: { id: string } },
-) {
+export async function GET(request: Request, { params }: { params: { id: string } }) {
+  const authError = await requireAuth();
+  if (authError) return authError;
+
   const { id } = params;
 
   try {
+    if (!id || !/^c[a-z0-9]{24}$/.test(id)) {
+      return ApiUtils.error('ID inválido', null, 400);
+    }
     const contract = await prisma.contract.findUnique({
       where: { id },
       include: {
         client: true,
         professional: true,
         appointments: {
-          orderBy: { date: "asc" },
+          orderBy: { date: 'asc' },
         },
       },
     });
 
     if (!contract) {
-      return NextResponse.json(
-        { error: "Contrato não encontrado" },
-        { status: 404 },
-      );
+      return ApiUtils.error('Contrato não encontrado', null, 404);
     }
 
-    return NextResponse.json(contract);
-  } catch (error: any) {
-    return NextResponse.json(
-      {
-        error: "Erro ao buscar dados do contrato para o relatório",
-        details: error.message,
-      },
-      { status: 500 },
-    );
+    return ApiUtils.success(contract);
+  } catch (error: unknown) {
+    return ApiUtils.error('Erro ao buscar dados do contrato para o relatório', error);
   }
 }
