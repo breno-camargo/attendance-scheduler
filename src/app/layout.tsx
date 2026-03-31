@@ -1,17 +1,20 @@
-import type { Metadata } from "next";
-import "./globals.css";
-import Header from "./components/Header";
+import { Analytics } from '@vercel/analytics/next';
+import type { Metadata } from 'next';
+import { Outfit } from 'next/font/google';
+
+import '@/styles/globals.css';
+import Header from '@/components/layout/Header';
+
+import Providers from './providers';
+
+const outfit = Outfit({ subsets: ['latin'], weight: ['300', '400', '600', '800'] });
 
 export const metadata: Metadata = {
-  title: "Agendador CompaSSS",
-  description: "Sistema de Gestão de Manutenção Preventiva - CompaSSS",
+  title: 'Agendador CompaSSS',
+  description: 'Sistema de Gestão de Manutenção Preventiva - CompaSSS',
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="pt-BR">
       <head>
@@ -31,11 +34,14 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body>
-        <Header />
-        <main className="animate-fade-in" key="main-page-wrapper">
-          {children}
-        </main>
+      <body className={outfit.className}>
+        <Providers>
+          <Header />
+          <main className="animate-fade-in" key="main-page-wrapper">
+            {children}
+          </main>
+        </Providers>
+        <Analytics />
       </body>
     </html>
   );
