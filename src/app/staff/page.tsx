@@ -1,497 +1,445 @@
-"use client";
-import { useEffect, useState } from "react";
-import { createPortal } from "react-dom";
+'use client';
+import { useCallback, useEffect, useState } from 'react';
 
-const formatPhone = (value: string) => {
-  if (!value) return "";
-  let v = value.replace(/\D/g, "");
-  if (v.length > 11) v = v.substring(0, 11);
-  if (v.length <= 2) return v.length > 0 ? `(${v}` : v;
-  if (v.length <= 7) return `(${v.substring(0, 2)})${v.substring(2)}`;
-  return `(${v.substring(0, 2)})${v.substring(2, 7)}-${v.substring(7)}`;
+import { Badge } from '@/components/ui/badge';
+import { useConfirm } from '@/components/ui/confirm-modal';
+import { GlassCard } from '@/components/ui/glass-card';
+import { Modal } from '@/components/ui/modal';
+import { useToast } from '@/components/ui/toast';
+import { staffApi } from '@/lib/api-client';
+import { ApiUtils } from '@/lib/api-utils';
+import { EMAIL_DOMAIN, UNIQUE_ROLES, MAINT_ROLES, migrateRole } from '@/lib/constants';
+import type { InternalContact } from '@/types';
+
+type StaffMember = InternalContact;
+
+const ROLE_RANK: Record<string, number> = {
+  '(líder)': 10,
+  '(lider)': 10,
+  supervisor: 20,
+  coordenador: 30,
+  comercial: 100,
+  gerente: 110,
+  diretor: 120,
+};
+const getRank = (role: string) => {
+  const r = role.toLowerCase();
+  return Object.entries(ROLE_RANK).find(([k]) => r.includes(k))?.[1] ?? 999;
 };
 
+function SectionHeader({ icon, label }: { icon: string; label: string }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1.5rem' }}>
+      <span style={{ fontSize: '1.4rem' }}>{icon}</span>
+      <h2
+        style={{
+          fontSize: '1.1rem',
+          color: 'var(--foreground)',
+          textTransform: 'uppercase',
+          letterSpacing: '1px',
+          margin: 0,
+        }}
+      >
+        {label}
+      </h2>
+    </div>
+  );
+}
+
+function StaffItem({
+  s,
+  index,
+  onEdit,
+  onDelete,
+}: {
+  s: StaffMember;
+  index: number;
+  onEdit: (s: StaffMember) => void;
+  onDelete: (id: string, name: string) => void;
+}) {
+  const initials = s.name
+    .trim()
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0].toUpperCase())
+    .join('');
+
+  return (
+    <li
+      style={{
+        listStyle: 'none',
+        animation: `fadeIn 0.6s var(--ease-out-expo) forwards ${index * 0.1}s`,
+        opacity: 0,
+      }}
+    >
+      <GlassCard
+        className="responsive-card"
+        style={{
+          marginBottom: '16px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '1.5rem 2rem',
+        }}
+      >
+        <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', minWidth: 0, flex: 1 }}>
+          <div
+            style={{
+              width: '50px',
+              height: '50px',
+              flexShrink: 0,
+              background: 'var(--primary-subtle)',
+              borderRadius: '14px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: '1px solid var(--border)',
+              fontWeight: 800,
+              fontSize: '1rem',
+              letterSpacing: '-0.5px',
+              color: 'var(--primary)',
+            }}
+          >
+            {initials}
+          </div>
+
+          <div style={{ minWidth: 0 }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                marginBottom: '6px',
+                flexWrap: 'wrap',
+              }}
+            >
+              <strong
+                style={{
+                  fontSize: '1.25rem',
+                  color: 'var(--foreground)',
+                  fontWeight: 700,
+                  letterSpacing: '-0.5px',
+                }}
+              >
+                {s.name}
+              </strong>
+              <Badge variant="primary">{s.role}</Badge>
+            </div>
+            <div
+              className="info-row-mobile"
+              style={{
+                display: 'flex',
+                gap: '2rem',
+                color: 'var(--text-muted)',
+                fontSize: '0.85rem',
+                fontWeight: 500,
+              }}
+            >
+              <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  style={{ color: 'var(--primary)', flexShrink: 0 }}
+                >
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                </svg>
+                {ApiUtils.maskPII(s.phone ?? '')}
+              </span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  style={{ color: 'var(--primary)', flexShrink: 0 }}
+                >
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                  <polyline points="22,6 12,13 2,6" />
+                </svg>
+                {ApiUtils.maskPII(s.email ?? '')}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="card-actions">
+          <button
+            onClick={() => onEdit(s)}
+            className="btn-secondary"
+            style={{ padding: '0.6rem 1.2rem', fontSize: '0.85rem' }}
+          >
+            Editar
+          </button>
+          <button onClick={() => onDelete(s.id, s.name)} className="btn-danger">
+            Excluir
+          </button>
+        </div>
+      </GlassCard>
+    </li>
+  );
+}
+
 export default function StaffPage() {
-  const [staff, setStaff] = useState<any[]>([]);
-
-  const [name, setName] = useState("");
-  const [role, setRole] = useState("");
-  const [emailPrefix, setEmailPrefix] = useState("");
-  const [phone, setPhone] = useState("");
-
+  const { showToast } = useToast();
+  const [confirmModal, confirm] = useConfirm();
+  const [staff, setStaff] = useState<StaffMember[]>([]);
+  const [name, setName] = useState('');
+  const [role, setRole] = useState('');
+  const [emailPrefix, setEmailPrefix] = useState('');
+  const [phone, setPhone] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const carregarDados = async () => {
+  const carregarDados = useCallback(async () => {
     try {
-      const res = await fetch("/api/internal-contacts");
-      if (res.ok) {
-        const data = await res.json();
-        setStaff(Array.isArray(data) ? data : []);
+      const { data } = await staffApi.list();
+      if (data) {
+        setStaff(
+          data.map((s) => ({
+            ...s,
+            role: migrateRole(s.role || ''),
+          })),
+        );
       }
-    } catch (error) {
-      console.error("Falha ao carregar equipe", error);
-    }
-  };
-
-  useEffect(() => {
-    carregarDados();
+    } catch {}
   }, []);
 
+  useEffect(() => {
+    carregarDados(); // eslint-disable-line react-hooks/set-state-in-effect -- fetch inicial
+  }, [carregarDados]);
+
   const resetForm = () => {
-    setName("");
-    setRole("");
-    setEmailPrefix("");
-    setPhone("");
+    setName('');
+    setRole('');
+    setEmailPrefix('');
+    setPhone('');
     setEditingId(null);
     setIsModalOpen(false);
   };
 
-  const openNewModal = () => {
-    resetForm();
-    setIsModalOpen(true);
-  };
-
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    const fullEmail = emailPrefix ? `${emailPrefix.split('@')[0]}@${EMAIL_DOMAIN}` : '';
 
-    const cleanPrefix = emailPrefix.split("@")[0];
-    const fullEmail = emailPrefix ? `${cleanPrefix}@compasss.com.br` : "";
+    if (UNIQUE_ROLES.includes(role)) {
+      const existing = staff.find((s) => s.role === role && s.id !== editingId);
+      if (existing) {
+        showToast(`Atenção: O cargo de ${role} já está ocupado por ${existing.name}.`, 'error');
+        return;
+      }
+    }
 
-    const payload = {
-      name,
-      role,
-      email: fullEmail,
-      phone,
-    };
+    const payload = { name, role, email: fullEmail, phone };
 
-    if (editingId) {
-      const res = await fetch(`/api/internal-contacts/${editingId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+    try {
+      const res = editingId
+        ? await staffApi.update(editingId, payload)
+        : await staffApi.create(payload);
       if (res.ok) {
         carregarDados();
         resetForm();
+        showToast('Contato salvo com sucesso');
       } else {
-        const err = await res.json();
-        alert(`Erro ao editar equipe: ${err.error || "Falha no servidor"}`);
+        showToast(`Erro: ${res.error || 'Falha no servidor'}`, 'error');
       }
-    } else {
-      const res = await fetch("/api/internal-contacts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      if (res.ok) {
-        carregarDados();
-        resetForm();
-      } else {
-        const err = await res.json();
-        alert(
-          `Erro ao criar equipe: ${err.details || err.error || "Falha no servidor"}`,
-        );
-      }
+    } catch {
+      showToast('Falha de conexão. Tente novamente.', 'error');
     }
   };
 
-  const handleEdit = (s: any) => {
+  const handleEdit = (s: StaffMember) => {
     setEditingId(s.id);
     setName(s.name);
-    setRole(s.role || "");
-    const prefix = s.email?.split("@")[0] || "";
-    setEmailPrefix(prefix);
-    setPhone(formatPhone(s.phone || ""));
+    setRole(migrateRole(s.role || ''));
+    setEmailPrefix(s.email?.split('@')[0] || '');
+    setPhone(ApiUtils.formatPhone(s.phone || ''));
     setIsModalOpen(true);
   };
 
   const handleDelete = async (id: string, sName: string) => {
-    if (!confirm(`Tem certeza que deseja excluir '${sName}'?`)) return;
-
-    const res = await fetch(`/api/internal-contacts/${id}`, {
-      method: "DELETE",
+    const ok = await confirm({
+      title: 'Excluir integrante',
+      message: `Tem certeza que deseja excluir '${sName}'?`,
     });
-    if (res.ok) {
-      carregarDados();
-    } else {
-      const err = await res.json();
-      alert(`Erro ao excluir: ${err.details || err.error}`);
-    }
+    if (!ok) return;
+    const res = await staffApi.delete(id);
+    if (res.ok) carregarDados();
   };
 
+  const maintGroup = staff
+    .filter((s) => MAINT_ROLES.includes(s.role))
+    .sort((a, b) => getRank(a.role) - getRank(b.role));
+  const escGroup = staff
+    .filter((s) => !MAINT_ROLES.includes(s.role))
+    .sort((a, b) => getRank(a.role) - getRank(b.role));
+
   return (
-    <main
-      style={{ padding: "4rem 2rem", maxWidth: "1000px", margin: "0 auto" }}
-    >
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "3rem",
-        }}
-      >
+    <main style={{ padding: '4rem 2rem', maxWidth: '1000px', margin: '0 auto' }}>
+      <div className="page-header">
         <div>
-          <h1 className="title" style={{ margin: 0 }}>
-            Gestão de Equipe (Staff)
+          <h1 className="title" style={{ margin: 0, fontSize: '3.2rem', letterSpacing: '-1.5px' }}>
+            Painel da Equipe
           </h1>
-          <p style={{ color: "var(--text-muted)", marginTop: "0.5rem" }}>
-            Especifique os gerentes, coordenadores e diretores da CompaSSS.
+          <p
+            style={{
+              color: 'var(--text-muted)',
+              marginTop: '0.5rem',
+              fontSize: '1.1rem',
+              maxWidth: '450px',
+            }}
+          >
+            Gerenciamento oficial de contatos internos e níveis de monitoramento operacional.
           </p>
         </div>
         <button
-          onClick={openNewModal}
+          onClick={() => {
+            resetForm();
+            setIsModalOpen(true);
+          }}
           className="btn-primary"
-          style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}
         >
-          <span style={{ fontSize: "1.2rem" }}>+</span> Adicionar Colaborador
+          + Novo Integrante
         </button>
       </div>
 
-      {isModalOpen &&
-        typeof document !== "undefined" &&
-        createPortal(
-          <div
-            style={{
-              position: "fixed",
-              inset: 0,
-              background: "rgba(0,0,0,0.92)",
-              zIndex: 99999,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: "1rem",
-              backdropFilter: "blur(8px)",
-            }}
-          >
-            <section
-              className="glass-panel animate-fade-in"
-              style={{
-                width: "100%",
-                maxWidth: "500px",
-                maxHeight: "90vh",
-                overflowY: "auto",
-                border: "1px solid var(--primary)",
-                boxShadow: "0 0 40px rgba(16, 185, 129, 0.15)",
-                padding: "2rem",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  marginBottom: "2rem",
-                }}
-              >
-                <h2 style={{ margin: 0 }}>
-                  {editingId ? "Editar Colaborador" : "Novo Colaborador"}
-                </h2>
-                <button
-                  onClick={resetForm}
-                  style={{
-                    background: "transparent",
-                    color: "white",
-                    border: "none",
-                    fontSize: "1.5rem",
-                    cursor: "pointer",
-                    padding: "0.5rem",
-                  }}
-                >
-                  &times;
-                </button>
-              </div>
-
-              <form
-                onSubmit={handleSave}
-                style={{
-                  display: "flex",
-                  gap: "1.5rem",
-                  flexDirection: "column",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "0.5rem",
-                  }}
-                >
-                  <label
-                    style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}
-                  >
-                    Nome Completo
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Nome do Colaborador"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    required
-                    style={{
-                      padding: "0.8rem",
-                      borderRadius: "8px",
-                      border: "1px solid var(--border)",
-                      background: "rgba(255,255,255,0.02)",
-                      color: "white",
-                    }}
-                  />
-                </div>
-
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "0.5rem",
-                  }}
-                >
-                  <label
-                    style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}
-                  >
-                    Cargo / Função
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Ex: Cargo A, Cargo B, Cargo C..."
-                    value={role}
-                    onChange={(e) => setRole(e.target.value)}
-                    required
-                    style={{
-                      padding: "0.8rem",
-                      borderRadius: "8px",
-                      border: "1px solid var(--border)",
-                      background: "rgba(255,255,255,0.02)",
-                      color: "white",
-                    }}
-                  />
-                </div>
-
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "0.5rem",
-                  }}
-                >
-                  <label
-                    style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}
-                  >
-                    E-mail (Opcional)
-                  </label>
-                  <div
-                    style={{ display: "flex", gap: "0", alignItems: "stretch" }}
-                  >
-                    <input
-                      type="text"
-                      placeholder="usuário"
-                      value={emailPrefix}
-                      onChange={(e) =>
-                        setEmailPrefix(e.target.value.split("@")[0])
-                      }
-                      style={{
-                        flex: 1,
-                        padding: "0.8rem",
-                        borderRadius: "8px 0 0 8px",
-                        border: "1px solid var(--border)",
-                        background: "rgba(255,255,255,0.02)",
-                        color: "white",
-                        textAlign: "right",
-                      }}
-                    />
-                    <div
-                      style={{
-                        background: "rgba(16, 185, 129, 0.1)",
-                        display: "flex",
-                        alignItems: "center",
-                        border: "1px solid var(--border)",
-                        borderLeft: "none",
-                        borderRadius: "0 8px 8px 0",
-                        color: "var(--primary)",
-                        fontSize: "0.85rem",
-                        padding: "0 10px",
-                        fontWeight: "bold",
-                      }}
-                    >
-                      @compasss.com.br
-                    </div>
-                  </div>
-                </div>
-
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "0.5rem",
-                  }}
-                >
-                  <label
-                    style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}
-                  >
-                    Telefone (Opcional)
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="(11) 99999-9999"
-                    value={phone}
-                    onChange={(e) => setPhone(formatPhone(e.target.value))}
-                    maxLength={14}
-                    style={{
-                      padding: "0.8rem",
-                      borderRadius: "8px",
-                      border: "1px solid var(--border)",
-                      background: "rgba(255,255,255,0.02)",
-                      color: "white",
-                    }}
-                  />
-                </div>
-
-                <div
-                  style={{ display: "flex", gap: "1rem", marginTop: "1rem" }}
-                >
-                  <button
-                    type="submit"
-                    className="btn-primary"
-                    style={{ flex: 1 }}
-                  >
-                    {editingId ? "Salvar Alterações" : "Cadastrar"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={resetForm}
-                    className="btn-secondary"
-                    style={{ flex: 1 }}
-                  >
-                    Cancelar
-                  </button>
-                </div>
-              </form>
-            </section>
-          </div>,
-          document.body,
-        )}
-
-      <div>
-        <h2
-          style={{
-            marginBottom: "1.5rem",
-            fontSize: "1.2rem",
-            color: "var(--text-muted)",
-            textTransform: "uppercase",
-            letterSpacing: "1px",
-          }}
+      <Modal
+        isOpen={isModalOpen}
+        onClose={resetForm}
+        title={editingId ? 'Editar Integrante' : 'Novo Integrante'}
+      >
+        <form
+          onSubmit={handleSave}
+          style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}
         >
-          Registros Administrativos
-        </h2>
-        {staff.length === 0 ? (
-          <p style={{ color: "var(--text-muted)" }}>
-            Nenhuma pessoa cadastrada na equipe.
-          </p>
-        ) : (
-          <ul style={{ listStyle: "none" }}>
-            {staff.map((s) => (
-              <li
-                key={s.id}
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  padding: "1.5rem",
-                  border: "1px solid var(--border)",
-                  background: "rgba(255,255,255,0.01)",
-                  borderRadius: "12px",
-                  marginBottom: "16px",
-                }}
-                className="client-card"
-              >
-                <div>
-                  <strong
-                    style={{
-                      fontSize: "1.4rem",
-                      color: "var(--primary)",
-                      display: "block",
-                      marginBottom: "4px",
-                    }}
-                  >
-                    {s.name}
-                  </strong>
-                  <span
-                    style={{
-                      color: "#94a3b8",
-                      fontSize: "0.95rem",
-                      fontWeight: 600,
-                      display: "block",
-                      marginBottom: "8px",
-                    }}
-                  >
-                    {s.role}
-                  </span>
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: "16px",
-                      color: "white",
-                      opacity: 0.8,
-                      fontSize: "0.85rem",
-                    }}
-                  >
-                    <span
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "4px",
-                      }}
-                    >
-                      <span style={{ color: "var(--primary)" }}>📞</span>{" "}
-                      {s.phone || "Nenhum"}
-                    </span>
-                    <span
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "4px",
-                      }}
-                    >
-                      <span style={{ color: "var(--primary)" }}>✉️</span>{" "}
-                      {s.email || "Nenhum"}
-                    </span>
-                  </div>
-                </div>
-                <div style={{ display: "flex", gap: "0.8rem" }}>
-                  <button
-                    onClick={() => handleEdit(s)}
-                    style={{
-                      padding: "0.6rem 1.2rem",
-                      background: "rgba(255,255,255,0.05)",
-                      border: "1px solid var(--border)",
-                      borderRadius: "8px",
-                      cursor: "pointer",
-                      color: "white",
-                      fontWeight: "600",
-                    }}
-                  >
-                    Editar
-                  </button>
-                  <button
-                    onClick={() => handleDelete(s.id, s.name)}
-                    style={{
-                      padding: "0.6rem 1.2rem",
-                      background: "rgba(239, 68, 68, 0.1)",
-                      border: "1px solid rgba(239, 68, 68, 0.2)",
-                      borderRadius: "8px",
-                      cursor: "pointer",
-                      color: "#f87171",
-                      fontWeight: "600",
-                    }}
-                  >
-                    Excluir
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
+          <div className="form-field">
+            <label htmlFor="staff-name" className="form-label">
+              Nome Completo
+            </label>
+            <input
+              id="staff-name"
+              className="form-input"
+              type="text"
+              placeholder="Nome do integrante"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
+          </div>
+          <div className="form-field">
+            <label htmlFor="staff-role" className="form-label">
+              Cargo / Função
+            </label>
+            <select
+              id="staff-role"
+              className="form-input"
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+              required
+              style={{ cursor: 'pointer' }}
+            >
+              <option value="" disabled>
+                Selecione um Cargo
+              </option>
+              <option value="Técnico de Sistemas (Líder)">Técnico de Sistemas (Líder)</option>
+              <option value="Supervisor">Supervisor</option>
+              <option value="Coordenador">Coordenador</option>
+              <option value="Comercial Obras/Peça">Comercial Obras/Peça</option>
+              <option value="Comercial Serviços">Comercial Serviços</option>
+              <option value="Gerente">Gerente</option>
+              <option value="Diretor">Diretor</option>
+              <option value="Outros">Outros</option>
+            </select>
+          </div>
+          <div className="form-field">
+            <label htmlFor="staff-email" className="form-label">
+              E-mail (Opcional)
+            </label>
+            <div className="email-input-wrapper">
+              <input
+                id="staff-email"
+                className="form-input"
+                type="text"
+                placeholder="usuário"
+                value={emailPrefix}
+                onChange={(e) => setEmailPrefix(e.target.value.split('@')[0])}
+              />
+              <span className="email-domain-badge">@{EMAIL_DOMAIN}</span>
+            </div>
+          </div>
+          <div className="form-field">
+            <label htmlFor="staff-phone" className="form-label">
+              Telefone (Opcional)
+            </label>
+            <input
+              id="staff-phone"
+              className="form-input"
+              type="text"
+              placeholder="(11) 99999-9999"
+              value={phone}
+              onChange={(e) => setPhone(ApiUtils.formatPhone(e.target.value))}
+              maxLength={15}
+            />
+          </div>
+          <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
+            <button type="submit" className="btn-primary" style={{ flex: 1 }}>
+              {editingId ? 'Salvar Alterações' : 'Cadastrar'}
+            </button>
+            <button type="button" onClick={resetForm} className="btn-secondary" style={{ flex: 1 }}>
+              Cancelar
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '3rem' }}>
+        <section>
+          <SectionHeader icon="🛠️" label="Manutenção de Sistemas" />
+          {maintGroup.length === 0 ? (
+            <p style={{ color: 'var(--text-muted)', paddingLeft: '2.5rem' }}>
+              Não há contatos técnicos registrados.
+            </p>
+          ) : (
+            <ul style={{ listStyle: 'none', padding: 0 }}>
+              {maintGroup.map((s, i) => (
+                <StaffItem key={s.id} s={s} index={i} onEdit={handleEdit} onDelete={handleDelete} />
+              ))}
+            </ul>
+          )}
+        </section>
+        <section>
+          <SectionHeader icon="📈" label="Escalonamento e Gestão" />
+          {escGroup.length === 0 ? (
+            <p style={{ color: 'var(--text-muted)', paddingLeft: '2.5rem' }}>
+              Não há contatos de gestão registrados.
+            </p>
+          ) : (
+            <ul style={{ listStyle: 'none', padding: 0 }}>
+              {escGroup.map((s, i) => (
+                <StaffItem
+                  key={s.id}
+                  s={s}
+                  index={i + maintGroup.length}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                />
+              ))}
+            </ul>
+          )}
+        </section>
       </div>
+
+      {confirmModal}
     </main>
   );
 }
