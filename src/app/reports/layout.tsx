@@ -8,13 +8,16 @@
  * ESTE layout no lugar do global apenas para as rotas filhas,
  * eliminando o Header indesejado que aparecia no meio do PDF.
  */
-export default function ReportsLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+import { Montserrat } from 'next/font/google';
+
+const montserrat = Montserrat({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '800', '900'],
+});
+
+export default function ReportsLayout({ children }: { children: React.ReactNode }) {
   return (
     // Renderiza apenas o conteúdo filho, sem Header nem footer.
-    <>{children}</>
+    <div className={montserrat.className}>{children}</div>
   );
 }

@@ -1,5 +1,3 @@
-@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap");
-
 /* ─── Reset Global ───────────────────────────────────────────── */
 * {
   box-sizing: border-box;
@@ -10,7 +8,7 @@ body {
   -webkit-print-color-adjust: exact !important;
   print-color-adjust: exact !important;
   color: black;
-  font-family: "Montserrat", sans-serif;
+  font-family: 'Montserrat', sans-serif;
   margin: 0;
   padding: 0;
 }
@@ -27,14 +25,14 @@ main {
 /* ─── Container A4 ───────────────────────────────────────────── */
 .report-container {
   width: 210mm;
-  min-height: 297mm; /* min-height em vez de height fixo */
+  /* min-height removido para evitar páginas em branco extras */
   background: white;
-  margin: 0 auto;
+  margin: 20px auto;
   position: relative;
   box-sizing: border-box;
-  padding: 0 12mm 8mm;
+  padding: 0 12mm 4mm; /* padding inferior reduzido */
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-  overflow: visible; /* nunca cortar conteúdo */
+  overflow: visible;
 }
 
 /* ─── Impressão ──────────────────────────────────────────────── */
@@ -57,8 +55,8 @@ main {
     margin: 0;
     box-shadow: none;
     width: 210mm;
-    min-height: 297mm;
-    padding: 0 12mm 8mm;
+    min-height: auto;
+    padding: 0 12mm 4mm;
   }
   /* Evita quebra de página dentro de tabelas e seções */
   table,
@@ -81,7 +79,7 @@ main {
   z-index: 0;
 }
 .abstract-shape::after {
-  content: "";
+  content: '';
   position: absolute;
   top: 40px;
   left: -20px;
@@ -196,7 +194,7 @@ main {
 }
 
 .text-red {
-  color: #ef4444;
+  color: #ef4444 !important;
 }
 .text-blue {
   color: #3b82f6;
@@ -210,43 +208,59 @@ main {
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 6px;
-  padding: 5px 8px;
+  gap: 8px;
+  padding: 4px 10px 4px 4px;
   min-height: 38px;
-  color: white;
+  color: #1e293b;
   font-weight: 800;
-  font-size: 0.55rem;
+  font-size: 0.52rem;
   text-transform: uppercase;
-  border-radius: 7px;
-  line-height: 1.2;
+  border-radius: 20px;
+  line-height: 1.25;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  background: white;
 }
 .badge-icon {
-  width: 26px;
-  height: 26px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.9);
+  background: white;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  border: 1.5px solid currentColor;
+  overflow: hidden;
 }
 .badge-sdai {
-  background: #dc2626;
+  background: rgba(220, 38, 38, 0.08);
+  border-color: rgba(220, 38, 38, 0.2);
+  color: #dc2626 !important;
 }
 .badge-cftv {
-  background: #10b981;
+  background: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.2);
+  color: #059669 !important;
 }
 .badge-sca {
-  background: #9333ea;
+  background: rgba(147, 51, 234, 0.08);
+  border-color: rgba(147, 51, 234, 0.2);
+  color: #9333ea !important;
 }
 .badge-sap {
-  background: #3b82f6;
+  background: rgba(59, 130, 246, 0.08);
+  border-color: rgba(59, 130, 246, 0.2);
+  color: #2563eb !important;
 }
 .badge-sai {
-  background: #d97706;
+  background: rgba(217, 119, 6, 0.08);
+  border-color: rgba(217, 119, 6, 0.2);
+  color: #b45309 !important;
 }
 .badge-default {
-  background: #6b7280;
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #64748b !important;
 }
 
 /* ─── Legenda ────────────────────────────────────────────────── */
