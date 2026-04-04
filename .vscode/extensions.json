@@ -1,0 +1,12 @@
+{
+  "recommendations": [
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "eamodio.gitlens",
+    "usernamehw.errorlens",
+    "dsznajder.es7-react-js-snippets",
+    "christian-kohler.path-intellisense",
+    "rangav.vscode-thunder-client",
+    "mikestead.dotenv"
+  ]
+}
