@@ -6,6 +6,12 @@ import { generateScheduleSchema } from '@/lib/schemas';
 
 export const dynamic = 'force-dynamic';
 
+// Esse arquivo é o core do sistema. Antes a agenda era feita na mão em planilha
+// e levava dias pra encaixar 40+ contratos sem conflito. O algoritmo aqui
+// faz em segundos o que levava uma semana: distribui visitas e testes SDAI
+// respeitando feriados, fins de semana, frequência de cada contrato e
+// preferência de dia do cliente.
+
 // ─────────────────────────────────────────────────────────────
 // Tipos
 // ─────────────────────────────────────────────────────────────
@@ -117,6 +123,10 @@ export async function POST(request: Request) {
     contracts.forEach((c) => (visitCounter[c.id] = 1));
 
     // ── ETAPA 1: Pré-alocar Testes SDAI (Trimestrais, Sábados) ──
+    // SDAI é obrigatório por norma — teste trimestral do sistema de detecção
+    // de incêndio. Tem que ser no sábado porque o prédio precisa estar vazio
+    // (o alarme dispara de verdade). Cada contrato entra num grupo de rotação
+    // pra não cair todo mundo no mesmo mês.
     const sdaiSchedule: Record<number, { contract: ContractWithClient; date: Date }[]> = {};
     const usedSdaiDates = new Set<string>();
 
@@ -125,9 +135,12 @@ export async function POST(request: Request) {
     );
     for (let idx = 0; idx < sdaiContracts.length; idx++) {
       const contract = sdaiContracts[idx];
+      // distribui contratos em 3 grupos pra não sobrecarregar o mesmo mês
       const rotationGroup = idx % 3;
       for (let month = rotationGroup; month < 12; month += 3) {
         const saturdays = getSaturdays(year, month);
+        // prefere sábados perto do dia 25 — meu supervisor pedia pra ser
+        // no final do mês porque o relatório mensal fecha dia 30
         const sortedSats = [...saturdays].sort(
           (a, b) => Math.abs(a.getDate() - 25) - Math.abs(b.getDate() - 25),
         );
@@ -147,6 +160,10 @@ export async function POST(request: Request) {
     }
 
     // ── ETAPA 2: Distribuir Visitas Técnicas por Mês ──
+    // Aqui é onde a planilha virava um pesadelo. Cada contrato tem frequência
+    // diferente, alguns pedem dias específicos, e não pode ter 3 visitas no
+    // mesmo dia enquanto outra semana fica vazia. O algoritmo tenta espaçar
+    // as visitas uniformemente e prioriza contratos com restrição de dia.
     for (let month = 0; month < 12; month++) {
       const workDays = getWorkDaysFast(year, month);
       const daySlots: (SlotEntry | null)[] = new Array(workDays.length).fill(null);
@@ -244,7 +261,9 @@ export async function POST(request: Request) {
     }
 
     // ── OPERAÇÃO ATÔMICA ──
-    // Usamos transação para garantir que não apaguemos a agenda antiga se a nova falhar.
+    // Aprendemos da pior forma: uma vez a geração falhou no meio e ficou metade
+    // da agenda antiga com metade da nova. Transação resolve isso — ou gera tudo
+    // ou não muda nada.
     const result = await prisma.$transaction(async (tx) => {
       // Apaga apenas a agenda do ano selecionado para o técnico
       await tx.appointment.deleteMany({
@@ -257,7 +276,8 @@ export async function POST(request: Request) {
         },
       });
 
-      // Insere em lote (batch) — muito mais rápido que creates individuais
+      // createMany em vez de loop — a primeira versão criava um por um e
+      // demorava ~8s pra 400 agendamentos. Com batch caiu pra <1s
       await tx.appointment.createMany({ data: appointmentsToCreate });
       return appointmentsToCreate;
     });

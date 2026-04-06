@@ -5,6 +5,9 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import prisma from './prisma';
 import { checkLoginRateLimit } from './rate-limit';
 
+// Auth simples com credentials porque é sistema interno — não precisa de
+// OAuth/Google. Só quem tem login acessa, e por enquanto é só o admin.
+// Se precisar de mais usuários, a tabela User já tá pronta.
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
@@ -38,7 +41,7 @@ export const authOptions: NextAuthOptions = {
   },
   session: {
     strategy: 'jwt',
-    maxAge: 8 * 60 * 60,
+    maxAge: 8 * 60 * 60, // turno de trabalho — expira no fim do dia
   },
   secret: process.env.NEXTAUTH_SECRET,
 };

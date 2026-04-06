@@ -44,12 +44,26 @@ src/
 └── types/         # interfaces do domínio
 ```
 
+## Decisões técnicas
+
+- **CSS puro em vez de Tailwind** — queria controle total do glassmorphism. Tailwind abstrairia demais os backdrop-filter e as transições que fazem o visual funcionar. Pra um projeto desse tamanho, 850 linhas de CSS é gerenciável.
+- **Sem React Query/SWR** — o frontend carrega tudo de uma vez (são ~50 clientes no máximo) e filtra local. Não justifica a dependência extra. Se crescer, migro.
+- **contactsJson como texto em vez de tabela** — cada contrato tem uma lista de contatos de manutenção e escalonamento que muda o tempo todo. Normalizar isso seria 3 tabelas a mais pra um dado que só aparece em 2 telas. JSON resolveu.
+- **Rate limiting com Redis + fallback** — Redis (Upstash) em produção, memória em dev. Parece overkill pra 1 admin, mas a tela de login é pública e brute force é trivial. O fallback in-memory garante que funciona sem Redis configurado.
+- **Sessão de 8h** — turno de trabalho. O operador loga de manhã e não precisa se preocupar até o fim do dia.
+- **SDAI no sábado** — exigência da norma. O teste dispara o alarme de verdade, então o prédio precisa estar vazio.
+
+## O que eu faria diferente
+
+- O algoritmo de geração de agenda funciona mas é um bloco de 400 linhas. Deveria ter quebrado em funções menores desde o início.
+- Comecei com commit messages em inglês tentando seguir padrão e depois mudei pra português. Ficou inconsistente no histórico.
+- Testes E2E são frágeis — dependem de dados seed e quebram se a ordem muda. Precisam de fixtures isoladas.
+
 ## O que falta
 
-- [ ] Login com tabela de usuários e bcrypt (hoje é 1 admin hardcoded)
-- [ ] Rate limiting persistente (hoje é in-memory, reseta no deploy)
 - [ ] Notificações por email quando a agenda é gerada
 - [ ] Dashboard com métricas de visitas realizadas vs programadas
+- [ ] Exportar agenda em formato .ics (Google Calendar)
 
 ## Licença
 

@@ -1,6 +1,9 @@
 import { Ratelimit } from '@upstash/ratelimit';
 import { Redis } from '@upstash/redis';
 
+// Rate limit só no login porque é a única rota pública. As outras já estão
+// atrás do middleware de auth então brute force não rola.
+// Em dev usa memória pra não depender do Redis; em prod usa Upstash.
 const hasRedis = !!(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN);
 
 const LOGIN_MAX_ATTEMPTS = process.env.NODE_ENV === 'development' ? 50 : 5;

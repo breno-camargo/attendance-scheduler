@@ -11,10 +11,9 @@ export async function requireAuth() {
   return null;
 }
 
-/**
- * Extrai parâmetros de paginação de uma URL.
- * Defaults: page=1, limit=200 (alto para não quebrar frontend existente).
- */
+// limit=200 porque o frontend carrega todos os clientes de uma vez pra montar
+// a tabela com filtro local. Paginação server-side seria melhor mas não vale
+// o esforço agora — são ~50 clientes no máximo.
 export function parsePagination(url: string): { skip: number; take: number } {
   const { searchParams } = new URL(url);
   const rawPage = parseInt(searchParams.get('page') || '1');
@@ -60,7 +59,9 @@ export const ApiUtils = {
       .join(' ');
   },
 
-  // mascara email/telefone pra não mostrar dado completo na tela
+  // mascara PII nas telas de listagem — o pessoal da recepção do prédio
+  // não precisa ver telefone/email completo do técnico, só o suficiente
+  // pra confirmar que é a pessoa certa. Na tela de detalhe mostra tudo.
   maskPII: <T>(data: T): T => {
     const applyMask = (val: string): string => {
       if (!val || typeof val !== 'string') return val;
