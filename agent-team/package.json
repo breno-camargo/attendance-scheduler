@@ -1,0 +1,16 @@
+{
+  "name": "agent-team",
+  "version": "1.0.0",
+  "description": "Agent team: Opus planeja, Sonnet executa hard tasks, Gemini executa easy tasks",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "orchestrator": "node orchestrator.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "@google/generative-ai": "^0.24.0",
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "dotenv": "^16.6.1"
+  }
+}
