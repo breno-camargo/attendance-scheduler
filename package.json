@@ -54,21 +54,11 @@
     "vitest": "^4.1.2",
     "vitest-mock-extended": "^3.1.1"
   },
-  "description": "[![Status](https://img.shields.io/badge/Status-Em%20Desenvolvimento-green?style=for-the-badge)]() [![Next.js](https://img.shields.io/badge/Next.js-14-black?style=for-the-badge&logo=next.js)]() [![Prisma](https://img.shields.io/badge/Prisma-ORM-5a67d8?style=for-the-badge&logo=prisma)]() [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-DB-336791?style=for-the-badge&logo=postgresql)]() [![Vercel](https://img.shields.io/badge/Deploy-Vercel-000?style=for-the-badge&logo=vercel)]()",
-  "main": "index.js",
-  "directories": {
-    "test": "tests"
-  },
+  "description": "Sistema de agendamento de manutencao preventiva para a CompaSSS",
+  "author": "Breno Camargo",
+  "license": "ISC",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/breno-camargo/attendance-scheduler.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "bugs": {
-    "url": "https://github.com/breno-camargo/attendance-scheduler/issues"
-  },
-  "homepage": "https://github.com/breno-camargo/attendance-scheduler#readme"
+  }
 }
