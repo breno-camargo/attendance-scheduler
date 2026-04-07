@@ -37,9 +37,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const colors = {
-    success: { bg: 'var(--primary-subtle)', border: 'var(--primary)' },
-    error: { bg: 'var(--danger-bg)', border: 'var(--danger)' },
-    info: { bg: 'var(--warning-bg)', border: 'var(--warning)' },
+    success: { bg: 'var(--primary-subtle)', border: 'var(--primary)', icon: '\u2713' },
+    error: { bg: 'var(--danger-bg)', border: 'var(--danger)', icon: '\u2717' },
+    info: { bg: 'var(--warning-bg)', border: 'var(--warning)', icon: '\u2139' },
   };
 
   return (
@@ -73,6 +73,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                   pointerEvents: 'auto',
                 }}
               >
+                <span style={{ marginRight: '8px', fontWeight: 700 }}>{colors[t.type].icon}</span>
                 {t.message}
               </div>
             ))}

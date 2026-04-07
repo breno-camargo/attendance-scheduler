@@ -109,6 +109,28 @@ body {
     color 0.4s ease;
 }
 
+/* scrollbar discreta — combina com o glassmorphism sem chamar atenção */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(16, 185, 129, 0.2);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(16, 185, 129, 0.4);
+}
+
+[data-theme='light'] ::-webkit-scrollbar-thumb {
+  background: rgba(5, 150, 105, 0.15);
+}
+[data-theme='light'] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(5, 150, 105, 0.3);
+}
+
 a {
   transition: var(--transition-fast);
 }
@@ -174,6 +196,26 @@ a {
 
 .btn-primary:active {
   transform: translateY(0) scale(0.98);
+}
+
+/* Focus ring pra navegação por teclado */
+.btn-primary:focus-visible,
+.btn-secondary:focus-visible,
+.btn-danger:focus-visible,
+.btn-icon:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Disabled — botão desabilitado precisa parecer desabilitado */
+.btn-primary:disabled,
+.btn-secondary:disabled,
+.btn-danger:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+  filter: none;
 }
 
 .btn-secondary {
@@ -650,6 +692,10 @@ select.form-input {
   color: #1e293b !important;
   background: #f1f5f9 !important;
   border-color: rgba(5, 150, 105, 0.2) !important;
+}
+
+.nav-link:hover {
+  color: var(--primary) !important;
 }
 
 .hide-scrollbar::-webkit-scrollbar {
