@@ -50,8 +50,8 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
           <div
             style={{
               position: 'fixed',
-              top: '1rem',
-              right: '1rem',
+              bottom: '1.5rem',
+              right: '1.5rem',
               display: 'flex',
               flexDirection: 'column',
               gap: '0.5rem',
@@ -64,23 +64,27 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                 key={t.id}
                 style={{
                   padding: '0.75rem 1.25rem',
-                  borderRadius: '8px',
-                  background: colors[t.type].bg,
+                  borderRadius: '10px',
+                  background: 'var(--surface-solid)',
                   border: `1px solid ${colors[t.type].border}`,
-                  color: 'white',
+                  color: 'var(--foreground)',
                   fontSize: '0.9rem',
+                  boxShadow: '0 4px 20px rgba(0, 0, 0, 0.25)',
+                  backdropFilter: 'blur(12px)',
                   animation: 'toastIn 0.3s ease-out',
                   pointerEvents: 'auto',
                 }}
               >
-                <span style={{ marginRight: '8px', fontWeight: 700 }}>{colors[t.type].icon}</span>
+                <span style={{ marginRight: '8px', fontWeight: 700, color: colors[t.type].border }}>
+                  {colors[t.type].icon}
+                </span>
                 {t.message}
               </div>
             ))}
             <style>{`
             @keyframes toastIn {
-              from { opacity: 0; transform: translateX(100%); }
-              to { opacity: 1; transform: translateX(0); }
+              from { opacity: 0; transform: translateY(1rem); }
+              to { opacity: 1; transform: translateY(0); }
             }
           `}</style>
           </div>,
