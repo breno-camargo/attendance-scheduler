@@ -79,9 +79,24 @@ main {
   width: 380px;
   height: auto;
 }
+/* No preview, esconde o shape do thead (já tem o principal) */
+.thead-shape {
+  display: none;
+}
 @media print {
   .abstract-shape {
     left: 0;
+  }
+  /* Na impressão, mostra o shape do thead (repete em cada página) */
+  .thead-shape {
+    display: block;
+    position: absolute;
+    top: 0;
+    left: -8mm;
+  }
+  /* Esconde o shape principal (coberto pelo thead) */
+  .report-container > .abstract-shape {
+    display: none;
   }
 }
 
@@ -279,18 +294,28 @@ main {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.5rem;
-  margin-top: 5px;
+  margin-top: 10px;
+  border: 1.5px solid #065f46;
 }
 .contact-table th {
-  background: #064e3b;
+  background: #065f46;
   color: white;
-  padding: 4px 5px;
-  border: 1px solid black;
+  padding: 5px 6px;
+  border: 1px solid #065f46;
   font-weight: 700;
+  letter-spacing: 0.4px;
+  font-size: 0.48rem;
 }
 .contact-table td {
-  padding: 3px 5px;
-  border: 1px solid black;
+  padding: 4px 6px;
+  border: 1px solid #cbd5e1;
   text-align: center;
   font-weight: 600;
+  color: #1e293b;
+}
+.contact-table tbody tr:nth-child(even) {
+  background-color: #f0fdf4;
+}
+.contact-table tbody tr:nth-child(odd) {
+  background-color: #ffffff;
 }

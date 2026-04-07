@@ -32,14 +32,14 @@ export default function ReportContactTables({
       {/* Seção 1: Manutenção de Sistemas */}
       <table className="contact-table" style={{ marginBottom: '4px' }}>
         <thead>
-          <tr style={{ background: '#1e40af', color: 'white' }}>
-            <th colSpan={6} style={{ textAlign: 'center', letterSpacing: '1px' }}>
+          <tr>
+            <th colSpan={6} style={{ textAlign: 'center', letterSpacing: '1.5px', fontSize: '0.55rem', padding: '8px' }}>
               LISTA DE CONTATOS
             </th>
           </tr>
           <tr
             style={{
-              background: '#0f172a',
+              background: '#0f4a3a',
               color: 'white',
               fontSize: '0.48rem',
             }}
@@ -54,13 +54,7 @@ export default function ReportContactTables({
         </thead>
         <tbody>
           <tr>
-            <td
-              style={{
-                fontWeight: 800,
-                color: '#000',
-                background: '#f0fdf4',
-              }}
-            >
+            <td style={{ fontWeight: 800 }}>
               1° Contato
             </td>
             <td
@@ -68,7 +62,8 @@ export default function ReportContactTables({
               style={{
                 fontWeight: 800,
                 verticalAlign: 'middle',
-                background: 'white',
+                background: '#f8fafc',
+                border: '1px solid #cbd5e1',
               }}
             >
               CompaSSS
@@ -107,7 +102,7 @@ export default function ReportContactTables({
           </tr>
           <tr
             style={{
-              background: '#0f172a',
+              background: '#0f4a3a',
               color: 'white',
               fontSize: '0.48rem',
             }}
@@ -139,6 +134,8 @@ export default function ReportContactTables({
                     style={{
                       fontWeight: 800,
                       verticalAlign: 'middle',
+                      background: '#f8fafc',
+                      border: '1px solid #cbd5e1',
                     }}
                   >
                     {row.contact}
@@ -150,7 +147,8 @@ export default function ReportContactTables({
                     style={{
                       fontWeight: 800,
                       verticalAlign: 'middle',
-                      background: 'white',
+                      background: '#f8fafc',
+                      border: '1px solid #cbd5e1',
                     }}
                   >
                     CompaSSS

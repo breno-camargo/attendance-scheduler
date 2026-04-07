@@ -275,15 +275,18 @@ export default async function ContractReportPage({ params }: { params: { id: str
         <table style={{ width: '100%', borderCollapse: 'collapse', border: 'none' }}>
           <thead style={{ display: 'table-header-group' }}>
             <tr>
-              <td
-                style={{
-                  border: 'none',
-                  padding: '16mm 0 0',
-                  position: 'relative',
-                }}
-              >
-
-                {/* CABEÇALHO */}
+              <td style={{ border: 'none', padding: 0, height: '8mm' }}>
+                <div className="abstract-shape thead-shape">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/corner-shape.png" alt="" />
+                </div>
+              </td>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style={{ border: 'none', padding: 0 }}>
+                {/* CABEÇALHO — só aparece na página 1 */}
                 <div
                   style={{
                     display: 'flex',
@@ -292,6 +295,7 @@ export default async function ContractReportPage({ params }: { params: { id: str
                     position: 'relative',
                     zIndex: 10,
                     marginBottom: '20px',
+                    paddingTop: '10mm',
                   }}
                 >
                   <div style={{ width: '40%' }}></div>
@@ -307,7 +311,7 @@ export default async function ContractReportPage({ params }: { params: { id: str
                     <img
                       src="/logo.png"
                       alt="CompaSSS"
-                      style={{ height: '60px', width: 'auto' }}
+                      style={{ height: '100px', width: 'auto' }}
                     />
                     <div
                       style={{
@@ -345,14 +349,7 @@ export default async function ContractReportPage({ params }: { params: { id: str
                     </div>
                   </div>
                 </div>
-                {/* Espaço a mais para o thead cobrir a altura total da forma verde absoluta */}
-                <div style={{ height: '35px' }}></div>
-              </td>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td style={{ border: 'none', padding: 0 }}>
+
                 <h2
                   style={{
                     textAlign: 'center',

@@ -39,14 +39,14 @@ interface AppointmentData {
 // Utilitários de Data
 // ---
 
-const isWeekend = (date: Date) => date.getDay() === 0 || date.getDay() === 6;
+const isWeekend = (date: Date) => date.getUTCDay() === 0 || date.getUTCDay() === 6;
 
 const getSaturdays = (year: number, month: number): Date[] => {
   const sats: Date[] = [];
-  const totalDays = new Date(year, month + 1, 0).getDate();
+  const totalDays = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
   for (let d = 1; d <= totalDays; d++) {
-    const date = new Date(year, month, d);
-    if (date.getDay() === 6) sats.push(date);
+    const date = new Date(Date.UTC(year, month, d));
+    if (date.getUTCDay() === 6) sats.push(date);
   }
   return sats;
 };
@@ -99,8 +99,8 @@ export async function POST(request: Request) {
     const holidaysInYear = await prisma.holiday.findMany({
       where: {
         date: {
-          gte: new Date(year, 0, 1),
-          lt: new Date(year + 1, 0, 1),
+          gte: new Date(Date.UTC(year, 0, 1)),
+          lt: new Date(Date.UTC(year + 1, 0, 1)),
         },
       },
     });
@@ -109,9 +109,9 @@ export async function POST(request: Request) {
 
     const getWorkDaysFast = (y: number, month: number): Date[] => {
       const days: Date[] = [];
-      const totalDays = new Date(y, month + 1, 0).getDate();
+      const totalDays = new Date(Date.UTC(y, month + 1, 0)).getUTCDate();
       for (let d = 1; d <= totalDays; d++) {
-        const date = new Date(y, month, d);
+        const date = new Date(Date.UTC(y, month, d));
         if (!isWeekend(date) && !isHolidayFast(date)) days.push(date);
       }
       return days;
@@ -265,11 +265,16 @@ export async function POST(request: Request) {
     // Aprendemos da pior forma: uma vez a geração falhou no meio e ficou metade
     // da agenda antiga com metade da nova. Transação resolve isso — ou gera tudo
     // ou não muda nada.
+    const contractIds = contracts.map((c) => c.id);
+
     const result = await prisma.$transaction(async (tx) => {
-      // Apaga apenas a agenda do ano selecionado para o técnico
+      // Apaga agenda do ano: por professionalId OU por contractId (pega órfãos com professionalId null)
       await tx.appointment.deleteMany({
         where: {
-          professionalId: professional.id,
+          OR: [
+            { professionalId: professional.id },
+            { contractId: { in: contractIds } },
+          ],
           date: {
             gte: new Date(Date.UTC(year, 0, 1)),
             lt: new Date(Date.UTC(year + 1, 0, 1)),
@@ -403,7 +408,7 @@ function findBestSlot(
     if (sdaiDates?.has(toDateKey(workDays[i]))) continue;
     const meetsGap = usedIndices.every((idx) => Math.abs(idx - i) >= minGap);
     if (!meetsGap && totalVisits > 1) continue;
-    const matchesPref = prefDays.length === 0 || prefDays.includes(workDays[i].getDay());
+    const matchesPref = prefDays.length === 0 || prefDays.includes(workDays[i].getUTCDay());
     const weight = matchesPref ? 0 : 1000;
     const diff = Math.abs(i - targetIdx) + weight;
     if (diff < minDiff) {
