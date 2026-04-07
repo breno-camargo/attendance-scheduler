@@ -113,8 +113,11 @@ export default function CalendarPage() {
     }
     setLoading(true);
     try {
-      await scheduleApi.generate(professionalId, year);
+      const res = await scheduleApi.generate(professionalId, year);
       await fetchAppointments();
+      if (res.ok && res.data) {
+        showToast(`Agenda gerada: ${res.data.count} agendamentos criados`);
+      }
     } catch {
       showToast('Erro ao gerar agenda. Tente novamente.', 'error');
     } finally {
@@ -175,9 +178,15 @@ export default function CalendarPage() {
   };
 
   const handleDayClick = (dateStr: string) => {
-    const apt = getAppointment(dateStr);
-    if (apt) {
-      setSelectedApt(apt);
+    // busca sem filtro pra não ter dead end quando sidebar filtra por contrato
+    const anyApt = appointments.find(
+      (a) => new Date(a.date).toISOString().split('T')[0] === dateStr,
+    );
+    if (anyApt) {
+      if (filterContractId && anyApt.contractId !== filterContractId) {
+        setFilterContractId(null); // limpa filtro pra mostrar a visita que o cara clicou
+      }
+      setSelectedApt(anyApt);
       setNewDate(dateStr);
     } else {
       setManualDate(dateStr);
@@ -205,8 +214,13 @@ export default function CalendarPage() {
       if (res.ok) {
         setIsManualModalOpen(false);
         fetchAppointments();
+        showToast('Visita agendada com sucesso');
+      } else {
+        showToast(res.error || 'Erro ao agendar visita', 'error');
       }
-    } catch {}
+    } catch {
+      showToast('Falha de conexão. Tente novamente.', 'error');
+    }
   };
 
   const handleClearSchedule = async () => {

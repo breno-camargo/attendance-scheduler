@@ -202,6 +202,7 @@ export default function ContactListModal({
       if (!res.ok) {
         showToast(`Erro ao salvar: ${res.error || 'Tente novamente'}`, 'error');
       } else {
+        showToast('Contatos salvos com sucesso');
         onClose();
       }
     } catch {

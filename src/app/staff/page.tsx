@@ -274,7 +274,10 @@ export default function StaffPage() {
     });
     if (!ok) return;
     const res = await staffApi.delete(id);
-    if (res.ok) carregarDados();
+    if (res.ok) {
+      carregarDados();
+      showToast('Contato excluído com sucesso');
+    }
   };
 
   const maintGroup = staff

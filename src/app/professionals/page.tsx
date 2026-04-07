@@ -74,8 +74,10 @@ export default function ProfessionalsPage() {
     });
     if (!ok) return;
     const res = await professionalsApi.delete(id);
-    if (res.ok) carregarDados();
-    else {
+    if (res.ok) {
+      carregarDados();
+      showToast('Técnico excluído com sucesso');
+    } else {
       showToast(
         `Erro ao excluir: ${res.error || 'O técnico pode ter dependências ativas.'}`,
         'error',

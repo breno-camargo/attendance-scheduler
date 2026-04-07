@@ -121,7 +121,10 @@ export default function ClientsPage() {
     });
     if (!ok) return;
     const res = await clientsApi.delete(id);
-    if (res.ok) carregarDados();
+    if (res.ok) {
+      carregarDados();
+      showToast('Cliente excluído com sucesso');
+    }
   };
 
   const openContactsModal = (contractId: string, tech: Professional) => {
