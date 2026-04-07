@@ -294,58 +294,60 @@ export default async function ContractReportPage({ params }: { params: { id: str
                     alignItems: 'flex-start',
                     position: 'relative',
                     zIndex: 10,
-                    marginBottom: '20px',
-                    paddingTop: '10mm',
+                    marginBottom: '4px',
+                    paddingTop: '3mm',
                   }}
                 >
                   <div style={{ width: '40%' }}></div>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src="/logo.png"
+                    alt="CompaSSS"
+                    style={{ height: '100px', width: 'auto' }}
+                  />
+                </div>
+
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'flex-end',
+                    position: 'relative',
+                    zIndex: 10,
+                    marginBottom: '4px',
+                  }}
+                >
                   <div
                     style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'flex-end',
-                      gap: '8px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      background: 'linear-gradient(to right, #c8e2f5, #d6ebfa)',
+                      borderRadius: '30px',
+                      padding: '3px 4px 3px 18px',
+                      gap: '12px',
                     }}
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src="/logo.png"
-                      alt="CompaSSS"
-                      style={{ height: '100px', width: 'auto' }}
-                    />
-                    <div
+                    <span
                       style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        background: 'linear-gradient(to right, #c8e2f5, #d6ebfa)',
-                        borderRadius: '30px',
-                        padding: '3px 4px 3px 18px',
-                        gap: '12px',
+                        color: '#1a1a1a',
+                        fontSize: '0.6rem',
+                        fontWeight: 700,
+                        whiteSpace: 'nowrap',
                       }}
                     >
-                      <span
-                        style={{
-                          color: '#1a1a1a',
-                          fontSize: '0.6rem',
-                          fontWeight: 700,
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        Agenda de Atendimento Técnico {year}
-                      </span>
-                      <div
-                        style={{
-                          background: '#1a1a1a',
-                          color: 'white',
-                          padding: '7px 18px',
-                          borderRadius: '25px',
-                          fontSize: '0.6rem',
-                          fontWeight: 800,
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {contract.client.name}
-                      </div>
+                      Agenda de Atendimento Técnico {year}
+                    </span>
+                    <div
+                      style={{
+                        background: '#1a1a1a',
+                        color: 'white',
+                        padding: '7px 18px',
+                        borderRadius: '25px',
+                        fontSize: '0.6rem',
+                        fontWeight: 800,
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {contract.client.name}
                     </div>
                   </div>
                 </div>
