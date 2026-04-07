@@ -7,6 +7,9 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
 
   try {
     const { id } = await params;
+    if (!id || !/^c[a-z0-9]{24}$/.test(id)) {
+      return ApiUtils.error('ID inválido', null, 400);
+    }
     const holiday = await prisma.holiday.findUnique({ where: { id } });
     if (!holiday) {
       return ApiUtils.error('Feriado não encontrado', null, 404);

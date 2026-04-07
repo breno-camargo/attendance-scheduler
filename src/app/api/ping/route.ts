@@ -14,6 +14,6 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  await prisma.$queryRaw`SELECT 1`;
+  await prisma.user.findFirst({ select: { id: true } });
   return NextResponse.json({ status: 'ok' });
 }

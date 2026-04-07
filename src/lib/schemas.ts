@@ -52,7 +52,7 @@ export const appointmentPatchSchema = z.object({
 
 // Esquema para Geração de Agenda
 export const generateScheduleSchema = z.object({
-  professionalId: z.string().min(1, 'professionalId é obrigatório'),
+  professionalId: z.string().regex(/^c[a-z0-9]{24}$/, 'ID de profissional inválido'),
   year: z
     .number()
     .or(z.string().transform((v) => Number(v)))
