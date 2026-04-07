@@ -268,17 +268,20 @@ export default async function ContractReportPage({ params }: { params: { id: str
       <PrintTrigger />
 
       <div className="report-container">
+        <div className="abstract-shape">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/corner-shape.png" alt="" />
+        </div>
         <table style={{ width: '100%', borderCollapse: 'collapse', border: 'none' }}>
           <thead style={{ display: 'table-header-group' }}>
             <tr>
               <td
                 style={{
                   border: 'none',
-                  padding: '10mm 0 0',
+                  padding: '16mm 0 0',
                   position: 'relative',
                 }}
               >
-                <div className="abstract-shape"></div>
 
                 {/* CABEÇALHO */}
                 <div
@@ -300,68 +303,41 @@ export default async function ContractReportPage({ params }: { params: { id: str
                       gap: '8px',
                     }}
                   >
-                    <h1
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src="/logo.png"
+                      alt="CompaSSS"
+                      style={{ height: '60px', width: 'auto' }}
+                    />
+                    <div
                       style={{
-                        margin: 0,
-                        fontSize: '2rem',
-                        fontWeight: 900,
-                        color: '#10b981',
-                        display: 'flex',
+                        display: 'inline-flex',
                         alignItems: 'center',
-                        gap: '2px',
-                        letterSpacing: '-1.5px',
+                        background: 'linear-gradient(to right, #c8e2f5, #d6ebfa)',
+                        borderRadius: '30px',
+                        padding: '3px 4px 3px 18px',
+                        gap: '12px',
                       }}
                     >
-                      <span>C</span>
-                      <svg width="32" height="32" viewBox="0 0 100 100" style={{ margin: '0 2px' }}>
-                        <circle
-                          cx="50"
-                          cy="50"
-                          r="42"
-                          stroke="#10b981"
-                          strokeWidth="8"
-                          fill="transparent"
-                        />
-                        <circle
-                          cx="50"
-                          cy="50"
-                          r="26"
-                          stroke="#10b981"
-                          strokeWidth="4"
-                          fill="transparent"
-                        />
-                        <circle cx="50" cy="8" r="4.5" fill="#10b981" />
-                        <circle cx="50" cy="92" r="4.5" fill="#10b981" />
-                        <circle cx="8" cy="50" r="4.5" fill="#10b981" />
-                        <circle cx="92" cy="50" r="4.5" fill="#10b981" />
-                        <path
-                          d="M50 20 L55 38 L72 35 L60 48 L70 65 L50 55 L30 65 L40 48 L28 35 L45 38 Z"
-                          fill="#10b981"
-                        />
-                      </svg>
-                      <span>mpaSSS</span>
-                    </h1>
-                    <div style={{ display: 'flex', gap: '6px' }}>
-                      <div
+                      <span
                         style={{
-                          background: '#bae6fd',
-                          color: '#0369a1',
-                          padding: '4px 12px',
-                          borderRadius: '15px',
-                          fontSize: '0.55rem',
-                          fontWeight: 800,
+                          color: '#1a1a1a',
+                          fontSize: '0.6rem',
+                          fontWeight: 700,
+                          whiteSpace: 'nowrap',
                         }}
                       >
                         Agenda de Atendimento Técnico {year}
-                      </div>
+                      </span>
                       <div
                         style={{
-                          background: 'black',
+                          background: '#1a1a1a',
                           color: 'white',
-                          padding: '4px 12px',
-                          borderRadius: '15px',
-                          fontSize: '0.55rem',
+                          padding: '7px 18px',
+                          borderRadius: '25px',
+                          fontSize: '0.6rem',
                           fontWeight: 800,
+                          whiteSpace: 'nowrap',
                         }}
                       >
                         {contract.client.name}

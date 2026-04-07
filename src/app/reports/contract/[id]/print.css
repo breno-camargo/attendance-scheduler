@@ -30,7 +30,7 @@ main {
   margin: 20px auto;
   position: relative;
   box-sizing: border-box;
-  padding: 0 12mm 4mm; /* padding inferior reduzido */
+  padding: 0 4mm 4mm;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
   overflow: visible;
 }
@@ -56,7 +56,7 @@ main {
     box-shadow: none;
     width: 210mm;
     min-height: auto;
-    padding: 0 12mm 4mm;
+    padding: 0 8mm 4mm;
   }
   /* Evita quebra de página dentro de tabelas e seções */
   table,
@@ -66,28 +66,23 @@ main {
   }
 }
 
-/* ─── Forma decorativa ───────────────────────────────────────── */
+/* ─── Forma decorativa (imagem do canto) ─────────────────────── */
 .abstract-shape {
   position: absolute;
-  top: -60px;
-  left: -80px;
-  width: 350px;
-  height: 180px;
-  background: linear-gradient(135deg, #059669 0%, #10b981 100%);
-  transform: rotate(-10deg);
-  border-radius: 40px;
+  top: 0;
+  left: -4mm;
   z-index: 0;
+  pointer-events: none;
 }
-.abstract-shape::after {
-  content: '';
-  position: absolute;
-  top: 40px;
-  left: -20px;
-  width: 300px;
-  height: 80px;
-  background: rgba(255, 255, 255, 0.25);
-  transform: rotate(5deg);
-  border-radius: 30px;
+.abstract-shape img {
+  display: block;
+  width: 380px;
+  height: auto;
+}
+@media print {
+  .abstract-shape {
+    left: 0;
+  }
 }
 
 /* ─── Calendário ─────────────────────────────────────────────── */
