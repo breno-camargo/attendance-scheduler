@@ -97,6 +97,8 @@ model Holiday {
   date  DateTime
   name  String
   fixed Boolean  @default(false) /// true = feriado nacional fixo (não pode ser excluído)
+
+  @@index([date])
 }
 
 /// Contatos internos permanentes da CompaSSS (Gerente, Diretor, Comercial, Coordenador)

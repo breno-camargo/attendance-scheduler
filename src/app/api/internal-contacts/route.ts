@@ -39,30 +39,34 @@ export async function POST(request: Request) {
 
     const data = validation.data;
 
-    // Validação de cargo único (Exclusividade CompaSSS)
-    if (data.role && UNIQUE_ROLES.includes(data.role)) {
-      const existing = await prisma.internalContact.findFirst({
-        where: { role: data.role },
-      });
-      if (existing) {
-        return ApiUtils.error(
-          `O cargo de '${data.role}' já está ocupado por ${existing.name}.`,
-          null,
-          400,
-        );
+    // transação pra não ter race condition se dois requests tentarem
+    // criar o mesmo cargo único ao mesmo tempo
+    const contact = await prisma.$transaction(async (tx) => {
+      if (data.role && UNIQUE_ROLES.includes(data.role)) {
+        const existing = await tx.internalContact.findFirst({
+          where: { role: data.role },
+        });
+        if (existing) {
+          throw new Error(`UNIQUE_ROLE:O cargo de '${data.role}' já está ocupado por ${existing.name}.`);
+        }
       }
-    }
 
-    const contact = await prisma.internalContact.create({
-      data: {
-        name: ApiUtils.capitalizeName(data.name),
-        role: data.role || null,
-        phone: data.phone || null,
-        email: data.email || null,
-      },
+      return tx.internalContact.create({
+        data: {
+          name: ApiUtils.capitalizeName(data.name),
+          role: data.role || null,
+          phone: data.phone || null,
+          email: data.email || null,
+        },
+      });
     });
+
     return ApiUtils.success(contact, 201);
   } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : '';
+    if (msg.startsWith('UNIQUE_ROLE:')) {
+      return ApiUtils.error(msg.replace('UNIQUE_ROLE:', ''), null, 400);
+    }
     return ApiUtils.error('Erro ao cadastrar equipe', error);
   }
 }

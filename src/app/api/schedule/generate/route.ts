@@ -196,7 +196,8 @@ export async function POST(request: Request) {
         if (!isActive) continue;
 
         const hasSdaiThisMonth = monthlySdai.some((s) => s.contract.id === contract.id);
-        const visitsGoal = contract.visitsPerMonth || 1;
+        const visitsGoal = contract.visitsPerMonth ?? 1;
+        if (visitsGoal <= 0) continue;
         const remaining = hasSdaiThisMonth
           ? visitsGoal - 1
           : contract.frequency === 'MONTHLY'
@@ -270,8 +271,8 @@ export async function POST(request: Request) {
         where: {
           professionalId: professional.id,
           date: {
-            gte: new Date(year, 0, 1),
-            lt: new Date(year + 1, 0, 1),
+            gte: new Date(Date.UTC(year, 0, 1)),
+            lt: new Date(Date.UTC(year + 1, 0, 1)),
           },
         },
       });
@@ -354,7 +355,7 @@ export async function DELETE(request: Request) {
     const deleted = await prisma.appointment.deleteMany({
       where: {
         professionalId,
-        date: { gte: new Date(year, 0, 1), lt: new Date(year + 1, 0, 1) },
+        date: { gte: new Date(Date.UTC(year, 0, 1)), lt: new Date(Date.UTC(year + 1, 0, 1)) },
       },
     });
 
