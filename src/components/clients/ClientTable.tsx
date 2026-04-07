@@ -107,6 +107,7 @@ export default function ClientTable({
 }: ClientTableProps) {
   const [search, setSearch] = useState('');
 
+  // TODO: buscar por sistema tambem (ex: digitar "SDAI" e mostrar só contratos com SDAI)
   const filtered = clients.filter((c) => c.name.toLowerCase().includes(search.toLowerCase()));
 
   const totalContracts = clients.reduce((sum, c) => sum + (c.contracts?.length || 0), 0);

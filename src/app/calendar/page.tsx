@@ -224,6 +224,7 @@ export default function CalendarPage() {
     setLoading(false);
   };
 
+  // TODO: filtro por sistema (SDAI, CFTV, etc) — o pessoal pediu pra poder ver só visitas de um tipo
   const getAppointment = (dateStr: string) => {
     return appointments.find((a) => {
       const isDateMatch = new Date(a.date).toISOString().split('T')[0] === dateStr;

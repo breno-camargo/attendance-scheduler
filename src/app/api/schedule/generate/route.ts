@@ -12,9 +12,9 @@ export const dynamic = 'force-dynamic';
 // respeitando feriados, fins de semana, frequência de cada contrato e
 // preferência de dia do cliente.
 
-// ─────────────────────────────────────────────────────────────
+// ---
 // Tipos
-// ─────────────────────────────────────────────────────────────
+// ---
 
 type ContractWithClient = Contract & { client: Client };
 
@@ -35,9 +35,9 @@ interface AppointmentData {
   observation?: string;
 }
 
-// ─────────────────────────────────────────────────────────────
+// ---
 // Utilitários de Data
-// ─────────────────────────────────────────────────────────────
+// ---
 
 const isWeekend = (date: Date) => date.getDay() === 0 || date.getDay() === 6;
 
@@ -53,9 +53,9 @@ const getSaturdays = (year: number, month: number): Date[] => {
 
 const toDateKey = (date: Date) => date.toISOString().split('T')[0];
 
-// ─────────────────────────────────────────────────────────────
+// ---
 // Constantes de Frequência
-// ─────────────────────────────────────────────────────────────
+// ---
 
 const FREQUENCY_PERIOD: Record<string, number> = {
   MONTHLY: 1,
@@ -65,9 +65,9 @@ const FREQUENCY_PERIOD: Record<string, number> = {
   ANNUAL: 12,
 };
 
-// ─────────────────────────────────────────────────────────────
+// ---
 // POST — Gerar Agenda Automática
-// ─────────────────────────────────────────────────────────────
+// ---
 
 /**
  * POST /api/schedule/generate
@@ -364,9 +364,9 @@ export async function DELETE(request: Request) {
   }
 }
 
-// ─────────────────────────────────────────────────────────────
+// ---
 // Funções Auxiliares Sanitizadas
-// ─────────────────────────────────────────────────────────────
+// ---
 
 function checkMonthActivity(contract: ContractWithClient, month: number): boolean {
   if (contract.frequency === 'MONTHLY') return true;

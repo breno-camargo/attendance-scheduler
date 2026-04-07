@@ -1,14 +1,9 @@
-/**
- * Utilitário de fetch para o frontend.
- * Centraliza tratamento de erros, parsing JSON e endpoints tipados por recurso.
- */
+// Wrapper de fetch pro frontend — evita repetir try/catch e JSON.parse em todo lugar.
+// Cada recurso da API tem suas funções tipadas embaixo.
 
 import type { Appointment, Client, Contact, Holiday, InternalContact, Professional } from '@/types';
 
-// ── Tipos base ──
-
 interface ApiFetchOptions extends RequestInit {
-  /** Se true, não faz JSON.parse da resposta */
   raw?: boolean;
 }
 
@@ -18,8 +13,6 @@ interface ApiResult<T> {
   status: number;
   ok: boolean;
 }
-
-// ── Fetch genérico ──
 
 export async function apiFetch<T = unknown>(
   url: string,
@@ -53,8 +46,7 @@ export async function apiFetch<T = unknown>(
   }
 }
 
-// ── Helpers ──
-
+// helpers internos — "del" porque "delete" é palavra reservada do JS
 function post<T>(url: string, body: unknown): Promise<ApiResult<T>> {
   return apiFetch<T>(url, {
     method: 'POST',
@@ -83,7 +75,7 @@ function del<T = void>(url: string): Promise<ApiResult<T>> {
   return apiFetch<T>(url, { method: 'DELETE' });
 }
 
-// ── Endpoints tipados por recurso ──
+// --- endpoints por recurso ---
 
 export const clientsApi = {
   list: () => apiFetch<Client[]>('/api/clients'),
@@ -114,26 +106,20 @@ export const staffApi = {
   delete: (id: string) => del(`/api/internal-contacts/${id}`),
 };
 
+// schedule é o mais complexo — generate, listagem por ano, CRUD manual e limpeza
 export const scheduleApi = {
-  /** Gera agenda anual para um técnico */
   generate: (professionalId: string, year: number) =>
     post<{ message: string; count: number }>('/api/schedule/generate', { professionalId, year }),
-  /** Busca o ano existente de agendamentos para um técnico */
   getExistingYear: (professionalId: string) =>
     apiFetch<{ existingYear: number | null }>(
       `/api/schedule/generate?professionalId=${professionalId}`,
     ),
-  /** Lista agendamentos de um técnico para um ano */
   listByYear: (professionalId: string, year: number) =>
     apiFetch<Appointment[]>(`/api/schedule/generate?professionalId=${professionalId}&year=${year}`),
-  /** Cria agendamento manual */
   create: (data: Record<string, unknown>) => post<Appointment>('/api/schedule', data),
-  /** Atualiza agendamento (tipo, data, observação) */
   update: (id: string, data: Record<string, unknown>) =>
     patch<Appointment>(`/api/schedule/${id}`, data),
-  /** Exclui agendamento */
   delete: (id: string) => del(`/api/schedule/${id}`),
-  /** Limpa toda agenda de um técnico para um ano */
   clearYear: (professionalId: string, year: number) =>
     del(`/api/schedule/generate?professionalId=${professionalId}&year=${year}`),
 };

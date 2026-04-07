@@ -13,6 +13,16 @@ Antes a agenda era feita em planilha. O problema: técnicos esqueciam visitas, t
 - **Lista de contatos** — manutenção e escalonamento por contrato, com sincronização automática da equipe interna.
 - **Relatório PDF** — cronograma imprimível com calendário, tabela de visitas e contatos. O pessoal do prédio precisa disso em papel.
 
+## Screenshots
+
+|                Dashboard                |                Calendário                 |
+| :-------------------------------------: | :---------------------------------------: |
+| ![Dashboard](screenshots/dashboard.png) | ![Calendário](screenshots/calendario.png) |
+
+|                Contratos                |                  Relatório PDF                  |
+| :-------------------------------------: | :---------------------------------------------: |
+| ![Contratos](screenshots/contratos.png) | ![Relatório PDF](screenshots/relatorio-pdf.png) |
+
 ## Stack
 
 - Next.js 14 (App Router) + TypeScript
