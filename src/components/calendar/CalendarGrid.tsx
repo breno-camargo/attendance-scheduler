@@ -1,5 +1,7 @@
 'use client';
 
+import { useMemo } from 'react';
+
 import type { Appointment } from '@/types';
 
 interface CalendarGridProps {
@@ -40,27 +42,37 @@ export default function CalendarGrid({
   holidays,
   onDayClick,
 }: CalendarGridProps) {
+  // pre-computa maps pra não ficar fazendo find/filter em cada célula do calendário
+  const appointmentsByDate = useMemo(() => {
+    const map = new Map<string, Appointment[]>();
+    for (const a of appointments) {
+      const key = new Date(a.date).toISOString().split('T')[0];
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(a);
+    }
+    return map;
+  }, [appointments]);
+
+  const holidaySet = useMemo(
+    () => new Set(holidays.map((h) => new Date(h.date).toISOString().split('T')[0])),
+    [holidays],
+  );
+
   const getAppointment = (dateStr: string) => {
-    return appointments.find((a) => {
-      const isDateMatch = new Date(a.date).toISOString().split('T')[0] === dateStr;
-      if (!isDateMatch) return false;
-      if (filterContractId && a.contractId !== filterContractId) return false;
-      return true;
-    });
+    const list = appointmentsByDate.get(dateStr);
+    if (!list) return undefined;
+    if (filterContractId) return list.find((a) => a.contractId === filterContractId);
+    return list[0];
   };
 
   const getAppointmentCount = (dateStr: string) => {
-    return appointments.filter((a) => {
-      const isDateMatch = new Date(a.date).toISOString().split('T')[0] === dateStr;
-      if (!isDateMatch) return false;
-      if (filterContractId && a.contractId !== filterContractId) return false;
-      return true;
-    }).length;
+    const list = appointmentsByDate.get(dateStr);
+    if (!list) return 0;
+    if (filterContractId) return list.filter((a) => a.contractId === filterContractId).length;
+    return list.length;
   };
 
-  const isHoliday = (dateStr: string): boolean => {
-    return holidays.some((h) => new Date(h.date).toISOString().split('T')[0] === dateStr);
-  };
+  const isHoliday = (dateStr: string) => holidaySet.has(dateStr);
 
   const getColor = (apt: Appointment | undefined, dateStr: string) => {
     if (!apt) {
@@ -117,13 +129,13 @@ export default function CalendarGrid({
                 marginBottom: '10px',
               }}
             >
-              <div style={{ color: '#f87171' }}>D</div>
+              <div style={{ color: 'var(--cal-sunday)' }}>D</div>
               <div>S</div>
               <div>T</div>
               <div>Q</div>
               <div>Q</div>
               <div>S</div>
-              <div style={{ color: '#60a5fa' }}>S</div>
+              <div style={{ color: 'var(--cal-saturday)' }}>S</div>
             </div>
             <div
               style={{

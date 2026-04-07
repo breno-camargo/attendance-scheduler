@@ -338,9 +338,10 @@ export default function ClientTable({
                     </Link>
                     <button
                       onClick={() =>
-                        contract && onOpenContacts(contract.id, contract.professional!)
+                        contract?.professional &&
+                        onOpenContacts(contract.id, contract.professional)
                       }
-                      disabled={!contract}
+                      disabled={!contract?.professional}
                       className="btn-icon btn-icon-blue"
                     >
                       <span style={{ fontSize: '1.1rem' }}>📋</span>Contatos
