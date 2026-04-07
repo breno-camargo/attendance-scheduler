@@ -116,7 +116,9 @@ export default function CalendarPage() {
       const res = await scheduleApi.generate(professionalId, year);
       await fetchAppointments();
       if (res.ok && res.data) {
-        showToast(`Agenda gerada: ${res.data.count} agendamentos criados`);
+        showToast(
+          `${res.data.contractCount} agendas criadas: ${res.data.count} atendimentos agendados`,
+        );
       }
     } catch {
       showToast('Erro ao gerar agenda. Tente novamente.', 'error');

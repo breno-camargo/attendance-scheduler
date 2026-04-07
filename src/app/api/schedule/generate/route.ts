@@ -283,10 +283,13 @@ export async function POST(request: Request) {
       return appointmentsToCreate;
     });
 
+    const contractCount = new Set(result.map((a) => a.contractId)).size;
+
     return ApiUtils.success(
       {
-        message: `${result.length} agendamentos gerados atómicamente`,
+        message: `${contractCount} agendas criadas: ${result.length} atendimentos agendados`,
         count: result.length,
+        contractCount,
       },
       201,
     );

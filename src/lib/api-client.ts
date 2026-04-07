@@ -109,7 +109,10 @@ export const staffApi = {
 // schedule é o mais complexo — generate, listagem por ano, CRUD manual e limpeza
 export const scheduleApi = {
   generate: (professionalId: string, year: number) =>
-    post<{ message: string; count: number }>('/api/schedule/generate', { professionalId, year }),
+    post<{ message: string; count: number; contractCount: number }>('/api/schedule/generate', {
+      professionalId,
+      year,
+    }),
   getExistingYear: (professionalId: string) =>
     apiFetch<{ existingYear: number | null }>(
       `/api/schedule/generate?professionalId=${professionalId}`,
