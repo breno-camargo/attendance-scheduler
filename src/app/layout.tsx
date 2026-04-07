@@ -10,7 +10,7 @@ import Providers from './providers';
 const outfit = Outfit({ subsets: ['latin'], weight: ['300', '400', '600', '800'] });
 
 export const metadata: Metadata = {
-  title: 'Agendador CompaSSS',
+  title: 'Gerador de Agenda CompaSSS',
   description: 'Sistema de Gestão de Manutenção Preventiva - CompaSSS',
 };
 
