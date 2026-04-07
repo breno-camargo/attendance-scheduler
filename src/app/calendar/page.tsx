@@ -236,6 +236,7 @@ export default function CalendarPage() {
     await scheduleApi.clearYear(professionalId, year);
     await fetchAppointments();
     setLoading(false);
+    showToast('Agenda excluída com sucesso');
   };
 
   // TODO: filtro por sistema (SDAI, CFTV, etc) — o pessoal pediu pra poder ver só visitas de um tipo
