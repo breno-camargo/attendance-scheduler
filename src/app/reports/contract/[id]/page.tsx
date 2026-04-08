@@ -337,6 +337,7 @@ export default async function ContractReportPage({ params }: { params: { id: str
                       Agenda de Atendimento Técnico {year}
                     </span>
                     <div
+                      className="contract-name-badge"
                       style={{
                         background: '#1a1a1a',
                         color: 'white',

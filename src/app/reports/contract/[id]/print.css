@@ -273,6 +273,14 @@ main {
   color: #64748b !important;
 }
 
+/* ─── Badge do nome do contrato (header) ────────────────────── */
+.contract-name-badge {
+  background: #1a1a1a !important;
+  color: white !important;
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
+}
+
 /* ─── Legenda ────────────────────────────────────────────────── */
 .legend-item {
   display: flex;
