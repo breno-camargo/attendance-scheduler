@@ -1,11 +1,15 @@
-import { ApiUtils, requireAuth } from '@/lib/api-utils';
+import { ApiUtils, requireAuthWithScope } from '@/lib/api-utils';
 import { UNIQUE_ROLES } from '@/lib/constants';
 import prisma from '@/lib/prisma';
 import { internalContactSchema } from '@/lib/schemas';
 
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
-  const authError = await requireAuth();
-  if (authError) return authError;
+  const result = await requireAuthWithScope();
+  if ('error' in result) return result.error;
+  // Escopo filtrado: só pode editar o próprio contato
+  if (result.auth.scope === 'filtered' && params.id !== result.auth.internalContactId) {
+    return ApiUtils.error('Você só pode editar seu próprio contato', null, 403);
+  }
 
   try {
     if (!params.id || !/^c[a-z0-9]{24}$/.test(params.id)) {
@@ -57,8 +61,11 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 }
 
 export async function DELETE(_request: Request, { params }: { params: { id: string } }) {
-  const authError = await requireAuth();
-  if (authError) return authError;
+  const result = await requireAuthWithScope();
+  if ('error' in result) return result.error;
+  if (result.auth.scope === 'filtered') {
+    return ApiUtils.error('Apenas o coordenador pode alterar a equipe interna', null, 403);
+  }
 
   try {
     if (!params.id || !/^c[a-z0-9]{24}$/.test(params.id)) {

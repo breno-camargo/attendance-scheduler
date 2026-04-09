@@ -1,4 +1,4 @@
-import { ApiUtils, parsePagination, requireAuth } from '@/lib/api-utils';
+import { ApiUtils, parsePagination, requireAuth, requireAuthWithScope } from '@/lib/api-utils';
 import { UNIQUE_ROLES } from '@/lib/constants';
 import prisma from '@/lib/prisma';
 import { internalContactSchema } from '@/lib/schemas';
@@ -26,8 +26,11 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const authError = await requireAuth();
-  if (authError) return authError;
+  const result = await requireAuthWithScope();
+  if ('error' in result) return result.error;
+  if (result.auth.scope === 'filtered') {
+    return ApiUtils.error('Apenas o coordenador pode alterar a equipe interna', null, 403);
+  }
 
   try {
     const body = await request.json();

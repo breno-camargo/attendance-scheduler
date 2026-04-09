@@ -1,4 +1,5 @@
 'use client';
+import { useSession } from 'next-auth/react';
 import { useCallback, useEffect, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -51,11 +52,13 @@ function StaffItem({
   index,
   onEdit,
   onDelete,
+  canEdit,
 }: {
   s: StaffMember;
   index: number;
   onEdit: (s: StaffMember) => void;
   onDelete: (id: string, name: string) => void;
+  canEdit: boolean;
 }) {
   const initials = s.name
     .trim()
@@ -173,27 +176,33 @@ function StaffItem({
           </div>
         </div>
 
-        <div className="card-actions">
-          <button
-            onClick={() => onEdit(s)}
-            className="btn-secondary"
-            style={{ padding: '0.6rem 1.2rem', fontSize: '0.85rem' }}
-          >
-            Editar
-          </button>
-          <button onClick={() => onDelete(s.id, s.name)} className="btn-danger">
-            Excluir
-          </button>
-        </div>
+        {canEdit && (
+          <div className="card-actions">
+            <button
+              onClick={() => onEdit(s)}
+              className="btn-secondary"
+              style={{ padding: '0.6rem 1.2rem', fontSize: '0.85rem' }}
+            >
+              Editar
+            </button>
+            <button onClick={() => onDelete(s.id, s.name)} className="btn-danger">
+              Excluir
+            </button>
+          </div>
+        )}
       </GlassCard>
     </li>
   );
 }
 
 export default function StaffPage() {
+  const { data: session } = useSession();
   const { showToast } = useToast();
   const [confirmModal, confirm] = useConfirm();
   const [staff, setStaff] = useState<StaffMember[]>([]);
+
+  const isAdmin = !session?.user?.internalContactId || (session?.user?.role || '').toLowerCase().includes('coordenador');
+  const myContactId = session?.user?.internalContactId;
   const [name, setName] = useState('');
   const [role, setRole] = useState('');
   const [emailPrefix, setEmailPrefix] = useState('');
@@ -305,15 +314,17 @@ export default function StaffPage() {
             Gerenciamento oficial de contatos internos e níveis de monitoramento operacional.
           </p>
         </div>
-        <button
-          onClick={() => {
-            resetForm();
-            setIsModalOpen(true);
-          }}
-          className="btn-primary"
-        >
-          + Novo Integrante
-        </button>
+        {isAdmin && (
+          <button
+            onClick={() => {
+              resetForm();
+              setIsModalOpen(true);
+            }}
+            className="btn-primary"
+          >
+            + Novo Integrante
+          </button>
+        )}
       </div>
 
       <Modal
@@ -415,7 +426,7 @@ export default function StaffPage() {
           ) : (
             <ul style={{ listStyle: 'none', padding: 0 }}>
               {maintGroup.map((s, i) => (
-                <StaffItem key={s.id} s={s} index={i} onEdit={handleEdit} onDelete={handleDelete} />
+                <StaffItem key={s.id} s={s} index={i} onEdit={handleEdit} onDelete={handleDelete} canEdit={isAdmin || s.id === myContactId} />
               ))}
             </ul>
           )}
@@ -435,6 +446,7 @@ export default function StaffPage() {
                   index={i + maintGroup.length}
                   onEdit={handleEdit}
                   onDelete={handleDelete}
+                  canEdit={isAdmin || s.id === myContactId}
                 />
               ))}
             </ul>
