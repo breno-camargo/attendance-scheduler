@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 
 import PrintTrigger from '@/components/reports/PrintTrigger';
 import ReportContactTables from '@/components/reports/ReportContactTables';
+import { getHolidaysForYear } from '@/lib/holidays';
 import prisma from '@/lib/prisma';
 
 import './print.css';
@@ -52,13 +53,7 @@ export default async function ContractReportPage({
   });
 
   if (!contract) return notFound();
-  const [internalStaff, dbHolidays] = await Promise.all([
-    prisma.internalContact.findMany(),
-    prisma.holiday.findMany({
-      select: { date: true, name: true },
-      orderBy: { date: 'asc' },
-    }),
-  ]);
+  const internalStaff = await prisma.internalContact.findMany();
 
   const savedJson = contract.contactsJson ?? null;
 
@@ -151,12 +146,9 @@ export default async function ContractReportPage({
   const getAppointment = (dateStr: string) =>
     filteredAppointments.find((a) => new Date(a.date).toISOString().split('T')[0] === dateStr);
 
-  // Feriados vêm inteiramente do banco de dados (tabela Holiday).
-  const dbHolidayKeys = new Set(
-    dbHolidays.map((h) => new Date(h.date).toISOString().split('T')[0]),
-  );
-
-  const isFixedHoliday = (dateStr: string) => dbHolidayKeys.has(dateStr);
+  // Feriados calculados para o ano
+  const holidayKeys = new Set(getHolidaysForYear(year).map((h) => h.date));
+  const isFixedHoliday = (dateStr: string) => holidayKeys.has(dateStr);
 
   const getCellClass = (apt: ReturnType<typeof getAppointment>, dateStr: string) => {
     if (isFixedHoliday(dateStr)) return 'bg-yellow';

@@ -20,33 +20,6 @@ function easter(year: number): { month: number; day: number } {
   return { month: month - 1, day }; // 0-indexed month
 }
 
-import prisma from '@/lib/prisma';
-
-/**
- * Garante que os feriados fixos de um ano existam no banco.
- * Só insere se o ano ainda não tiver feriados fixos, evitando queries desnecessárias.
- */
-export async function ensureHolidaysForYear(year: number) {
-  const start = new Date(Date.UTC(year, 0, 1));
-  const end = new Date(Date.UTC(year + 1, 0, 1));
-
-  const count = await prisma.holiday.count({
-    where: { date: { gte: start, lt: end }, fixed: true },
-  });
-
-  if (count > 0) return;
-
-  const holidays = getHolidaysForYear(year);
-  await prisma.holiday.createMany({
-    data: holidays.map((h) => ({
-      date: new Date(h.date),
-      name: h.name,
-      fixed: true,
-    })),
-    skipDuplicates: true,
-  });
-}
-
 /** Gera a lista de feriados nacionais + estaduais (SP) para qualquer ano. */
 export function getHolidaysForYear(year: number): { date: string; name: string }[] {
   const pad = (n: number) => String(n).padStart(2, '0');
