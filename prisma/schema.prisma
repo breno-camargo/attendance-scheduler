@@ -14,15 +14,17 @@ datasource db {
 
 /// Técnico responsável pela execução das visitas e testes.
 model Professional {
-  id             String         @id @default(cuid())
+  id             String          @id @default(cuid())
   name           String
-  email          String         @unique
+  email          String          @unique
   phone          String?
+  supervisorId   String?
+  supervisor     InternalContact? @relation(fields: [supervisorId], references: [id])
   availabilities Availability[]
   appointments   Appointment[]
   contracts      Contract[]
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
 }
 
 /// Cliente (prédio, shopping, condomínio) que recebe manutenção.
@@ -103,13 +105,14 @@ model Holiday {
 
 /// Contatos internos permanentes da CompaSSS (Gerente, Diretor, Comercial, Coordenador)
 model InternalContact {
-  id        String   @id @default(cuid())
-  name      String
-  role      String?
-  phone     String?
-  email     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String         @id @default(cuid())
+  name           String
+  role           String?
+  phone          String?
+  email          String?
+  professionals  Professional[]
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
 }
 
 /// Usuário do sistema com senha hash (bcrypt).

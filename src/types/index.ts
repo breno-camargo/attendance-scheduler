@@ -5,6 +5,8 @@ export interface Professional {
   name: string;
   email: string;
   phone: string | null;
+  supervisorId: string | null;
+  supervisor?: InternalContact | null;
 }
 
 export interface Client {

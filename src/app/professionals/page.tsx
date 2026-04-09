@@ -6,10 +6,10 @@ import { useConfirm } from '@/components/ui/confirm-modal';
 import { GlassCard } from '@/components/ui/glass-card';
 import { Modal } from '@/components/ui/modal';
 import { useToast } from '@/components/ui/toast';
-import { clientsApi, professionalsApi } from '@/lib/api-client';
+import { clientsApi, professionalsApi, staffApi } from '@/lib/api-client';
 import { ApiUtils } from '@/lib/api-utils';
 import { EMAIL_DOMAIN } from '@/lib/constants';
-import type { Contract, Professional } from '@/types';
+import type { Contract, InternalContact, Professional } from '@/types';
 
 export default function ProfessionalsPage() {
   const { showToast } = useToast();
@@ -22,14 +22,21 @@ export default function ProfessionalsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [unassignedContracts, setUnassignedContracts] = useState<(Contract & { clientName: string })[]>([]);
   const [selectedContracts, setSelectedContracts] = useState<string[]>([]);
+  const [supervisors, setSupervisors] = useState<InternalContact[]>([]);
+  const [supervisorId, setSupervisorId] = useState<string>('');
 
   const carregarDados = useCallback(async () => {
     try {
-      const [profsRes, clientsRes] = await Promise.all([
+      const [profsRes, clientsRes, staffRes] = await Promise.all([
         professionalsApi.list(),
         clientsApi.list(),
+        staffApi.list(),
       ]);
       if (profsRes.data) setProfessionals(profsRes.data);
+      if (staffRes.data) {
+        const supRoles = ['técnico de sistemas (líder)', 'supervisor'];
+        setSupervisors(staffRes.data.filter((s) => supRoles.includes((s.role || '').toLowerCase())));
+      }
       if (clientsRes.data) {
         const unassigned = clientsRes.data.flatMap((c) =>
           (c.contracts || [])
@@ -51,12 +58,13 @@ export default function ProfessionalsPage() {
     setPhone('');
     setEditingId(null);
     setSelectedContracts([]);
+    setSupervisorId('');
     setIsModalOpen(false);
   };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    const payload: Record<string, unknown> = { name, email: `${emailPrefix.split('@')[0]}@${EMAIL_DOMAIN}`, phone };
+    const payload: Record<string, unknown> = { name, email: `${emailPrefix.split('@')[0]}@${EMAIL_DOMAIN}`, phone, supervisorId: supervisorId || null };
     if (!editingId && selectedContracts.length > 0) {
       payload.contractIds = selectedContracts;
     }
@@ -81,6 +89,7 @@ export default function ProfessionalsPage() {
     setName(prof.name);
     setEmailPrefix(prof.email?.split('@')[0] || '');
     setPhone(ApiUtils.formatPhone(prof.phone || ''));
+    setSupervisorId(prof.supervisorId || '');
     setIsModalOpen(true);
   };
 
@@ -179,6 +188,27 @@ export default function ProfessionalsPage() {
               maxLength={15}
             />
           </div>
+          {supervisors.length > 0 && (
+            <div className="form-field">
+              <label htmlFor="prof-supervisor" className="form-label">
+                Escopo / Responde a
+              </label>
+              <select
+                id="prof-supervisor"
+                className="form-input"
+                value={supervisorId}
+                onChange={(e) => setSupervisorId(e.target.value)}
+                style={{ cursor: 'pointer' }}
+              >
+                <option value="">Sem supervisor direto</option>
+                {supervisors.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name} — {s.role}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           {!editingId && unassignedContracts.length > 0 && (
             <div className="form-field">
               <label className="form-label">
@@ -322,6 +352,19 @@ export default function ProfessionalsPage() {
                           {ApiUtils.capitalizeName(p.name)}
                         </strong>
                         <Badge variant="primary">Técnico</Badge>
+                        {p.supervisor && (
+                          <span style={{
+                            fontSize: '0.72rem',
+                            fontWeight: 600,
+                            padding: '2px 8px',
+                            borderRadius: '6px',
+                            background: 'rgba(168, 85, 247, 0.1)',
+                            color: '#c084fc',
+                            border: '1px solid rgba(168, 85, 247, 0.25)',
+                          }}>
+                            {p.supervisor.name}
+                          </span>
+                        )}
                       </div>
                       <div
                         className="info-row-mobile"

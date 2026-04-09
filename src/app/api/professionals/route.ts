@@ -15,6 +15,7 @@ export async function GET(request: Request) {
   try {
     const { skip, take } = parsePagination(request.url);
     const professionals = await prisma.professional.findMany({
+      include: { supervisor: true },
       orderBy: { createdAt: 'desc' },
       skip,
       take,
@@ -61,6 +62,7 @@ export async function POST(request: Request) {
         name: ApiUtils.capitalizeName(data.name),
         email: email,
         phone: data.phone || null,
+        supervisorId: body.supervisorId || null,
       },
     });
 
