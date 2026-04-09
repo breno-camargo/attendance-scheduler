@@ -12,7 +12,7 @@
   --input-bg: rgba(0, 0, 0, 0.3);
   --text-muted: #94a3b8;
   --modal-bg: rgba(0, 0, 0, 0.92);
-  --nav-height: 70px;
+  --nav-height: 90px;
   --body-gradient-1: #064e3b;
   --body-gradient-2: #065f46;
 
@@ -245,7 +245,7 @@ a {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 4rem;
+  padding: 0 max(4rem, calc((100% - 1400px) / 2 + 4rem));
   position: sticky;
   top: 0;
   z-index: 1000;
