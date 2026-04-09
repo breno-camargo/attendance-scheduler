@@ -23,7 +23,7 @@ export async function sendResetPasswordEmail(to: string, resetUrl: string) {
       <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 520px; margin: 0 auto; background: #ffffff;">
         <!-- Header -->
         <div style="background: #0a0a0a; padding: 28px 32px; border-radius: 12px 12px 0 0; text-align: center;">
-          <img src="${logoUrl}" alt="CompaSSS" style="height: 40px; width: auto;" />
+          <img src="${logoUrl}" alt="CompaSSS" width="160" style="height: auto; max-height: 35px; width: 160px;" />
           <p style="color: rgba(255,255,255,0.4); margin: 10px 0 0; font-size: 10px; text-transform: uppercase; letter-spacing: 3px;">Gerador de Agenda</p>
         </div>
 
