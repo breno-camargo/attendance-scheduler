@@ -93,7 +93,7 @@ export const professionalsApi = {
 };
 
 export const holidaysApi = {
-  list: () => apiFetch<Holiday[]>('/api/holidays'),
+  list: (year?: number) => apiFetch<Holiday[]>(year ? `/api/holidays?year=${year}` : '/api/holidays'),
   create: (data: { date: string; name: string }) => post<Holiday>('/api/holidays', data),
   delete: (id: string) => del(`/api/holidays/${id}`),
 };

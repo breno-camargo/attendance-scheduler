@@ -21,19 +21,20 @@ export default function HolidaysPage() {
   const { showToast } = useToast();
   const [confirmModal, confirm] = useConfirm();
   const [holidays, setHolidays] = useState<Holiday[]>([]);
+  const [year, setYear] = useState(new Date().getFullYear());
   const [date, setDate] = useState('');
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
 
   const fetchHolidays = useCallback(async () => {
     try {
-      const { data, error } = await holidaysApi.list();
+      const { data, error } = await holidaysApi.list(year);
       if (error) throw new Error(error);
       setHolidays(data ?? []);
     } catch {
       showToast('Erro ao carregar feriados', 'error');
     }
-  }, [showToast]);
+  }, [showToast, year]);
 
   useEffect(() => {
     fetchHolidays();
@@ -84,9 +85,53 @@ export default function HolidaysPage() {
     <main style={{ padding: '4rem 2rem', maxWidth: '800px', margin: '0 auto' }}>
       <div className="page-header">
         <div>
-          <h1 className="title" style={{ margin: 0, fontSize: '3.2rem', letterSpacing: '-1.5px' }}>
-            Feriados
-          </h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+            <h1 className="title" style={{ margin: 0, fontSize: '3.2rem', letterSpacing: '-1.5px' }}>
+              Feriados {year}
+            </h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <button
+                onClick={() => setYear((y) => y - 1)}
+                aria-label="Ano anterior"
+                style={{
+                  background: 'var(--input-bg)',
+                  border: '1px solid var(--border)',
+                  color: 'var(--foreground)',
+                  borderRadius: '6px',
+                  width: '30px',
+                  height: '30px',
+                  cursor: 'pointer',
+                  fontWeight: 700,
+                  fontSize: '1rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                ‹
+              </button>
+              <button
+                onClick={() => setYear((y) => y + 1)}
+                aria-label="Próximo ano"
+                style={{
+                  background: 'var(--input-bg)',
+                  border: '1px solid var(--border)',
+                  color: 'var(--foreground)',
+                  borderRadius: '6px',
+                  width: '30px',
+                  height: '30px',
+                  cursor: 'pointer',
+                  fontWeight: 700,
+                  fontSize: '1rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                ›
+              </button>
+            </div>
+          </div>
           <p
             style={{
               color: 'var(--text-muted)',
@@ -161,7 +206,7 @@ export default function HolidaysPage() {
       {/* Holidays list */}
       {holidays.length === 0 ? (
         <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '3rem 0' }}>
-          Nenhum feriado cadastrado.
+          Nenhum feriado cadastrado para {year}.
         </p>
       ) : (
         <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>

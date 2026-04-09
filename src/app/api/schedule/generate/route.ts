@@ -1,6 +1,7 @@
 import type { Contract, Client } from '@prisma/client';
 
 import { ApiUtils, requireAuth } from '@/lib/api-utils';
+import { ensureHolidaysForYear } from '@/lib/holidays';
 import prisma from '@/lib/prisma';
 import { generateScheduleSchema } from '@/lib/schemas';
 
@@ -85,6 +86,9 @@ export async function POST(request: Request) {
     }
 
     const { professionalId, year } = validation.data;
+
+    // Garante que os feriados do ano existam antes de gerar a agenda
+    await ensureHolidaysForYear(year);
 
     const professional = await prisma.professional.findUnique({
       where: { id: professionalId },
@@ -268,17 +272,14 @@ export async function POST(request: Request) {
     const contractIds = contracts.map((c) => c.id);
 
     const result = await prisma.$transaction(async (tx) => {
-      // Apaga agenda do ano: por professionalId OU por contractId (pega órfãos com professionalId null)
+      // Apaga TODA a agenda do profissional (todos os anos) — quando o usuário gera
+      // um novo ano, a agenda anterior é substituída conforme confirmação do frontend.
       await tx.appointment.deleteMany({
         where: {
           OR: [
             { professionalId: professional.id },
             { contractId: { in: contractIds } },
           ],
-          date: {
-            gte: new Date(Date.UTC(year, 0, 1)),
-            lt: new Date(Date.UTC(year + 1, 0, 1)),
-          },
         },
       });
 

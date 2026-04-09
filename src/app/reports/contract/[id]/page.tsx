@@ -32,7 +32,15 @@ interface TableRow {
   item2?: RowData;
 }
 
-export default async function ContractReportPage({ params }: { params: { id: string } }) {
+export default async function ContractReportPage({
+  params,
+  searchParams,
+}: {
+  params: { id: string };
+  searchParams: { year?: string };
+}) {
+  const yearParam = searchParams.year ? parseInt(searchParams.year) : null;
+
   // Busca o contrato com ORM padrão
   const contract = await prisma.contract.findUnique({
     where: { id: params.id },
@@ -109,19 +117,18 @@ export default async function ContractReportPage({ params }: { params: { id: str
         }),
       };
 
-  // Determina o ano pelo ano mais comum nos agendamentos do contrato.
-  // Fallback para o ano corrente se não houver agendamentos.
-  const appointmentYears = contract.appointments.map((a) => new Date(a.date).getFullYear());
-  const yearCounts = appointmentYears.reduce(
-    (acc: Record<number, number>, y: number) => {
-      acc[y] = (acc[y] || 0) + 1;
-      return acc;
-    },
-    {} as Record<number, number>,
+  // Determina o ano: usa query param ?year=, senão pega o ano mais recente dos agendamentos.
+  const appointmentYears = Array.from(new Set(contract.appointments.map((a) => new Date(a.date).getFullYear())));
+  const year = yearParam && !isNaN(yearParam)
+    ? yearParam
+    : appointmentYears.length > 0
+      ? Math.max(...appointmentYears)
+      : new Date().getFullYear();
+
+  // Filtra appointments apenas do ano selecionado
+  const filteredAppointments = contract.appointments.filter(
+    (a) => new Date(a.date).getFullYear() === year,
   );
-  const year = Object.entries(yearCounts).sort((a, b) => b[1] - a[1])[0]?.[0]
-    ? Number(Object.entries(yearCounts).sort((a, b) => b[1] - a[1])[0][0])
-    : new Date().getFullYear();
   const months = [
     'Janeiro',
     'Fevereiro',
@@ -142,7 +149,7 @@ export default async function ContractReportPage({ params }: { params: { id: str
   const getFirstDayOfMonth = (m: number) => new Date(year, m, 1).getDay();
 
   const getAppointment = (dateStr: string) =>
-    contract.appointments.find((a) => new Date(a.date).toISOString().split('T')[0] === dateStr);
+    filteredAppointments.find((a) => new Date(a.date).toISOString().split('T')[0] === dateStr);
 
   // Feriados vêm inteiramente do banco de dados (tabela Holiday).
   const dbHolidayKeys = new Set(
@@ -162,10 +169,10 @@ export default async function ContractReportPage({ params }: { params: { id: str
   const systems = contract.systemTypes ? contract.systemTypes.split(',') : ['SDAI'];
 
   // Decide entre layout de coluna única ou dupla
-  const isSingleColumn = contract.appointments.length <= 16;
+  const isSingleColumn = filteredAppointments.length <= 16;
   const totalRows = isSingleColumn
-    ? Math.max(5, contract.appointments.length)
-    : Math.min(54, Math.max(5, Math.ceil(contract.appointments.length / 2)));
+    ? Math.max(5, filteredAppointments.length)
+    : Math.min(54, Math.max(5, Math.ceil(filteredAppointments.length / 2)));
 
   const tableRows: TableRow[] = [];
   const getRowData = (apt: ReturnType<typeof getAppointment>, defaultNum: number): RowData => {
@@ -190,11 +197,11 @@ export default async function ContractReportPage({ params }: { params: { id: str
 
   for (let i = 0; i < totalRows; i++) {
     if (isSingleColumn) {
-      tableRows.push({ item1: getRowData(contract.appointments[i], i + 1) });
+      tableRows.push({ item1: getRowData(filteredAppointments[i], i + 1) });
     } else {
       tableRows.push({
-        item1: getRowData(contract.appointments[i], i + 1),
-        item2: getRowData(contract.appointments[i + totalRows], i + 1 + totalRows),
+        item1: getRowData(filteredAppointments[i], i + 1),
+        item2: getRowData(filteredAppointments[i + totalRows], i + 1 + totalRows),
       });
     }
   }

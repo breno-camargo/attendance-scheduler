@@ -18,6 +18,23 @@ const holidays = [
   { date: '2026-11-15', name: 'Proclamação da República' },
   { date: '2026-11-20', name: 'Dia da Consciência Negra' },
   { date: '2026-12-25', name: 'Natal' },
+
+  // ── 2027 ──────────────────────────────────────────────
+  { date: '2027-01-01', name: 'Confraternização Universal' },
+  { date: '2027-01-25', name: 'Aniversário de São Paulo' },
+  { date: '2027-02-08', name: 'Carnaval' },
+  { date: '2027-02-09', name: 'Carnaval' },
+  { date: '2027-03-26', name: 'Paixão de Cristo' },
+  { date: '2027-04-21', name: 'Tiradentes' },
+  { date: '2027-05-01', name: 'Dia do Trabalho' },
+  { date: '2027-05-27', name: 'Corpus Christi' },
+  { date: '2027-07-09', name: 'Revolução Constitucionalista de 1932' },
+  { date: '2027-09-07', name: 'Independência do Brasil' },
+  { date: '2027-10-12', name: 'Nossa Senhora Aparecida' },
+  { date: '2027-11-02', name: 'Finados' },
+  { date: '2027-11-15', name: 'Proclamação da República' },
+  { date: '2027-11-20', name: 'Dia da Consciência Negra' },
+  { date: '2027-12-25', name: 'Natal' },
 ];
 
 async function main() {
