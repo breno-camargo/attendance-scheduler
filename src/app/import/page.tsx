@@ -17,6 +17,7 @@ const TEMPLATE_COLUMNS = [
   'Técnico',
   'Telefone Técnico',
   'Email Técnico',
+  'Escopo',
 ];
 
 const TEMPLATE_EXAMPLE = [
@@ -30,6 +31,7 @@ const TEMPLATE_EXAMPLE = [
     Técnico: 'João Silva',
     'Telefone Técnico': '(11) 97777-0000',
     'Email Técnico': 'joao.silva',
+    Escopo: 'Victor Lopes',
   },
   {
     Cliente: 'Shopping Center Norte',
@@ -41,6 +43,7 @@ const TEMPLATE_EXAMPLE = [
     Técnico: 'João Silva',
     'Telefone Técnico': '',
     'Email Técnico': '',
+    Escopo: '',
   },
   {
     Cliente: 'Condomínio Alphaville',
@@ -52,6 +55,7 @@ const TEMPLATE_EXAMPLE = [
     Técnico: 'Maria Santos',
     'Telefone Técnico': '(11) 96666-0000',
     'Email Técnico': 'maria.santos@compasss.com.br',
+    Escopo: 'Gabriel Domingos',
   },
 ];
 
@@ -79,6 +83,7 @@ export default function ImportPage() {
       { header: 'Técnico', key: 'tecnico', width: 24 },
       { header: 'Telefone Técnico', key: 'telTec', width: 18 },
       { header: 'Email Técnico', key: 'emailTec', width: 30 },
+      { header: 'Escopo', key: 'escopo', width: 22 },
     ];
 
     // Estilo do cabeçalho
@@ -134,6 +139,14 @@ export default function ImportPage() {
         errorStyle: 'warning' as 'warning',
         errorTitle: 'Dias',
         error: 'Selecione da lista ou digite (separe com vírgula)',
+      };
+
+      // Escopo (supervisor)
+      ws.getCell(`J${r}`).dataValidation = {
+        type: 'list',
+        allowBlank: true,
+        formulae: ['"Victor Lopes,Gabriel Domingos"'],
+        showErrorMessage: true,
       };
     }
 
@@ -268,7 +281,7 @@ export default function ImportPage() {
         >
           <strong style={{ color: 'var(--foreground)' }}>Colunas da planilha:</strong>{' '}
           Cliente, Telefone, Sistemas (SDAI, CFTV, SCA...), Visitas/Mês, Frequência
-          (Mensal, Trimestral...), Dias Preferidos (Seg, Ter...), Técnico, Telefone Técnico, Email Técnico
+          (Mensal, Trimestral...), Dias Preferidos (Seg, Ter...), Técnico, Telefone Técnico, Email Técnico, Escopo (Victor Lopes ou Gabriel Domingos)
         </div>
       </GlassCard>
 

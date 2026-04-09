@@ -42,12 +42,24 @@ export async function POST(request: Request) {
       return ApiUtils.error('Planilha vazia', null, 400);
     }
 
-    // Cache de profissionais e clientes já existentes
-    const existingProfs = await prisma.professional.findMany();
-    const existingClients = await prisma.client.findMany({ include: { contracts: true } });
+    // Cache de profissionais, clientes e supervisores
+    const [existingProfs, existingClients, internalStaff] = await Promise.all([
+      prisma.professional.findMany(),
+      prisma.client.findMany({ include: { contracts: true } }),
+      prisma.internalContact.findMany(),
+    ]);
 
     const profCache = new Map(existingProfs.map((p) => [p.name.toLowerCase().trim(), p]));
     const clientCache = new Map(existingClients.map((c) => [c.name.toLowerCase().trim(), c]));
+    // Mapa de nome → id para supervisores (Líder e Supervisor)
+    const supervisorMap = new Map(
+      internalStaff
+        .filter((s) => {
+          const role = (s.role || '').toLowerCase();
+          return role.includes('líder') || role.includes('lider') || role.includes('supervisor');
+        })
+        .map((s) => [s.name.toLowerCase().trim(), s.id]),
+    );
 
     let created = 0;
     let skipped = 0;
@@ -69,6 +81,7 @@ export async function POST(request: Request) {
       const techName = String(row['Técnico'] ?? row['Tecnico'] ?? '').trim();
       const techPhone = String(row['Telefone Técnico'] ?? row['Tel Técnico'] ?? '').trim();
       const techEmail = String(row['Email Técnico'] ?? row['E-mail Técnico'] ?? '').trim();
+      const techScope = String(row['Escopo'] ?? '').trim();
 
       if (!clientName) {
         errors.push(`Linha ${lineNum}: nome do cliente vazio`);
@@ -85,11 +98,13 @@ export async function POST(request: Request) {
           const email = techEmail
             ? (techEmail.includes('@') ? techEmail : `${techEmail}@${emailDomain}`)
             : `${techName.toLowerCase().replace(/\s+/g, '.')}@${emailDomain}`;
+          const supervisorId = techScope ? (supervisorMap.get(techScope.toLowerCase()) || null) : null;
           prof = await prisma.professional.create({
             data: {
               name: ApiUtils.capitalizeName(techName),
               email,
               phone: techPhone || null,
+              supervisorId,
             },
           });
           profCache.set(techKey, prof);
