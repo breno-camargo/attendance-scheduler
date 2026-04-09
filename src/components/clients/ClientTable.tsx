@@ -6,13 +6,12 @@ import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { GlassCard } from '@/components/ui/glass-card';
 import { ApiUtils } from '@/lib/api-utils';
-import type { Client, Professional } from '@/types';
+import type { Client } from '@/types';
 
 interface ClientTableProps {
   clients: Client[];
   onEdit: (client: Client) => void;
   onDelete: (id: string, name: string) => void;
-  onOpenContacts: (contractId: string, professional: Professional) => void;
 }
 
 const FREQ_LABELS: Record<string, string> = {
@@ -103,7 +102,6 @@ export default function ClientTable({
   clients,
   onEdit,
   onDelete,
-  onOpenContacts,
 }: ClientTableProps) {
   const [search, setSearch] = useState('');
   const [techFilter, setTechFilter] = useState('');
@@ -419,16 +417,6 @@ export default function ClientTable({
                     >
                       <span style={{ fontSize: '1.1rem' }}>🖨️</span>PDF
                     </Link>
-                    <button
-                      onClick={() =>
-                        contract?.professional &&
-                        onOpenContacts(contract.id, contract.professional)
-                      }
-                      disabled={!contract?.professional}
-                      className="btn-icon btn-icon-blue"
-                    >
-                      <span style={{ fontSize: '1.1rem' }}>📋</span>Contatos
-                    </button>
                     <button onClick={() => onEdit(c)} className="btn-icon btn-icon-orange">
                       <span style={{ fontSize: '1.1rem' }}>✏️</span>Editar
                     </button>

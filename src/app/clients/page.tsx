@@ -3,13 +3,11 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import ClientTable from '@/components/clients/ClientTable';
-import ContactListModal from '@/components/clients/ContactListModal';
 import ContractFormModal from '@/components/clients/ContractFormModal';
 import { useConfirm } from '@/components/ui/confirm-modal';
 import { useToast } from '@/components/ui/toast';
-import { clientsApi, professionalsApi, staffApi } from '@/lib/api-client';
-import { migrateRole } from '@/lib/constants';
-import type { Client, Professional, InternalContact } from '@/types';
+import { clientsApi, professionalsApi } from '@/lib/api-client';
+import type { Client, Professional } from '@/types';
 
 export default function ClientsPage() {
   const { showToast } = useToast();
@@ -17,74 +15,22 @@ export default function ClientsPage() {
   // Estados de Dados da API
   const [clients, setClients] = useState<Client[]>([]);
   const [professionals, setProfessionals] = useState<Professional[]>([]);
-  const [internalStaff, setInternalStaff] = useState<InternalContact[]>([]);
 
   // Estados dos Modais
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
 
-  const [contactsModalOpen, setContactsModalOpen] = useState(false);
-  const [contactsContractId, setContactsContractId] = useState<string | null>(null);
-  const [contactsTech, setContactsTech] = useState({ name: '', phone: '', email: '' });
-
-  // Listas de Funções (Compartilhadas via Props e Persistidas)
-  const [availableMaintRoles, setAvailableMaintRoles] = useState<string[]>([
-    'Técnico de Sistemas (Líder)',
-    'Supervisor',
-    'Coordenador',
-  ]);
-  const [availableEscRoles, setAvailableEscRoles] = useState<string[]>([
-    'Comercial Obras/Peça',
-    'Comercial Serviços',
-    'Gerente',
-    'Diretor',
-    'Outros',
-  ]);
-
   // Carregamento Inicial
   const carregarDados = useCallback(async () => {
     try {
-      const [resC, resP, resS] = await Promise.all([
+      const [resC, resP] = await Promise.all([
         clientsApi.list(),
         professionalsApi.list(),
-        staffApi.list(),
       ]);
 
       if (resC.data) setClients(resC.data);
       if (resP.data) setProfessionals(resP.data);
-      if (resS.data) setInternalStaff(resS.data);
-
-      // Carrega permissões personalizadas do LocalStorage e MIGRAÇÃO (Legacy Roles)
-      const savedMaint = localStorage.getItem('compasss_maint_roles');
-      if (savedMaint) {
-        const roles: string[] = JSON.parse(savedMaint);
-        const migrated = roles.map(migrateRole);
-        const uniqueMigrated = Array.from(new Set(migrated)).filter(
-          (r) => r !== 'Técnico de Sistemas (Cobertura)',
-        );
-        const changed =
-          uniqueMigrated.length !== roles.length || migrated.some((m, i) => m !== roles[i]);
-
-        if (changed) {
-          setAvailableMaintRoles(uniqueMigrated);
-          localStorage.setItem('compasss_maint_roles', JSON.stringify(uniqueMigrated));
-        } else {
-          setAvailableMaintRoles(roles);
-        }
-      }
-
-      const savedEsc = localStorage.getItem('compasss_esc_roles');
-      if (savedEsc) {
-        const roles: string[] = JSON.parse(savedEsc);
-        const filtered = roles.filter((r) => r !== 'Técnico de Sistemas (Cobertura)');
-        if (filtered.length !== roles.length) {
-          setAvailableEscRoles(filtered);
-          localStorage.setItem('compasss_esc_roles', JSON.stringify(filtered));
-        } else {
-          setAvailableEscRoles(roles);
-        }
-      }
     } catch {}
   }, []);
 
@@ -94,12 +40,11 @@ export default function ClientsPage() {
 
   // Bloqueio de Scroll
   useEffect(() => {
-    const anyOpen = isModalOpen || contactsModalOpen;
-    document.body.style.overflow = anyOpen ? 'hidden' : '';
+    document.body.style.overflow = isModalOpen ? 'hidden' : '';
     return () => {
       document.body.style.overflow = '';
     };
-  }, [isModalOpen, contactsModalOpen]);
+  }, [isModalOpen]);
 
   // Ações Principais
   const handleEdit = (client: Client) => {
@@ -125,16 +70,6 @@ export default function ClientsPage() {
       carregarDados();
       showToast('Cliente excluído com sucesso');
     }
-  };
-
-  const openContactsModal = (contractId: string, tech: Professional) => {
-    setContactsContractId(contractId);
-    setContactsTech({
-      name: tech?.name || '',
-      phone: tech?.phone || '',
-      email: tech?.email || '',
-    });
-    setContactsModalOpen(true);
   };
 
   return (
@@ -171,7 +106,6 @@ export default function ClientsPage() {
         clients={clients}
         onEdit={handleEdit}
         onDelete={handleDelete}
-        onOpenContacts={openContactsModal}
       />
 
       {/* Modal de Formulário (Novo/Editar) */}
@@ -185,19 +119,6 @@ export default function ClientsPage() {
         editingId={editingId}
         initialData={editingClient}
         professionals={professionals}
-      />
-
-      {/* Modal de Contatos */}
-      <ContactListModal
-        isOpen={contactsModalOpen}
-        onClose={() => setContactsModalOpen(false)}
-        contractId={contactsContractId}
-        initialTech={contactsTech}
-        internalStaff={internalStaff}
-        availableMaintRoles={availableMaintRoles}
-        availableEscRoles={availableEscRoles}
-        setAvailableMaintRoles={setAvailableMaintRoles}
-        setAvailableEscRoles={setAvailableEscRoles}
       />
 
       {confirmModal}
