@@ -26,10 +26,21 @@ export default function CalendarPage() {
   const [manualType, setManualType] = useState('TESTE_SDAI');
   const [clients, setClients] = useState<Client[]>([]);
   const [year, setYear] = useState(new Date().getFullYear());
+  const [yearInitialized, setYearInitialized] = useState(false);
   const [existingYear, setExistingYear] = useState<number | null>(null);
   const [confirmModalEl, confirmAction] = useConfirm();
   const { showToast } = useToast();
   const [holidays, setHolidays] = useState<{ date: string; name: string }[]>([]);
+
+  useEffect(() => {
+    const saved = sessionStorage.getItem('calendar-year');
+    if (saved) setYear(parseInt(saved));
+    setYearInitialized(true);
+  }, []);
+
+  useEffect(() => {
+    if (yearInitialized) sessionStorage.setItem('calendar-year', String(year));
+  }, [year, yearInitialized]);
 
   // Only show clients that appear in the current professional's appointments
   const linkedClients = useMemo(
@@ -54,17 +65,25 @@ export default function CalendarPage() {
   }, []);
 
   const fetchAppointments = useCallback(async () => {
-    if (!professionalId) return;
+    if (!professionalId || !yearInitialized) return;
     try {
       const [yearRes, aptsRes] = await Promise.all([
         scheduleApi.getExistingYear(professionalId),
         scheduleApi.listByYear(professionalId, year),
         fetchHolidays(),
       ]);
-      if (yearRes.ok) setExistingYear(yearRes.data?.existingYear ?? null);
+      if (yearRes.ok) {
+        const ey = yearRes.data?.existingYear ?? null;
+        setExistingYear(ey);
+        // Na primeira carga, se não tinha ano salvo na sessão, ir pro ano que tem agenda
+        if (ey !== null && typeof window !== 'undefined' && !sessionStorage.getItem('calendar-year')) {
+          setYear(ey);
+          return; // vai re-fetchar com o ano correto
+        }
+      }
       if (aptsRes.ok) setAppointments(aptsRes.data ?? []);
     } catch {}
-  }, [professionalId, year, fetchHolidays]);
+  }, [professionalId, year, yearInitialized, fetchHolidays]);
 
   const fetchClients = useCallback(async () => {
     const { data } = await clientsApi.list();
