@@ -1,7 +1,7 @@
 import type { Contract, Client } from '@prisma/client';
 
 import { ApiUtils, requireAuth } from '@/lib/api-utils';
-import { ensureHolidaysForYear } from '@/lib/holidays';
+import { getHolidaysForYear } from '@/lib/holidays';
 import prisma from '@/lib/prisma';
 import { generateScheduleSchema } from '@/lib/schemas';
 
@@ -87,9 +87,6 @@ export async function POST(request: Request) {
 
     const { professionalId, year } = validation.data;
 
-    // Garante que os feriados do ano existam antes de gerar a agenda
-    await ensureHolidaysForYear(year);
-
     const professional = await prisma.professional.findUnique({
       where: { id: professionalId },
       include: { contracts: { include: { client: true } } },
@@ -99,16 +96,21 @@ export async function POST(request: Request) {
       return ApiUtils.error('Técnico não encontrado ou sem contratos', null, 404);
     }
 
-    // Pré-carrega TODOS os feriados do ano em memória (1 query em vez de ~250)
-    const holidaysInYear = await prisma.holiday.findMany({
+    // Feriados fixos (calculados) + customizados (do banco)
+    const fixedHolidays = getHolidaysForYear(year);
+    const customHolidays = await prisma.holiday.findMany({
       where: {
+        fixed: false,
         date: {
           gte: new Date(Date.UTC(year, 0, 1)),
           lt: new Date(Date.UTC(year + 1, 0, 1)),
         },
       },
     });
-    const holidayKeys = new Set(holidaysInYear.map((h) => toDateKey(new Date(h.date))));
+    const holidayKeys = new Set([
+      ...fixedHolidays.map((h) => h.date),
+      ...customHolidays.map((h) => toDateKey(new Date(h.date))),
+    ]);
     const isHolidayFast = (date: Date) => holidayKeys.has(toDateKey(date));
 
     const getWorkDaysFast = (y: number, month: number): Date[] => {
@@ -149,7 +151,7 @@ export async function POST(request: Request) {
           (a, b) => Math.abs(a.getDate() - 25) - Math.abs(b.getDate() - 25),
         );
 
-        let chosenDate = sortedSats.find((s) => !usedSdaiDates.has(toDateKey(s)));
+        let chosenDate = sortedSats.find((s) => !usedSdaiDates.has(toDateKey(s)) && !isHolidayFast(s));
         if (!chosenDate) {
           const workDays = getWorkDaysFast(year, month);
           chosenDate = workDays.find((d) => !usedSdaiDates.has(toDateKey(d)));
@@ -212,10 +214,37 @@ export async function POST(request: Request) {
 
         const prefDays = contract.preferredDays?.split(',').map(Number) || [];
         const usedIndices: number[] = [];
-        const minGap = Math.max(1, Math.floor(workDays.length / (remaining + 1)) - 1);
+
+        // Se tem SDAI neste mês, incluir no espaçamento pra garantir
+        // distância entre o teste e as visitas normais.
+        // Se o SDAI caiu no sábado, usa o dia útil mais próximo como referência.
+        if (hasSdaiThisMonth) {
+          const sdaiEntry = monthlySdai.find((s) => s.contract.id === contract.id);
+          if (sdaiEntry) {
+            let sdaiIdx = workDays.findIndex((d) => toDateKey(d) === toDateKey(sdaiEntry.date));
+            if (sdaiIdx === -1) {
+              // SDAI no sábado — achar o dia útil mais próximo
+              const sdaiTime = sdaiEntry.date.getTime();
+              let closestDist = Infinity;
+              for (let wi = 0; wi < workDays.length; wi++) {
+                const dist = Math.abs(workDays[wi].getTime() - sdaiTime);
+                if (dist < closestDist) {
+                  closestDist = dist;
+                  sdaiIdx = wi;
+                }
+              }
+            }
+            if (sdaiIdx !== -1) usedIndices.push(sdaiIdx);
+          }
+        }
+
+        const totalVisitsInMonth = remaining + usedIndices.length;
+        const minGap = Math.max(1, Math.floor(workDays.length / (totalVisitsInMonth + 1)) - 1);
 
         for (let v = 0; v < remaining; v++) {
-          const targetIdx = Math.floor(((v + 0.5) / remaining) * workDays.length);
+          // Distribui visitas considerando as já posicionadas (SDAI)
+          const slotNum = usedIndices.length + v;
+          const targetIdx = Math.floor(((slotNum + 0.5) / totalVisitsInMonth) * workDays.length);
           const bestIdx = findBestSlot(
             workDays,
             daySlots,
@@ -223,7 +252,7 @@ export async function POST(request: Request) {
             prefDays,
             usedIndices,
             minGap,
-            remaining,
+            totalVisitsInMonth,
             sdaiDates,
           );
 
