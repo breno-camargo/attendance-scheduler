@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -410,13 +409,6 @@ export default function ClientTable({
                       flexShrink: 0,
                     }}
                   >
-                    <Link
-                      href={`/reports/contract/${contract?.id}`}
-                      target="_blank"
-                      className="btn-icon btn-icon-green"
-                    >
-                      <span style={{ fontSize: '1.1rem' }}>🖨️</span>PDF
-                    </Link>
                     <button onClick={() => onEdit(c)} className="btn-icon btn-icon-orange">
                       <span style={{ fontSize: '1.1rem' }}>✏️</span>Editar
                     </button>
