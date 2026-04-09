@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import { signOut } from 'next-auth/react';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -110,7 +111,10 @@ export default function Header() {
             </p>
             <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Compasss Brasil</p>
           </div>
-          <div
+          <button
+            onClick={() => signOut({ callbackUrl: '/login' })}
+            title="Sair"
+            aria-label="Sair"
             style={{
               width: '36px',
               height: '36px',
@@ -120,11 +124,18 @@ export default function Header() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: '0.8rem',
+              fontSize: '0.85rem',
+              cursor: 'pointer',
+              color: 'var(--text-muted)',
+              transition: 'var(--transition-smooth)',
             }}
           >
-            👤
-          </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
+          </button>
         </div>
 
         {/* Mobile: theme toggle + hamburger */}
@@ -193,38 +204,32 @@ export default function Header() {
               {link.name}
             </Link>
           ))}
-          <div
+          <button
+            onClick={() => signOut({ callbackUrl: '/login' })}
             style={{
               marginTop: 'auto',
-              padding: '1rem 0',
-              borderTop: '1px solid var(--border)',
+              width: '100%',
+              padding: '0.9rem',
+              background: 'rgba(239, 68, 68, 0.08)',
+              border: '1px solid rgba(239, 68, 68, 0.2)',
+              borderRadius: '12px',
+              color: '#ef4444',
+              fontSize: '0.95rem',
+              fontWeight: 600,
+              cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
-              gap: '12px',
+              justifyContent: 'center',
+              gap: '8px',
             }}
           >
-            <div
-              style={{
-                width: '36px',
-                height: '36px',
-                borderRadius: '50%',
-                background: 'var(--input-bg)',
-                border: '1px solid var(--border)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '0.8rem',
-              }}
-            >
-              👤
-            </div>
-            <div>
-              <p style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--foreground)' }}>
-                Admin
-              </p>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Compasss Brasil</p>
-            </div>
-          </div>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
+            Sair da conta
+          </button>
         </nav>
       )}
     </>
