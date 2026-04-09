@@ -137,5 +137,5 @@ export const contactsApi = {
 
 export const statsApi = {
   get: () =>
-    apiFetch<{ clients: number; professionals: number; generatedSchedules: number }>('/api/stats'),
+    apiFetch<{ clients: number; professionals: number; totalContracts: number; contractsWithSchedule: number }>('/api/stats'),
 };

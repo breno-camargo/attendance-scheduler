@@ -8,7 +8,8 @@ import { statsApi } from '@/lib/api-client';
 interface Stats {
   clients: number;
   professionals: number;
-  generatedSchedules: number;
+  totalContracts: number;
+  contractsWithSchedule: number;
 }
 
 function StatBadge({
@@ -99,8 +100,8 @@ export default function Home() {
             loading={stats === null}
           />
           <StatBadge
-            value={stats?.generatedSchedules ?? null}
-            label="Agendas geradas"
+            value={stats?.contractsWithSchedule ?? null}
+            label={`Agendas geradas${stats ? ` de ${stats.totalContracts}` : ''}`}
             loading={stats === null}
           />
         </div>
