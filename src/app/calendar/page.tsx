@@ -60,9 +60,9 @@ export default function CalendarPage() {
   }, []);
 
   const fetchHolidays = useCallback(async () => {
-    const { data } = await holidaysApi.list();
+    const { data } = await holidaysApi.list(year);
     if (data) setHolidays(data);
-  }, []);
+  }, [year]);
 
   const fetchAppointments = useCallback(async () => {
     if (!professionalId || !yearInitialized) return;
@@ -182,19 +182,19 @@ export default function CalendarPage() {
     }
   };
 
-  const handleUpdateDate = async () => {
-    if (!selectedApt || !newDate) return;
+  const handleUpdateDate = async (): Promise<string | null> => {
+    if (!selectedApt || !newDate) return null;
     try {
       const res = await scheduleApi.update(selectedApt.id, { date: newDate });
       if (res.ok) {
         fetchAppointments();
         setSelectedApt(null);
         setNewDate('');
-      } else {
-        showToast('Erro ao mudar data. Verifique o formato.', 'error');
+        return null;
       }
+      return res.error || 'Erro ao mudar data.';
     } catch {
-      showToast('Falha de conexão. Tente novamente.', 'error');
+      return 'Falha de conexão. Tente novamente.';
     }
   };
 
@@ -333,7 +333,36 @@ export default function CalendarPage() {
               }}
             >
               <h1 className="title" style={{ margin: 0 }}>
-                Calendário Operacional {year}
+                Calendário Operacional{' '}
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={year}
+                  onChange={(e) => {
+                    const v = parseInt(e.target.value);
+                    if (!isNaN(v)) setYear(v);
+                  }}
+                  onBlur={(e) => {
+                    const v = parseInt(e.target.value);
+                    if (isNaN(v) || v < 2020 || v > 2100) setYear(new Date().getFullYear());
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                  }}
+                  maxLength={4}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    borderBottom: '2px dashed var(--border)',
+                    color: 'inherit',
+                    font: 'inherit',
+                    width: '4.5ch',
+                    textAlign: 'center',
+                    padding: 0,
+                    outline: 'none',
+                    cursor: 'text',
+                  }}
+                />
               </h1>
               <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                 <button
