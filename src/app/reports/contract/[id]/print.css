@@ -55,14 +55,71 @@ main {
     margin: 0;
     box-shadow: none;
     width: 210mm;
+    height: 296mm;
     min-height: auto;
-    padding: 0 8mm 4mm;
+    padding: 0 6mm 3mm;
+    overflow: hidden;
   }
-  /* Evita quebra de página dentro de tabelas e seções */
+  /* Força tudo em 1 página */
   table,
   .month-card,
   .contact-table {
     page-break-inside: avoid;
+  }
+  /* Comprime elementos pra caber em 1 página */
+  .calendar-grid {
+    gap: 3px !important;
+  }
+  .month-header {
+    padding: 2px 0 !important;
+    font-size: 0.55rem !important;
+  }
+  .days-header span {
+    font-size: 0.38rem !important;
+    padding: 1px 0 !important;
+  }
+  .day-cell {
+    font-size: 0.42rem !important;
+  }
+  .visits-table {
+    font-size: 0.42rem !important;
+  }
+  .visits-table th {
+    padding: 2px 3px !important;
+  }
+  .visits-table td {
+    padding: 1px 2px !important;
+  }
+  .contact-table {
+    margin-top: 4px !important;
+    font-size: 0.44rem !important;
+  }
+  .contact-table th {
+    padding: 3px 4px !important;
+    font-size: 0.42rem !important;
+  }
+  .contact-table td {
+    padding: 2px 4px !important;
+  }
+  .legend-item {
+    font-size: 0.44rem !important;
+    margin-bottom: 1px !important;
+  }
+  .badge-system {
+    min-height: 30px !important;
+    padding: 2px 8px 2px 2px !important;
+    font-size: 0.46rem !important;
+  }
+  .badge-icon {
+    width: 24px !important;
+    height: 24px !important;
+  }
+  .report-logo {
+    height: 70px !important;
+  }
+  .report-year {
+    font-size: 1rem !important;
+    margin: 0 0 2px !important;
   }
 }
 

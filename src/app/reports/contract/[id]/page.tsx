@@ -312,6 +312,7 @@ export default async function ContractReportPage({
                   <img
                     src="/logo.png"
                     alt="CompaSSS"
+                    className="report-logo"
                     style={{ height: '100px', width: 'auto' }}
                   />
                 </div>
@@ -363,6 +364,7 @@ export default async function ContractReportPage({
                 </div>
 
                 <h2
+                  className="report-year"
                   style={{
                     textAlign: 'center',
                     fontSize: '1.4rem',
