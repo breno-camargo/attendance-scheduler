@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import type { Appointment } from '@/types';
@@ -9,7 +10,7 @@ interface AppointmentModalProps {
   newDate: string;
   setNewDate: (date: string) => void;
   onToggleType: () => void;
-  onUpdateDate: () => void;
+  onUpdateDate: () => Promise<string | null>;
   onDelete: () => void;
   onClose: () => void;
 }
@@ -23,6 +24,7 @@ export default function AppointmentModal({
   onDelete,
   onClose,
 }: AppointmentModalProps) {
+  const [error, setError] = useState<string | null>(null);
   if (typeof document === 'undefined') return null;
 
   return createPortal(
@@ -129,7 +131,11 @@ export default function AppointmentModal({
               }}
             />
             <button
-              onClick={onUpdateDate}
+              onClick={async () => {
+                setError(null);
+                const err = await onUpdateDate();
+                if (err) setError(err);
+              }}
               className="btn-primary"
               style={{
                 fontSize: '0.85rem',
@@ -140,6 +146,20 @@ export default function AppointmentModal({
             >
               🚀 Mover Visita
             </button>
+            {error && (
+              <p style={{
+                margin: 0,
+                padding: '0.6rem 0.8rem',
+                borderRadius: '8px',
+                background: 'rgba(239, 68, 68, 0.1)',
+                border: '1px solid rgba(239, 68, 68, 0.25)',
+                color: '#ef4444',
+                fontSize: '0.82rem',
+                fontWeight: 600,
+              }}>
+                {error}
+              </p>
+            )}
           </div>
 
           <button

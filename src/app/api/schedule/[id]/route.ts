@@ -1,4 +1,5 @@
 import { ApiUtils, requireAuth } from '@/lib/api-utils';
+import { getHolidaysForYear } from '@/lib/holidays';
 import prisma from '@/lib/prisma';
 import { appointmentPatchSchema } from '@/lib/schemas';
 
@@ -47,6 +48,17 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     }
 
     const { type, observation, date } = validation.data;
+
+    // Bloqueia mover para feriado
+    if (date) {
+      const newDate = new Date(date);
+      const year = newDate.getUTCFullYear();
+      const dateKey = newDate.toISOString().split('T')[0];
+      const holidayKeys = new Set(getHolidaysForYear(year).map((h) => h.date));
+      if (holidayKeys.has(dateKey)) {
+        return ApiUtils.error('Não é possível mover para um feriado', null, 400);
+      }
+    }
 
     const updated = await prisma.appointment.update({
       where: { id },
