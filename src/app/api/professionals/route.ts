@@ -64,6 +64,15 @@ export async function POST(request: Request) {
       },
     });
 
+    // Vincula contratos sem técnico se enviados
+    const contractIds = body.contractIds;
+    if (Array.isArray(contractIds) && contractIds.length > 0) {
+      await prisma.contract.updateMany({
+        where: { id: { in: contractIds }, professionalId: null },
+        data: { professionalId: prof.id },
+      });
+    }
+
     return ApiUtils.success(prof, 201);
   } catch (error: unknown) {
     return ApiUtils.error('Erro interno ao criar técnico', error);

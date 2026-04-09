@@ -6,10 +6,10 @@ import { useConfirm } from '@/components/ui/confirm-modal';
 import { GlassCard } from '@/components/ui/glass-card';
 import { Modal } from '@/components/ui/modal';
 import { useToast } from '@/components/ui/toast';
-import { professionalsApi } from '@/lib/api-client';
+import { clientsApi, professionalsApi } from '@/lib/api-client';
 import { ApiUtils } from '@/lib/api-utils';
 import { EMAIL_DOMAIN } from '@/lib/constants';
-import type { Professional } from '@/types';
+import type { Contract, Professional } from '@/types';
 
 export default function ProfessionalsPage() {
   const { showToast } = useToast();
@@ -20,11 +20,24 @@ export default function ProfessionalsPage() {
   const [phone, setPhone] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [unassignedContracts, setUnassignedContracts] = useState<(Contract & { clientName: string })[]>([]);
+  const [selectedContracts, setSelectedContracts] = useState<string[]>([]);
 
   const carregarDados = useCallback(async () => {
     try {
-      const { data } = await professionalsApi.list();
-      if (data) setProfessionals(data);
+      const [profsRes, clientsRes] = await Promise.all([
+        professionalsApi.list(),
+        clientsApi.list(),
+      ]);
+      if (profsRes.data) setProfessionals(profsRes.data);
+      if (clientsRes.data) {
+        const unassigned = clientsRes.data.flatMap((c) =>
+          (c.contracts || [])
+            .filter((ct) => !ct.professionalId)
+            .map((ct) => ({ ...ct, clientName: c.name })),
+        );
+        setUnassignedContracts(unassigned);
+      }
     } catch {}
   }, []);
 
@@ -37,12 +50,16 @@ export default function ProfessionalsPage() {
     setEmailPrefix('');
     setPhone('');
     setEditingId(null);
+    setSelectedContracts([]);
     setIsModalOpen(false);
   };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    const payload = { name, email: `${emailPrefix.split('@')[0]}@${EMAIL_DOMAIN}`, phone };
+    const payload: Record<string, unknown> = { name, email: `${emailPrefix.split('@')[0]}@${EMAIL_DOMAIN}`, phone };
+    if (!editingId && selectedContracts.length > 0) {
+      payload.contractIds = selectedContracts;
+    }
     try {
       const res = editingId
         ? await professionalsApi.update(editingId, payload)
@@ -162,6 +179,55 @@ export default function ProfessionalsPage() {
               maxLength={15}
             />
           </div>
+          {!editingId && unassignedContracts.length > 0 && (
+            <div className="form-field">
+              <label className="form-label">
+                Vincular Contratos sem Técnico
+              </label>
+              <div
+                style={{
+                  maxHeight: '160px',
+                  overflowY: 'auto',
+                  border: '1px solid var(--border)',
+                  borderRadius: '10px',
+                  background: 'var(--input-bg)',
+                }}
+              >
+                {unassignedContracts.map((ct) => (
+                  <label
+                    key={ct.id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      padding: '0.6rem 0.8rem',
+                      cursor: 'pointer',
+                      borderBottom: '1px solid var(--border)',
+                      fontSize: '0.9rem',
+                      color: 'var(--foreground)',
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedContracts.includes(ct.id)}
+                      onChange={(e) => {
+                        setSelectedContracts((prev) =>
+                          e.target.checked
+                            ? [...prev, ct.id]
+                            : prev.filter((id) => id !== ct.id),
+                        );
+                      }}
+                      style={{ accentColor: 'var(--primary)' }}
+                    />
+                    <span style={{ fontWeight: 600 }}>{ct.clientName}</span>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                      {ct.systemTypes || 'Sem sistema'}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
           <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
             <button type="submit" className="btn-primary" style={{ flex: 1 }}>
               {editingId ? 'Salvar Alterações' : 'Criar Técnico'}
