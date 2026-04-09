@@ -23,8 +23,13 @@ export const authOptions: NextAuthOptions = {
 
         if (!credentials?.username || !credentials?.password) return null;
 
+        // Aceita email completo ou só o username
+        const rawUsername = credentials.username.trim().toLowerCase();
+        const username = rawUsername.includes('@') ? rawUsername.split('@')[0] : rawUsername;
+
         const user = await prisma.user.findUnique({
-          where: { username: credentials.username },
+          where: { username },
+          include: { internalContact: true },
         });
 
         if (!user || !user.active) return null;
@@ -32,10 +37,41 @@ export const authOptions: NextAuthOptions = {
         const valid = await bcrypt.compare(credentials.password, user.password);
         if (!valid) return null;
 
-        return { id: user.id, name: user.name, email: `${user.username}@compasss.com.br` };
+        return {
+          id: user.id,
+          name: user.name,
+          email: `${user.username}@compasss.com.br`,
+          role: user.internalContact?.role || null,
+          internalContactId: user.internalContactId || null,
+          mustChangePassword: user.mustChangePassword,
+        };
       },
     }),
   ],
+  callbacks: {
+    async jwt({ token, user, trigger }) {
+      if (user) {
+        token.role = (user as { role?: string }).role || null;
+        token.internalContactId = (user as { internalContactId?: string }).internalContactId || null;
+        token.mustChangePassword = (user as { mustChangePassword?: boolean }).mustChangePassword ?? false;
+        token.userId = (user as { id: string }).id;
+      }
+      // Quando o frontend pede pra atualizar a sessão (após trocar senha)
+      if (trigger === 'update') {
+        token.mustChangePassword = false;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      if (session.user) {
+        (session.user as { role?: string | null }).role = token.role as string | null;
+        (session.user as { internalContactId?: string | null }).internalContactId = token.internalContactId as string | null;
+        (session.user as { mustChangePassword?: boolean }).mustChangePassword = token.mustChangePassword as boolean;
+        (session.user as { id?: string }).id = token.userId as string;
+      }
+      return session;
+    },
+  },
   pages: {
     signIn: '/login',
   },
