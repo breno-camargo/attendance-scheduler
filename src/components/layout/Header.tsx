@@ -47,6 +47,7 @@ export default function Header() {
     { name: 'Equipe', href: '/staff' },
     { name: 'Calendário', href: '/calendar' },
     { name: 'Feriados', href: '/holidays' },
+    { name: 'Importar', href: '/import' },
   ];
 
   return (
