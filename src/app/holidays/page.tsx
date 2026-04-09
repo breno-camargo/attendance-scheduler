@@ -22,11 +22,19 @@ export default function HolidaysPage() {
   const [confirmModal, confirm] = useConfirm();
   const [holidays, setHolidays] = useState<Holiday[]>([]);
   const [year, setYear] = useState(new Date().getFullYear());
+  const [yearReady, setYearReady] = useState(false);
   const [date, setDate] = useState('');
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    const saved = sessionStorage.getItem('calendar-year');
+    if (saved) setYear(parseInt(saved));
+    setYearReady(true);
+  }, []);
+
   const fetchHolidays = useCallback(async () => {
+    if (!yearReady) return;
     try {
       const { data, error } = await holidaysApi.list(year);
       if (error) throw new Error(error);
@@ -34,7 +42,7 @@ export default function HolidaysPage() {
     } catch {
       showToast('Erro ao carregar feriados', 'error');
     }
-  }, [showToast, year]);
+  }, [showToast, year, yearReady]);
 
   useEffect(() => {
     fetchHolidays();
