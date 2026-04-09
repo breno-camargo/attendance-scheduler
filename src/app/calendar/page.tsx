@@ -433,6 +433,7 @@ export default function CalendarPage() {
           appointments={appointments}
           onGenerate={generateAppointments}
           onClear={handleClearSchedule}
+          contractIds={linkedClients.flatMap((c) => (c.contracts || []).map((ct) => ct.id))}
         />
 
         <CalendarGrid

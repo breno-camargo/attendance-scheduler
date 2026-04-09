@@ -10,6 +10,7 @@ interface ScheduleControlsProps {
   appointments: Appointment[];
   onGenerate: () => void;
   onClear: () => void;
+  contractIds: string[];
 }
 
 export default function ScheduleControls({
@@ -20,6 +21,7 @@ export default function ScheduleControls({
   appointments,
   onGenerate,
   onClear,
+  contractIds,
 }: ScheduleControlsProps) {
   return (
     <div className="glass-panel" style={{ marginBottom: '2.5rem', padding: '2rem' }}>
@@ -104,6 +106,35 @@ export default function ScheduleControls({
                 : '📅 Gerar Agenda'}
           </button>
           <button
+            onClick={() => {
+              contractIds.forEach((id) => {
+                const a = document.createElement('a');
+                a.href = `/reports/contract/${id}`;
+                a.target = '_blank';
+                a.rel = 'noopener';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+              });
+            }}
+            className="btn-secondary"
+            disabled={contractIds.length === 0}
+            style={{
+              background: 'rgba(16, 185, 129, 0.08)',
+              color: '#34d399',
+              border: '1px solid rgba(16, 185, 129, 0.25)',
+              height: '54px',
+              padding: '0 1.2rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            🖨️ Gerar {contractIds.length} PDF{contractIds.length !== 1 ? 's' : ''}
+          </button>
+          <button
             onClick={onClear}
             className="btn-secondary"
             disabled={loading || !professionalId || appointments.length === 0}
@@ -111,7 +142,7 @@ export default function ScheduleControls({
               background: 'rgba(239, 68, 68, 0.1)',
               color: '#ef4444',
               border: '1px solid rgba(239, 68, 68, 0.2)',
-              flex: '0.6',
+              flex: '0.4',
               height: '54px',
             }}
           >
