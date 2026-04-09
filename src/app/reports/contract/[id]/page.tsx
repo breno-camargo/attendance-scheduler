@@ -47,7 +47,7 @@ export default async function ContractReportPage({
     where: { id: params.id },
     include: {
       client: true,
-      professional: true,
+      professional: { include: { supervisor: true } },
       appointments: { orderBy: { date: 'asc' } },
     },
   });
@@ -58,12 +58,31 @@ export default async function ContractReportPage({
   const savedJson = contract.contactsJson ?? null;
 
   // Contatos editáveis salvos (ou valores padrão)
+  // Monta cadeia de contatos baseada no escopo do técnico:
+  // Se o supervisor é o Líder → mostra Líder + Coordenador (sem Supervisor)
+  // Se o supervisor é o Supervisor → mostra Supervisor + Coordenador (sem Líder)
+  // Se não tem supervisor → mostra os 3
+  // Busca o supervisor do técnico diretamente (caso o include não traga nested)
+  const profSupervisorId = (contract.professional as { supervisorId?: string } | null)?.supervisorId;
+  const supervisorContact = profSupervisorId ? internalStaff.find((s) => s.id === profSupervisorId) : null;
+  const supervisorRole = (supervisorContact?.role || '').toLowerCase();
+  const isLiderScope = supervisorRole.includes('líder') || supervisorRole.includes('lider');
+  const isSupervisorScope = supervisorRole.includes('supervisor');
+
+  const maintenanceDefaults: ReportContact[] = [];
+  let contactNum = 2;
+  if (!isSupervisorScope) {
+    maintenanceDefaults.push({ action: `${contactNum}° Contato`, role: 'Técnico de Sistemas (Líder)', name: '', phone: '', email: '' });
+    contactNum++;
+  }
+  if (!isLiderScope) {
+    maintenanceDefaults.push({ action: `${contactNum}° Contato`, role: 'Supervisor', name: '', phone: '', email: '' });
+    contactNum++;
+  }
+  maintenanceDefaults.push({ action: `${contactNum}° Contato`, role: 'Coordenador', name: '', phone: '', email: '' });
+
   const defaultContactsData = {
-    maintenance: [
-      { action: '2° Contato', role: 'Técnico de Sistemas (Líder)', name: '', phone: '', email: '' },
-      { action: '3° Contato', role: 'Supervisor', name: '', phone: '', email: '' },
-      { action: '4° Contato', role: 'Coordenador', name: '', phone: '', email: '' },
-    ],
+    maintenance: maintenanceDefaults,
     escalation: [
       { contact: 'Setor Comercial', role: 'Comercial Obras/Peças', name: '', phone: '', email: '' },
       { contact: '', role: 'Comercial Serviços', name: '', phone: '', email: '' },
@@ -72,45 +91,36 @@ export default async function ContractReportPage({
     ],
   };
 
-  // Se JÁ EXISTE dado salvo, usamos ele exatamente como está (respeita exclusões manuais do Breno)
-  // Se NÃO EXISTE dado salvo, usamos os padrões com preenchimento automático inicial
-  // Se JÁ EXISTE dado salvo, usamos ele EXATAMENTE como está.
-  // Se o Breno apagou o Gabriel, o banco tem "" e nós mostramos "-".
-  let parsedJson: ContactsData | null = null;
-  if (savedJson) {
-    try {
-      parsedJson = JSON.parse(savedJson);
-    } catch {
-      /* JSON corrompido, usa padrão */
-    }
-  }
+  // Match flexível de cargo (ignora plurais, acentos parciais)
+  const matchRole = (staffRole: string | null, targetRole: string) => {
+    if (!staffRole) return false;
+    const a = staffRole.toLowerCase().trim();
+    const b = targetRole.toLowerCase().trim();
+    return a === b || a.startsWith(b.slice(0, -1)) || b.startsWith(a.slice(0, -1));
+  };
 
-  const contactsData = parsedJson
-    ? {
-        maintenance: parsedJson.maintenance || [],
-        escalation: parsedJson.escalation || [],
-      }
-    : {
-        // A inteligência de preenchimento automático SÓ acontece se o contrato NUNCA foi salvo.
-        maintenance: (defaultContactsData.maintenance || []).map((row: ReportContact) => {
-          if (!row.name && row.role) {
-            const match = internalStaff.find(
-              (s) => s.role?.toLowerCase() === row.role.toLowerCase(),
-            );
-            if (match) return { ...row, name: match.name, phone: match.phone, email: match.email };
-          }
-          return row;
-        }),
-        escalation: (defaultContactsData.escalation || []).map((row: ReportContact) => {
-          if (!row.name && row.role) {
-            const match = internalStaff.find(
-              (s) => s.role?.toLowerCase() === row.role.toLowerCase(),
-            );
-            if (match) return { ...row, name: match.name, phone: match.phone, email: match.email };
-          }
-          return row;
-        }),
-      };
+  // Manutenção: SEMPRE recalcula pelo supervisor do técnico
+  const maintenanceContacts = (defaultContactsData.maintenance || []).map((row: ReportContact) => {
+    if (!row.name && row.role) {
+      const match = internalStaff.find((s) => matchRole(s.role, row.role));
+      if (match) return { ...row, name: match.name, phone: match.phone, email: match.email };
+    }
+    return row;
+  });
+
+  // Escalação: sempre auto-preenche pelos contatos internos
+  const escalationContacts = (defaultContactsData.escalation || []).map((row: ReportContact) => {
+    if (!row.name && row.role) {
+      const match = internalStaff.find((s) => matchRole(s.role, row.role));
+      if (match) return { ...row, name: match.name, phone: match.phone, email: match.email };
+    }
+    return row;
+  });
+
+  const contactsData = {
+    maintenance: maintenanceContacts,
+    escalation: escalationContacts,
+  };
 
   // Determina o ano: usa query param ?year=, senão pega o ano mais recente dos agendamentos.
   const appointmentYears = Array.from(new Set(contract.appointments.map((a) => new Date(a.date).getFullYear())));
