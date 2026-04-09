@@ -1,4 +1,4 @@
-import { ApiUtils, requireAuth } from '@/lib/api-utils';
+import { ApiUtils, getScopedProfessionalIds, requireAuthWithScope } from '@/lib/api-utils';
 import prisma from '@/lib/prisma';
 import { professionalSchema } from '@/lib/schemas';
 
@@ -7,13 +7,20 @@ import { professionalSchema } from '@/lib/schemas';
  * Atualiza os dados de um técnico existente.
  */
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
-  const authError = await requireAuth();
-  if (authError) return authError;
+  const result = await requireAuthWithScope();
+  if ('error' in result) return result.error;
+  const { auth } = result;
 
   try {
     const { id } = params;
     if (!id || !/^c[a-z0-9]{24}$/.test(id)) {
       return ApiUtils.error('ID inválido', null, 400);
+    }
+
+    // Verifica se o profissional está no escopo
+    const profIds = await getScopedProfessionalIds(auth);
+    if (profIds && !profIds.includes(id)) {
+      return ApiUtils.error('Você não tem permissão para editar este técnico', null, 403);
     }
     const body = await request.json();
 
@@ -48,13 +55,19 @@ export async function PUT(request: Request, { params }: { params: { id: string }
  * DELETE /api/professionals/[id]
  */
 export async function DELETE(_request: Request, { params }: { params: { id: string } }) {
-  const authError = await requireAuth();
-  if (authError) return authError;
+  const result = await requireAuthWithScope();
+  if ('error' in result) return result.error;
+  const { auth } = result;
 
   try {
     const { id } = params;
     if (!id || !/^c[a-z0-9]{24}$/.test(id)) {
       return ApiUtils.error('ID inválido', null, 400);
+    }
+
+    const profIds = await getScopedProfessionalIds(auth);
+    if (profIds && !profIds.includes(id)) {
+      return ApiUtils.error('Você não tem permissão para excluir este técnico', null, 403);
     }
 
     await prisma.$transaction([

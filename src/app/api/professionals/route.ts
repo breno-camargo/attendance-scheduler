@@ -1,4 +1,4 @@
-import { ApiUtils, parsePagination, requireAuth } from '@/lib/api-utils';
+import { ApiUtils, parsePagination, requireAuth, requireAuthWithScope } from '@/lib/api-utils';
 import prisma from '@/lib/prisma';
 import { professionalSchema } from '@/lib/schemas';
 
@@ -9,12 +9,14 @@ export const dynamic = 'force-dynamic';
  * Retorna técnicos cadastrados.
  */
 export async function GET(request: Request) {
-  const authError = await requireAuth();
-  if (authError) return authError;
+  const result = await requireAuthWithScope();
+  if ('error' in result) return result.error;
+  const { auth } = result;
 
   try {
     const { skip, take } = parsePagination(request.url);
     const professionals = await prisma.professional.findMany({
+      where: auth.scope === 'filtered' ? { supervisorId: auth.internalContactId } : undefined,
       include: { supervisor: true },
       orderBy: { createdAt: 'desc' },
       skip,
