@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { signOut } from 'next-auth/react';
+import { signOut, useSession } from 'next-auth/react';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -8,6 +8,7 @@ import { Logo } from '@/components/ui/logo';
 
 export default function Header() {
   const pathname = usePathname();
+  const { data: session } = useSession();
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -108,10 +109,35 @@ export default function Header() {
           </button>
           <div style={{ textAlign: 'right' }}>
             <p style={{ fontSize: '0.8rem', fontWeight: '600', color: 'var(--foreground)' }}>
-              Admin
+              {session?.user?.name || 'Usuário'}
             </p>
-            <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Compasss Brasil</p>
+            <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+              {session?.user?.role || 'Compasss Brasil'}
+            </p>
           </div>
+          <Link
+            href="/change-password"
+            title="Alterar senha"
+            style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: '50%',
+              background: 'var(--input-bg)',
+              border: '1px solid var(--border)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              color: 'var(--text-muted)',
+              transition: 'var(--transition-smooth)',
+              textDecoration: 'none',
+            }}
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+          </Link>
           <button
             onClick={() => signOut({ callbackUrl: '/login' })}
             title="Sair"
