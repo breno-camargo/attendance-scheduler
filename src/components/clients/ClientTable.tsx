@@ -106,9 +106,23 @@ export default function ClientTable({
   onOpenContacts,
 }: ClientTableProps) {
   const [search, setSearch] = useState('');
+  const [techFilter, setTechFilter] = useState('');
 
-  // TODO: buscar por sistema tambem (ex: digitar "SDAI" e mostrar só contratos com SDAI)
-  const filtered = clients.filter((c) => c.name.toLowerCase().includes(search.toLowerCase()));
+  // Técnicos únicos vinculados a contratos
+  const techs = Array.from(
+    new Map(
+      clients
+        .flatMap((c) => c.contracts || [])
+        .filter((ct) => ct.professional)
+        .map((ct) => [ct.professional!.id, ct.professional!.name]),
+    ).entries(),
+  );
+
+  const filtered = clients.filter((c) => {
+    const matchesSearch = c.name.toLowerCase().includes(search.toLowerCase());
+    const matchesTech = !techFilter || c.contracts?.some((ct) => ct.professionalId === techFilter);
+    return matchesSearch && matchesTech;
+  });
 
   const totalContracts = clients.reduce((sum, c) => sum + (c.contracts?.length || 0), 0);
   const filteredContracts = filtered.reduce((sum, c) => sum + (c.contracts?.length || 0), 0);
@@ -125,28 +139,97 @@ export default function ClientTable({
       >
         <h2 style={{ margin: 0 }}>Contratos Vigentes</h2>
         <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>
-          {search ? `${filteredContracts} de ${totalContracts}` : totalContracts} contrato
+          {search || techFilter ? `${filteredContracts} de ${totalContracts}` : totalContracts} contrato
           {totalContracts !== 1 ? 's' : ''}
         </span>
       </div>
 
-      <div style={{ marginBottom: '1.5rem' }}>
-        <input
-          type="text"
-          placeholder="Buscar cliente..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="form-input"
-          style={{
-            width: '100%',
-            padding: '0.7rem 1rem',
-            borderRadius: '8px',
-            border: '1px solid var(--primary-border-subtle)',
-            background: 'var(--input-bg)',
-            color: 'var(--foreground)',
-            fontSize: '0.95rem',
-          }}
-        />
+      <div style={{ marginBottom: '1.5rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
+        <div style={{ flex: '1 1 200px', position: 'relative' }}>
+          <svg
+            width="15"
+            height="15"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="var(--text-muted)"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}
+          >
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <input
+            type="text"
+            placeholder="Buscar cliente..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="form-input"
+            style={{
+              width: '100%',
+              padding: '0.7rem 1rem 0.7rem 2.4rem',
+              borderRadius: '10px',
+              border: '1px solid var(--primary-border-subtle)',
+              background: 'var(--input-bg)',
+              color: 'var(--foreground)',
+              fontSize: '0.95rem',
+            }}
+          />
+        </div>
+        {techs.length > 1 && (
+          <div style={{ flex: '0 1 240px', position: 'relative' }}>
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="var(--text-muted)"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}
+            >
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
+            <select
+              value={techFilter}
+              onChange={(e) => setTechFilter(e.target.value)}
+              className="form-input"
+              style={{
+                width: '100%',
+                padding: '0.7rem 1rem 0.7rem 2.4rem',
+                borderRadius: '10px',
+                border: techFilter ? '1px solid var(--primary)' : '1px solid var(--primary-border-subtle)',
+                background: techFilter ? 'var(--primary-subtle)' : 'var(--input-bg)',
+                color: techFilter ? 'var(--foreground)' : 'var(--text-muted)',
+                fontSize: '0.95rem',
+                cursor: 'pointer',
+                appearance: 'none',
+                WebkitAppearance: 'none',
+              }}
+            >
+              <option value="">Todos os técnicos</option>
+              {techs.map(([id, name]) => (
+                <option key={id} value={id}>{name}</option>
+              ))}
+            </select>
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="var(--text-muted)"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}
+            >
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </div>
+        )}
       </div>
 
       {clients.length === 0 ? (
