@@ -3,6 +3,18 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export async function middleware(request: NextRequest) {
+  // Proteção CSRF: requests mutáveis devem vir do mesmo origin
+  if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(request.method)) {
+    const origin = request.headers.get('origin');
+    const host = request.headers.get('host');
+    if (origin && host) {
+      const originHost = new URL(origin).host;
+      if (originHost !== host) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
+    }
+  }
+
   const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
 
   // Não autenticado → login
@@ -17,8 +29,6 @@ export async function middleware(request: NextRequest) {
   if (token.mustChangePassword && !isChangePasswordPage && !isChangePasswordApi) {
     return NextResponse.redirect(new URL('/change-password', request.url));
   }
-
-  // Página de troca de senha é sempre acessível pra quem tá logado
 
   return NextResponse.next();
 }

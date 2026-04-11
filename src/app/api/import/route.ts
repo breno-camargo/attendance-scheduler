@@ -33,6 +33,24 @@ export async function POST(request: Request) {
       return ApiUtils.error('Nenhum arquivo enviado', null, 400);
     }
 
+    // Validação de tamanho (máx 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      return ApiUtils.error('Arquivo muito grande. Máximo permitido: 5MB', null, 400);
+    }
+
+    // Validação de tipo (só aceita .xlsx)
+    const validTypes = [
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-excel',
+    ];
+    if (file.type && !validTypes.includes(file.type)) {
+      return ApiUtils.error('Formato inválido. Envie um arquivo .xlsx', null, 400);
+    }
+    const ext = file.name?.split('.').pop()?.toLowerCase();
+    if (ext && !['xlsx', 'xls'].includes(ext)) {
+      return ApiUtils.error('Formato inválido. Envie um arquivo .xlsx', null, 400);
+    }
+
     const buffer = Buffer.from(await file.arrayBuffer());
     const workbook = XLSX.read(buffer, { type: 'buffer' });
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
@@ -172,7 +190,6 @@ export async function POST(request: Request) {
     });
   } catch (error: unknown) {
     console.error('Import error:', error);
-    const message = error instanceof Error ? error.message : 'Erro desconhecido';
-    return ApiUtils.error(`Erro ao processar planilha: ${message}`, null);
+    return ApiUtils.error('Erro ao processar planilha', error);
   }
 }
