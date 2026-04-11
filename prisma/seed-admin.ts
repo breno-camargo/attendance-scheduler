@@ -5,8 +5,16 @@ import bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 async function main() {
-  const username = process.env.ADMIN_USERNAME || 'admin';
-  const password = process.env.ADMIN_PASSWORD || '123456';
+  const rawUsername = process.env.ADMIN_USERNAME;
+  const password = process.env.ADMIN_PASSWORD;
+
+  if (!rawUsername || !password) {
+    console.error('ADMIN_USERNAME e ADMIN_PASSWORD são obrigatórios no .env');
+    process.exit(1);
+  }
+
+  // Aceita email completo — extrai só o username
+  const username = rawUsername.includes('@') ? rawUsername.split('@')[0] : rawUsername;
 
   const existing = await prisma.user.findUnique({ where: { username } });
   if (existing) {
