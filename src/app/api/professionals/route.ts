@@ -17,7 +17,7 @@ export async function GET(request: Request) {
     const { skip, take } = parsePagination(request.url);
     const professionals = await prisma.professional.findMany({
       where: auth.scope === 'filtered' ? { supervisorId: auth.internalContactId } : undefined,
-      include: { supervisor: true },
+      include: { supervisor: { select: { id: true, name: true, role: true } } },
       orderBy: { createdAt: 'desc' },
       skip,
       take,

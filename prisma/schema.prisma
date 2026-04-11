@@ -90,6 +90,7 @@ model Appointment {
 
   @@index([professionalId, date])
   @@index([clientId, date])
+  @@index([contractId, date])
   @@index([status])
 }
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { GlassCard } from '@/components/ui/glass-card';
@@ -106,20 +106,23 @@ export default function ClientTable({
   const [techFilter, setTechFilter] = useState('');
 
   // Técnicos únicos vinculados a contratos
-  const techs = Array.from(
+  const techs = useMemo(() => Array.from(
     new Map(
       clients
         .flatMap((c) => c.contracts || [])
         .filter((ct) => ct.professional)
         .map((ct) => [ct.professional!.id, ct.professional!.name]),
     ).entries(),
-  );
+  ), [clients]);
 
-  const filtered = clients.filter((c) => {
-    const matchesSearch = c.name.toLowerCase().includes(search.toLowerCase());
-    const matchesTech = !techFilter || c.contracts?.some((ct) => ct.professionalId === techFilter);
-    return matchesSearch && matchesTech;
-  });
+  const filtered = useMemo(() => {
+    const searchLower = search.toLowerCase();
+    return clients.filter((c) => {
+      const matchesSearch = c.name.toLowerCase().includes(searchLower);
+      const matchesTech = !techFilter || c.contracts?.some((ct) => ct.professionalId === techFilter);
+      return matchesSearch && matchesTech;
+    });
+  }, [clients, search, techFilter]);
 
   const totalContracts = clients.reduce((sum, c) => sum + (c.contracts?.length || 0), 0);
   const filteredContracts = filtered.reduce((sum, c) => sum + (c.contracts?.length || 0), 0);

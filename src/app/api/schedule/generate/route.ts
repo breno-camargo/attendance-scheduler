@@ -137,6 +137,9 @@ export async function POST(request: Request) {
     const sdaiSchedule: Record<number, { contract: ContractWithClient; date: Date }[]> = {};
     const usedSdaiDates = new Set<string>();
 
+    // Pré-computa sábados pra todos os meses (evita recalcular no loop)
+    const saturdaysByMonth = Array.from({ length: 12 }, (_, m) => getSaturdays(year, m));
+
     const sdaiContracts = contracts.filter(
       (c) => c.frequency === 'MONTHLY' && c.systemTypes?.includes('SDAI'),
     );
@@ -145,7 +148,7 @@ export async function POST(request: Request) {
       // distribui contratos em 3 grupos pra não sobrecarregar o mesmo mês
       const rotationGroup = idx % 3;
       for (let month = rotationGroup; month < 12; month += 3) {
-        const saturdays = getSaturdays(year, month);
+        const saturdays = saturdaysByMonth[month];
         // prefere sábados perto do dia 25 — meu supervisor pedia pra ser
         // no final do mês porque o relatório mensal fecha dia 30
         const sortedSats = [...saturdays].sort(
@@ -176,13 +179,15 @@ export async function POST(request: Request) {
       const daySlots: (SlotEntry | null)[] = new Array(workDays.length).fill(null);
       const monthlySdai = sdaiSchedule[month] || [];
 
+      // Mapa dateKey→index pra lookup O(1) em vez de findIndex O(n)
+      const workDayIndex = new Map(workDays.map((d, i) => [toDateKey(d), i]));
+
       // Mark daySlots for SDAI dates that landed on workdays.
-      // SDAI dates on Saturdays won't find a matching workDay index (findIndex
-      // returns -1) and therefore can't be marked here — those are tracked via
-      // usedSdaiDates instead and blocked below.
+      // SDAI dates on Saturdays won't find a matching workDay index and
+      // therefore can't be marked here — those are tracked via usedSdaiDates.
       monthlySdai.forEach((s) => {
-        const idx = workDays.findIndex((d) => toDateKey(d) === toDateKey(s.date));
-        if (idx !== -1) daySlots[idx] = { contract: s.contract, type: 'TESTE_SDAI' };
+        const idx = workDayIndex.get(toDateKey(s.date));
+        if (idx !== undefined) daySlots[idx] = { contract: s.contract, type: 'TESTE_SDAI' };
       });
 
       // Build a per-month set of SDAI date keys so that findBestSlot skips any
@@ -222,7 +227,7 @@ export async function POST(request: Request) {
         if (hasSdaiThisMonth) {
           const sdaiEntry = monthlySdai.find((s) => s.contract.id === contract.id);
           if (sdaiEntry) {
-            let sdaiIdx = workDays.findIndex((d) => toDateKey(d) === toDateKey(sdaiEntry.date));
+            let sdaiIdx = workDayIndex.get(toDateKey(sdaiEntry.date)) ?? -1;
             if (sdaiIdx === -1) {
               // SDAI no sábado — achar o dia útil mais próximo
               const sdaiTime = sdaiEntry.date.getTime();
@@ -369,7 +374,7 @@ export async function GET(request: Request) {
         professionalId,
         date: { gte: new Date(Date.UTC(year, 0, 1)), lt: new Date(Date.UTC(year + 1, 0, 1)) },
       },
-      include: { client: true },
+      include: { client: { select: { id: true, name: true } } },
       orderBy: { date: 'asc' },
     });
 

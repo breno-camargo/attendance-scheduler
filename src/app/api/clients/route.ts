@@ -18,7 +18,13 @@ export async function GET(request: Request) {
     const profIds = await getScopedProfessionalIds(auth);
     const clients = await prisma.client.findMany({
       where: profIds ? { contracts: { some: { professionalId: { in: profIds } } } } : undefined,
-      include: { contracts: { include: { professional: true } } },
+      include: {
+        contracts: {
+          include: {
+            professional: { select: { id: true, name: true, email: true, phone: true } },
+          },
+        },
+      },
       orderBy: { createdAt: 'desc' },
       skip,
       take,

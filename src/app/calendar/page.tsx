@@ -43,13 +43,12 @@ export default function CalendarPage() {
   }, [year, yearInitialized]);
 
   // Only show clients that appear in the current professional's appointments
-  const linkedClients = useMemo(
-    () =>
-      clients.filter((c) =>
-        c.contracts?.some((contract) => appointments.some((a) => a.contractId === contract.id)),
-      ),
-    [clients, appointments],
-  );
+  const linkedClients = useMemo(() => {
+    const contractIds = new Set(appointments.map((a) => a.contractId));
+    return clients.filter((c) =>
+      c.contracts?.some((ct) => contractIds.has(ct.id)),
+    );
+  }, [clients, appointments]);
 
   useEffect(() => {
     professionalsApi.list().then(({ data }) => {
@@ -96,9 +95,7 @@ export default function CalendarPage() {
   useEffect(() => {
     fetchClients();
   }, [fetchClients]);
-  useEffect(() => {
-    fetchHolidays();
-  }, [fetchHolidays]);
+  // fetchHolidays já é chamado dentro de fetchAppointments via Promise.all
   useEffect(() => {
     fetchAppointments();
   }, [fetchAppointments]);
