@@ -4,6 +4,7 @@ import { Outfit } from 'next/font/google';
 
 import '@/styles/globals.css';
 import Header from '@/components/layout/Header';
+import SessionTimeout from '@/components/layout/SessionTimeout';
 
 import Providers from './providers';
 
@@ -37,6 +38,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={outfit.className}>
         <Providers>
           <Header />
+          <SessionTimeout />
           <main className="animate-fade-in" key="main-page-wrapper">
             {children}
           </main>

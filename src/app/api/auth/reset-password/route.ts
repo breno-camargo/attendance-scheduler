@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 
 import { ApiUtils } from '@/lib/api-utils';
+import { audit } from '@/lib/audit';
 import prisma from '@/lib/prisma';
 
 export async function POST(request: Request) {
@@ -33,6 +34,8 @@ export async function POST(request: Request) {
     if (updated.count === 0) {
       return ApiUtils.error('Link expirado ou inválido. Solicite um novo.', null, 400);
     }
+
+    audit({ event: 'PASSWORD_RESET_COMPLETED', details: `token used` });
 
     return ApiUtils.success({ success: true });
   } catch (error: unknown) {

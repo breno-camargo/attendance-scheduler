@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 
 import { ApiUtils } from '@/lib/api-utils';
+import { audit } from '@/lib/audit';
 import { sendResetPasswordEmail } from '@/lib/mail';
 import prisma from '@/lib/prisma';
 import { checkForgotPasswordRateLimit } from '@/lib/rate-limit';
@@ -52,6 +53,7 @@ export async function POST(request: Request) {
     const emailDomain = process.env.EMAIL_DOMAIN || 'compasss.com.br';
     const userEmail = `${username}@${emailDomain}`;
     await sendResetPasswordEmail(userEmail, resetUrl);
+    audit({ event: 'PASSWORD_RESET_REQUESTED', userId: user.id, ip });
 
     return GENERIC_RESPONSE;
   } catch (error: unknown) {

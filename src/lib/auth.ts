@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs';
 import type { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 
+import { audit } from './audit';
 import prisma from './prisma';
 import { checkLoginRateLimit } from './rate-limit';
 
@@ -20,7 +21,10 @@ export const authOptions: NextAuthOptions = {
         const forwarded = req?.headers?.['x-forwarded-for'];
         const ip = (typeof forwarded === 'string' ? forwarded.split(',')[0]?.trim() : null) || 'unknown';
         const allowed = await checkLoginRateLimit(ip);
-        if (!allowed) return null;
+        if (!allowed) {
+          audit({ event: 'LOGIN_RATE_LIMITED', ip });
+          return null;
+        }
 
         if (!credentials?.username || !credentials?.password) return null;
 
@@ -33,10 +37,18 @@ export const authOptions: NextAuthOptions = {
           include: { internalContact: true },
         });
 
-        if (!user || !user.active) return null;
+        if (!user || !user.active) {
+          audit({ event: 'LOGIN_FAILED', ip, details: `user: ${username}` });
+          return null;
+        }
 
         const valid = await bcrypt.compare(credentials.password, user.password);
-        if (!valid) return null;
+        if (!valid) {
+          audit({ event: 'LOGIN_FAILED', userId: user.id, ip });
+          return null;
+        }
+
+        audit({ event: 'LOGIN_SUCCESS', userId: user.id, ip });
 
         return {
           id: user.id,

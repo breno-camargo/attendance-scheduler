@@ -1,6 +1,7 @@
 import type { Contract, Client } from '@prisma/client';
 
 import { ApiUtils, requireAuth } from '@/lib/api-utils';
+import { audit } from '@/lib/audit';
 import { getHolidaysForYear } from '@/lib/holidays';
 import prisma from '@/lib/prisma';
 import { generateScheduleSchema } from '@/lib/schemas';
@@ -319,6 +320,8 @@ export async function POST(request: Request) {
     });
 
     const contractCount = new Set(result.map((a) => a.contractId)).size;
+
+    audit({ event: 'SCHEDULE_GENERATED', details: `${contractCount} contratos, ${result.length} atendimentos` });
 
     return ApiUtils.success(
       {
