@@ -14,8 +14,8 @@ export async function POST(request: Request) {
   try {
     const { newPassword } = await request.json();
 
-    if (!newPassword || newPassword.length < 6) {
-      return ApiUtils.error('A senha deve ter no mínimo 6 caracteres', null, 400);
+    if (!newPassword || newPassword.length < 8 || !/[a-zA-Z]/.test(newPassword) || !/\d/.test(newPassword)) {
+      return ApiUtils.error('A senha deve ter no mínimo 8 caracteres, com pelo menos uma letra e um número', null, 400);
     }
 
     const hash = await bcrypt.hash(newPassword, 10);

@@ -18,8 +18,8 @@ export default function ChangePasswordPage() {
     e.preventDefault();
     setError('');
 
-    if (password.length < 6) {
-      setError('A senha deve ter no mínimo 6 caracteres.');
+    if (password.length < 8 || !/[a-zA-Z]/.test(password) || !/\d/.test(password)) {
+      setError('A senha deve ter no mínimo 8 caracteres, com pelo menos uma letra e um número.');
       return;
     }
     if (password !== confirm) {

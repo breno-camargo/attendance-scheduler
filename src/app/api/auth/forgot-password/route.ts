@@ -3,6 +3,10 @@ import crypto from 'crypto';
 import { ApiUtils } from '@/lib/api-utils';
 import { sendResetPasswordEmail } from '@/lib/mail';
 import prisma from '@/lib/prisma';
+import { checkForgotPasswordRateLimit } from '@/lib/rate-limit';
+
+// Resposta genérica pra não revelar se o email existe ou não (anti-enumeração)
+const GENERIC_RESPONSE = ApiUtils.success({ sent: true });
 
 export async function POST(request: Request) {
   try {
@@ -12,13 +16,23 @@ export async function POST(request: Request) {
       return ApiUtils.error('E-mail é obrigatório', null, 400);
     }
 
+    const trimmed = email.trim().toLowerCase();
+
+    // Rate limit por IP — máx 3 tentativas por hora
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+    const allowed = await checkForgotPasswordRateLimit(ip);
+    if (!allowed) {
+      return ApiUtils.error('Muitas tentativas. Aguarde alguns minutos.', null, 429);
+    }
+
     // Extrai username do email
-    const username = email.trim().toLowerCase().split('@')[0];
+    const username = trimmed.split('@')[0];
 
     const user = await prisma.user.findUnique({ where: { username } });
 
+    // Retorna mesma resposta se user não existe — impede enumeração de contas
     if (!user) {
-      return ApiUtils.error('Nenhuma conta encontrada com este e-mail', null, 404);
+      return GENERIC_RESPONSE;
     }
 
     // Gera token e salva no banco (expira em 1 hora)
@@ -39,7 +53,7 @@ export async function POST(request: Request) {
     const userEmail = `${username}@${emailDomain}`;
     await sendResetPasswordEmail(userEmail, resetUrl);
 
-    return ApiUtils.success({ sent: true });
+    return GENERIC_RESPONSE;
   } catch (error: unknown) {
     console.error('Forgot password error:', error);
     return ApiUtils.error('Erro ao processar solicitação', null);

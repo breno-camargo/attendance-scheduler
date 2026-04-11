@@ -17,7 +17,8 @@ export const authOptions: NextAuthOptions = {
         password: { label: 'Senha', type: 'password' },
       },
       async authorize(credentials, req) {
-        const ip = req?.headers?.['x-forwarded-for'] || 'unknown';
+        const forwarded = req?.headers?.['x-forwarded-for'];
+        const ip = (typeof forwarded === 'string' ? forwarded.split(',')[0]?.trim() : null) || 'unknown';
         const allowed = await checkLoginRateLimit(ip);
         if (!allowed) return null;
 

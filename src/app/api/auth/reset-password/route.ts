@@ -11,24 +11,17 @@ export async function POST(request: Request) {
       return ApiUtils.error('Token e nova senha são obrigatórios', null, 400);
     }
 
-    if (newPassword.length < 6) {
-      return ApiUtils.error('A senha deve ter no mínimo 6 caracteres', null, 400);
+    if (newPassword.length < 8 || !/[a-zA-Z]/.test(newPassword) || !/\d/.test(newPassword)) {
+      return ApiUtils.error('A senha deve ter no mínimo 8 caracteres, com pelo menos uma letra e um número', null, 400);
     }
 
-    const user = await prisma.user.findFirst({
+    // Transaction atômica pra evitar race condition (mesmo token usado 2x simultâneo)
+    const hash = await bcrypt.hash(newPassword, 10);
+    const updated = await prisma.user.updateMany({
       where: {
         resetToken: token,
         resetTokenExpiry: { gte: new Date() },
       },
-    });
-
-    if (!user) {
-      return ApiUtils.error('Link expirado ou inválido. Solicite um novo.', null, 400);
-    }
-
-    const hash = await bcrypt.hash(newPassword, 10);
-    await prisma.user.update({
-      where: { id: user.id },
       data: {
         password: hash,
         mustChangePassword: false,
@@ -36,6 +29,10 @@ export async function POST(request: Request) {
         resetTokenExpiry: null,
       },
     });
+
+    if (updated.count === 0) {
+      return ApiUtils.error('Link expirado ou inválido. Solicite um novo.', null, 400);
+    }
 
     return ApiUtils.success({ success: true });
   } catch (error: unknown) {
