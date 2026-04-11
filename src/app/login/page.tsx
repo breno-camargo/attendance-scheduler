@@ -168,9 +168,17 @@ export default function LoginPage() {
               <p style={{ color: 'var(--foreground)', fontWeight: 600, margin: '0 0 0.3rem', fontSize: '0.95rem' }}>
                 E-mail enviado!
               </p>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', margin: 0 }}>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', margin: '0 0 1rem' }}>
                 Verifique sua caixa de entrada e clique no link para redefinir sua senha.
               </p>
+              <button
+                type="button"
+                className="btn-secondary"
+                style={{ padding: '0.6rem 1.2rem', fontSize: '0.82rem' }}
+                onClick={() => { setForgotMode(false); setForgotSent(false); setForgotEmail(''); }}
+              >
+                Voltar ao login
+              </button>
             </div>
           ) : (
             <div style={{
