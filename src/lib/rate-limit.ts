@@ -92,6 +92,27 @@ export function resetAccountRateLimit(username: string): void {
   memoryStore.delete(`account:${username}`);
 }
 
+// ── Rate limit genérico pra endpoints de leitura com PII ──
+const API_MAX_REQUESTS = isDev ? 500 : 60;
+const API_WINDOW_SECONDS = 60; // 1 minuto
+
+const apiRatelimit = redis
+  ? new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(API_MAX_REQUESTS, `${API_WINDOW_SECONDS} s`),
+      analytics: false,
+      prefix: 'compasss:api',
+    })
+  : null;
+
+export async function checkApiRateLimit(ip: string): Promise<boolean> {
+  if (apiRatelimit) {
+    const { success } = await apiRatelimit.limit(ip);
+    return success;
+  }
+  return checkMemoryRateLimit(`api:${ip}`, API_MAX_REQUESTS, API_WINDOW_SECONDS);
+}
+
 export async function checkLoginRateLimit(ip: string): Promise<boolean> {
   if (loginRatelimit) {
     const { success } = await loginRatelimit.limit(ip);

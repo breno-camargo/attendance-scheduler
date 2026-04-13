@@ -60,6 +60,11 @@ export async function getScopedProfessionalIds(auth: AuthScope): Promise<string[
 // limit=200 porque o frontend carrega todos os clientes de uma vez pra montar
 // a tabela com filtro local. Paginação server-side seria melhor mas não vale
 // o esforço agora — são ~50 clientes no máximo.
+export function getClientIp(request: Request): string {
+  const forwarded = request.headers.get('x-forwarded-for');
+  return (forwarded ? forwarded.split(',')[0]?.trim() : null) || 'unknown';
+}
+
 export function parsePagination(url: string): { skip: number; take: number } {
   const { searchParams } = new URL(url);
   const rawPage = parseInt(searchParams.get('page') || '1');
