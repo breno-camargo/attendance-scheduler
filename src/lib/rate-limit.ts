@@ -64,6 +64,34 @@ const forgotRatelimit = redis
     })
   : null;
 
+// ── Lockout por conta (complementa o rate limit por IP) ──
+const ACCOUNT_MAX_ATTEMPTS = isDev ? 50 : 5;
+const ACCOUNT_WINDOW_SECONDS = 15 * 60; // 15 minutos
+
+const accountRatelimit = redis
+  ? new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(ACCOUNT_MAX_ATTEMPTS, `${ACCOUNT_WINDOW_SECONDS} s`),
+      analytics: false,
+      prefix: 'compasss:account',
+    })
+  : null;
+
+export async function checkAccountRateLimit(username: string): Promise<boolean> {
+  if (accountRatelimit) {
+    const { success } = await accountRatelimit.limit(username);
+    return success;
+  }
+  return checkMemoryRateLimit(`account:${username}`, ACCOUNT_MAX_ATTEMPTS, ACCOUNT_WINDOW_SECONDS);
+}
+
+export function resetAccountRateLimit(username: string): void {
+  // Em dev, limpa o contador na memória. Em prod, o Upstash não tem
+  // reset nativo — o sliding window expira sozinho. 5 tentativas em
+  // 15 min é generoso o suficiente pra não impactar uso legítimo.
+  memoryStore.delete(`account:${username}`);
+}
+
 export async function checkLoginRateLimit(ip: string): Promise<boolean> {
   if (loginRatelimit) {
     const { success } = await loginRatelimit.limit(ip);

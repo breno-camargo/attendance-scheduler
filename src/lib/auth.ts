@@ -4,7 +4,7 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 
 import { audit } from './audit';
 import prisma from './prisma';
-import { checkLoginRateLimit } from './rate-limit';
+import { checkAccountRateLimit, checkLoginRateLimit, resetAccountRateLimit } from './rate-limit';
 
 // Auth simples com credentials porque é sistema interno — não precisa de
 // OAuth/Google. Só quem tem login acessa, e por enquanto é só o admin.
@@ -32,6 +32,13 @@ export const authOptions: NextAuthOptions = {
         const rawUsername = credentials.username.trim().toLowerCase();
         const username = rawUsername.includes('@') ? rawUsername.split('@')[0] : rawUsername;
 
+        // Lockout por conta — bloqueia após 5 tentativas falhas na mesma conta
+        const accountAllowed = await checkAccountRateLimit(username);
+        if (!accountAllowed) {
+          audit({ event: 'LOGIN_RATE_LIMITED', ip, details: `account locked: ${username.charAt(0)}***` });
+          return null;
+        }
+
         const user = await prisma.user.findUnique({
           where: { username },
           include: { internalContact: true },
@@ -48,6 +55,7 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
+        resetAccountRateLimit(username);
         audit({ event: 'LOGIN_SUCCESS', userId: user.id, ip });
 
         return {
