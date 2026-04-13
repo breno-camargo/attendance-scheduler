@@ -38,7 +38,7 @@ export const authOptions: NextAuthOptions = {
         });
 
         if (!user || !user.active) {
-          audit({ event: 'LOGIN_FAILED', ip, details: `user: ${username}` });
+          audit({ event: 'LOGIN_FAILED', ip, details: `user: ${username.charAt(0)}***` });
           return null;
         }
 
