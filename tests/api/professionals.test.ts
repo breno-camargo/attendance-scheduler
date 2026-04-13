@@ -77,7 +77,7 @@ describe('GET /api/professionals', () => {
     expect(Array.isArray(body)).toBe(true);
     expect(body).toHaveLength(1);
     expect(body[0].name).toBe('Carlos Silva');
-    expect(body[0].email).toBe('carlos@compasss.com.br');
+    expect(body[0].email).toBe('c****@compasss.com.br');
   });
 
   it('returns an empty array when no professionals exist', async () => {

@@ -4,5 +4,11 @@
       "path": "/api/ping",
       "schedule": "0 10 * * *"
     }
-  ]
+  ],
+  "git": {
+    "deploymentEnabled": {
+      "main": true
+    }
+  },
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- src/ public/ prisma/ package.json next.config.mjs"
 }

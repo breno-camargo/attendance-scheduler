@@ -167,13 +167,18 @@ describe('ApiUtils.maskPII', () => {
     expect(result[1]).toEqual({ role: 'guest' });
   });
 
-  it('handles nested objects by processing the top-level object only (phone/email)', () => {
-    // maskPII only does a shallow mask on object fields named phone/email
+  it('handles nested objects recursively', () => {
     const nested = { email: 'x@y.com', child: { email: 'z@w.com' } };
     const result = ApiUtils.maskPII(nested);
     expect(result.email).toBe('x****@y.com');
-    // nested child is not recursively masked (by design)
-    expect(result.child.email).toBe('z@w.com');
+    expect(result.child.email).toBe('z****@w.com');
+  });
+
+  it('preserves Date objects during recursion', () => {
+    const now = new Date();
+    const data = { email: 'x@y.com', createdAt: now };
+    const result = ApiUtils.maskPII(data);
+    expect(result.createdAt).toBe(now);
   });
 
   it('returns a number value unchanged', () => {

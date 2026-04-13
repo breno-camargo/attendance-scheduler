@@ -58,28 +58,29 @@ describe('GET /api/holidays', () => {
     expect(body).toHaveProperty('error');
   });
 
-  it('returns a list of holidays ordered by date', async () => {
+  it('returns a list of holidays ordered by date (fixed + custom)', async () => {
     prismaMock.holiday.findMany.mockResolvedValue([mockHoliday] as any);
 
-    const response = await GET(new Request('http://localhost/api/holidays'));
+    const response = await GET(new Request('http://localhost/api/holidays?year=2024'));
 
     expect(response.status).toBe(200);
     const body = await response.json();
     expect(Array.isArray(body)).toBe(true);
-    expect(body).toHaveLength(1);
-    expect(body[0].name).toBe('Natal');
-    expect(body[0]).toHaveProperty('id');
-    expect(body[0]).toHaveProperty('date');
+    // Includes fixed holidays + 1 custom
+    expect(body.length).toBeGreaterThan(1);
+    expect(body.some((h: any) => h.name === 'Natal')).toBe(true);
+    expect(body.some((h: any) => h.fixed === true)).toBe(true);
   });
 
-  it('returns an empty array when there are no holidays', async () => {
+  it('returns only fixed holidays when there are no custom ones', async () => {
     prismaMock.holiday.findMany.mockResolvedValue([]);
 
-    const response = await GET(new Request('http://localhost/api/holidays'));
+    const response = await GET(new Request('http://localhost/api/holidays?year=2024'));
 
     expect(response.status).toBe(200);
     const body = await response.json();
-    expect(body).toEqual([]);
+    expect(body.length).toBeGreaterThan(0);
+    expect(body.every((h: any) => h.fixed === true)).toBe(true);
   });
 
   it('returns 500 when Prisma throws', async () => {
@@ -186,7 +187,7 @@ describe('DELETE /api/holidays/[id]', () => {
       method: 'DELETE',
     });
 
-    const response = await DELETE(req, { params: Promise.resolve({ id: validId }) });
+    const response = await DELETE(req, { params: { id: validId } } as any);
 
     expect(response.status).toBe(401);
   });
@@ -199,7 +200,7 @@ describe('DELETE /api/holidays/[id]', () => {
       method: 'DELETE',
     });
 
-    const response = await DELETE(req, { params: Promise.resolve({ id: validId }) });
+    const response = await DELETE(req, { params: { id: validId } } as any);
 
     expect(response.status).toBe(200);
     const body = await response.json();
@@ -214,7 +215,7 @@ describe('DELETE /api/holidays/[id]', () => {
       method: 'DELETE',
     });
 
-    await DELETE(req, { params: Promise.resolve({ id: validId }) });
+    await DELETE(req, { params: { id: validId } } as any);
 
     expect(prismaMock.holiday.delete).toHaveBeenCalledWith({
       where: { id: validId },
@@ -228,7 +229,7 @@ describe('DELETE /api/holidays/[id]', () => {
       method: 'DELETE',
     });
 
-    const response = await DELETE(req, { params: Promise.resolve({ id: validId }) });
+    const response = await DELETE(req, { params: { id: validId } } as any);
 
     expect(response.status).toBe(404);
     const body = await response.json();
@@ -242,7 +243,7 @@ describe('DELETE /api/holidays/[id]', () => {
       method: 'DELETE',
     });
 
-    const response = await DELETE(req, { params: Promise.resolve({ id: validId }) });
+    const response = await DELETE(req, { params: { id: validId } } as any);
 
     expect(response.status).toBe(403);
     const body = await response.json();
@@ -257,7 +258,7 @@ describe('DELETE /api/holidays/[id]', () => {
       method: 'DELETE',
     });
 
-    const response = await DELETE(req, { params: Promise.resolve({ id: validId }) });
+    const response = await DELETE(req, { params: { id: validId } } as any);
 
     expect(response.status).toBe(500);
     const body = await response.json();

@@ -27,7 +27,7 @@ export async function GET(request: Request) {
       take,
     });
 
-    return ApiUtils.success(professionals);
+    return ApiUtils.success(ApiUtils.maskPII(professionals));
   } catch (error: unknown) {
     return ApiUtils.error('Falha ao listar técnicos', error);
   }

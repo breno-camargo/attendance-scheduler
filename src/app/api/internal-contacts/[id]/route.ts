@@ -3,6 +3,27 @@ import { UNIQUE_ROLES } from '@/lib/constants';
 import prisma from '@/lib/prisma';
 import { internalContactSchema } from '@/lib/schemas';
 
+/**
+ * GET /api/internal-contacts/[id]
+ * Retorna dados completos (sem máscara) — usado nos formulários de edição.
+ */
+export async function GET(_request: Request, { params }: { params: { id: string } }) {
+  const result = await requireAuthWithScope();
+  if ('error' in result) return result.error;
+
+  if (result.auth.scope === 'filtered' && params.id !== result.auth.internalContactId) {
+    return ApiUtils.error('Sem permissão', null, 403);
+  }
+
+  if (!params.id || !/^c[a-z0-9]{24}$/.test(params.id)) {
+    return ApiUtils.error('ID inválido', null, 400);
+  }
+
+  const contact = await prisma.internalContact.findUnique({ where: { id: params.id } });
+  if (!contact) return ApiUtils.error('Contato não encontrado', null, 404);
+  return ApiUtils.success(contact);
+}
+
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
   const result = await requireAuthWithScope();
   if ('error' in result) return result.error;

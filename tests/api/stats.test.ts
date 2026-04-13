@@ -25,7 +25,7 @@ vi.mock('next/server', () => ({
   },
 }));
 
-const mockGetServerSession = vi.fn().mockResolvedValue({ user: { name: 'Admin' } });
+const mockGetServerSession = vi.fn().mockResolvedValue({ user: { name: 'Admin', role: 'Coordenador' } });
 vi.mock('next-auth', () => ({
   getServerSession: (...args: any[]) => mockGetServerSession(...args),
 }));
@@ -40,7 +40,7 @@ const prismaMock = prisma as unknown as ReturnType<typeof mockDeep<PrismaClient>
 
 beforeEach(() => {
   mockReset(prismaMock);
-  mockGetServerSession.mockResolvedValue({ user: { name: 'Admin' } });
+  mockGetServerSession.mockResolvedValue({ user: { name: 'Admin', role: 'Coordenador' } });
 });
 
 describe('GET /api/stats', () => {
@@ -54,12 +54,13 @@ describe('GET /api/stats', () => {
     expect(body).toHaveProperty('error');
   });
 
-  it('returns correct counts for clients, professionals, and generatedSchedules', async () => {
+  it('returns correct counts for clients, professionals, contracts and schedules', async () => {
     prismaMock.client.count.mockResolvedValue(5);
     prismaMock.professional.count.mockResolvedValue(3);
+    prismaMock.contract.count.mockResolvedValue(7);
     (prismaMock.appointment.groupBy as any).mockResolvedValue([
-      { professionalId: 'prof1' },
-      { professionalId: 'prof2' },
+      { contractId: 'c1' },
+      { contractId: 'c2' },
     ]);
 
     const response = await GET();
@@ -69,20 +70,22 @@ describe('GET /api/stats', () => {
     expect(body).toEqual({
       clients: 5,
       professionals: 3,
-      generatedSchedules: 2,
+      totalContracts: 7,
+      contractsWithSchedule: 2,
     });
   });
 
   it('returns zero counts when database is empty', async () => {
     prismaMock.client.count.mockResolvedValue(0);
     prismaMock.professional.count.mockResolvedValue(0);
+    prismaMock.contract.count.mockResolvedValue(0);
     (prismaMock.appointment.groupBy as any).mockResolvedValue([]);
 
     const response = await GET();
 
     expect(response.status).toBe(200);
     const body = await response.json();
-    expect(body).toEqual({ clients: 0, professionals: 0, generatedSchedules: 0 });
+    expect(body).toEqual({ clients: 0, professionals: 0, totalContracts: 0, contractsWithSchedule: 0 });
   });
 
   it('returns 500 when a Prisma call throws', async () => {

@@ -86,6 +86,7 @@ export const clientsApi = {
 
 export const professionalsApi = {
   list: () => apiFetch<Professional[]>('/api/professionals'),
+  getById: (id: string) => apiFetch<Professional>(`/api/professionals/${id}`),
   create: (data: Record<string, unknown>) => post<Professional>('/api/professionals', data),
   update: (id: string, data: Record<string, unknown>) =>
     put<Professional>(`/api/professionals/${id}`, data),
@@ -100,6 +101,7 @@ export const holidaysApi = {
 
 export const staffApi = {
   list: () => apiFetch<InternalContact[]>('/api/internal-contacts'),
+  getById: (id: string) => apiFetch<InternalContact>(`/api/internal-contacts/${id}`),
   create: (data: Record<string, unknown>) => post<InternalContact>('/api/internal-contacts', data),
   update: (id: string, data: Record<string, unknown>) =>
     put<InternalContact>(`/api/internal-contacts/${id}`, data),

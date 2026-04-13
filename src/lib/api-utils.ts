@@ -140,11 +140,18 @@ export const ApiUtils = {
       return data.map((item) => ApiUtils.maskPII(item)) as T;
     }
 
-    // Caso 3: Objeto (Uso na API)
+    // Caso 3: Objeto (Uso na API) — recursivo pra pegar nested
+    if (data instanceof Date) return data;
     if (typeof data === 'object') {
       const masked = { ...data } as Record<string, unknown>;
       if (masked.phone) masked.phone = applyMask(masked.phone as string);
       if (masked.email) masked.email = applyMask(masked.email as string);
+      for (const key of Object.keys(masked)) {
+        const val = masked[key];
+        if (key !== 'phone' && key !== 'email' && val && typeof val === 'object') {
+          masked[key] = ApiUtils.maskPII(val);
+        }
+      }
       return masked as T;
     }
 

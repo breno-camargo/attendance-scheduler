@@ -23,7 +23,7 @@ export async function GET(request: Request) {
       skip,
       take,
     });
-    return ApiUtils.success(contacts);
+    return ApiUtils.success(ApiUtils.maskPII(contacts));
   } catch (error: unknown) {
     return ApiUtils.error('Erro ao buscar equipe interna', error);
   }

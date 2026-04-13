@@ -34,7 +34,7 @@ export async function GET(request: Request) {
       take,
     });
 
-    return ApiUtils.success(clients);
+    return ApiUtils.success(ApiUtils.maskPII(clients));
   } catch (error: unknown) {
     return ApiUtils.error('Falha ao listar clientes', error);
   }

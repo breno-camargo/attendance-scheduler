@@ -3,6 +3,34 @@ import prisma from '@/lib/prisma';
 import { professionalSchema } from '@/lib/schemas';
 
 /**
+ * GET /api/professionals/[id]
+ * Retorna dados completos (sem máscara) de um técnico — usado nos formulários de edição.
+ */
+export async function GET(_request: Request, { params }: { params: { id: string } }) {
+  const result = await requireAuthWithScope();
+  if ('error' in result) return result.error;
+  const { auth } = result;
+
+  const { id } = params;
+  if (!id || !/^c[a-z0-9]{24}$/.test(id)) {
+    return ApiUtils.error('ID inválido', null, 400);
+  }
+
+  const profIds = await getScopedProfessionalIds(auth);
+  if (profIds && !profIds.includes(id)) {
+    return ApiUtils.error('Sem permissão', null, 403);
+  }
+
+  const prof = await prisma.professional.findUnique({
+    where: { id },
+    include: { supervisor: { select: { id: true, name: true, role: true } } },
+  });
+
+  if (!prof) return ApiUtils.error('Técnico não encontrado', null, 404);
+  return ApiUtils.success(prof);
+}
+
+/**
  * PUT /api/professionals/[id]
  * Atualiza os dados de um técnico existente.
  */
