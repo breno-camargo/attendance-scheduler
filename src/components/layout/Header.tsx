@@ -37,14 +37,18 @@ export default function Header() {
     setTheme(next);
     document.documentElement.setAttribute('data-theme', next);
     localStorage.setItem('compasss_theme', next);
-    const tc = document.querySelector('meta[name="theme-color"]');
-    if (tc) tc.setAttribute('content', next === 'light' ? '#ffffff' : '#111111');
-    else {
-      const m = document.createElement('meta');
-      m.name = 'theme-color';
-      m.content = next === 'light' ? '#ffffff' : '#111111';
-      document.head.appendChild(m);
-    }
+    // atrasa 400ms pra sincronizar com a transição CSS (--transition-smooth)
+    setTimeout(() => {
+      const color = next === 'light' ? '#ffffff' : '#111111';
+      const tc = document.querySelector('meta[name="theme-color"]');
+      if (tc) tc.setAttribute('content', color);
+      else {
+        const m = document.createElement('meta');
+        m.name = 'theme-color';
+        m.content = color;
+        document.head.appendChild(m);
+      }
+    }, 400);
   };
 
   if (pathname.startsWith('/reports') || pathname === '/login') return null;
