@@ -13,12 +13,20 @@ const outfit = Outfit({ subsets: ['latin'], weight: ['300', '400', '600', '800']
 export const metadata: Metadata = {
   title: 'Gerador de Agenda CompaSSS',
   description: 'Sistema de Gestão de Manutenção Preventiva - CompaSSS',
+  manifest: '/manifest.json',
+  themeColor: '#6c5ce7',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'CompaSSS',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="pt-BR">
       <head>
+        <link rel="apple-touch-icon" href="/logo.png" />
         {/* Anti-flash: aplica o tema salvo ANTES do React renderizar, evitando piscar */}
         <script
           dangerouslySetInnerHTML={{
@@ -31,6 +39,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   document.documentElement.setAttribute('data-theme', 'dark');
                 }
               })();
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                  navigator.serviceWorker.register('/sw.js');
+                });
+              }
             `,
           }}
         />
