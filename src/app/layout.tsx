@@ -32,7 +32,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             __html: `
               (function() {
                 try {
-                  var theme = localStorage.getItem('compasss_theme') || 'dark';
+                  var saved = localStorage.getItem('compasss_theme');
+                  var systemPref = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+                  var theme = saved || systemPref;
                   document.documentElement.setAttribute('data-theme', theme);
                   var m = document.createElement('meta');
                   m.name = 'theme-color';

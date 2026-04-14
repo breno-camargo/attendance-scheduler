@@ -1,7 +1,7 @@
 const CACHE_NAME = 'compasss-v1';
 
 // Assets to pre-cache on install
-const PRECACHE_ASSETS = ['/', '/manifest.json'];
+const PRECACHE_ASSETS = ['/manifest.json', '/offline.html'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -41,6 +41,13 @@ self.addEventListener('fetch', (event) => {
         }
         return response;
       })
-      .catch(() => caches.match(request))
+      .catch(() =>
+        caches.match(request).then((cached) => {
+          if (cached) return cached;
+          // Se é navegação (página), mostra a página offline
+          if (request.mode === 'navigate') return caches.match('/offline.html');
+          return cached;
+        })
+      )
   );
 });

@@ -14,7 +14,8 @@ export default function Header() {
 
   useEffect(() => {
     const saved = localStorage.getItem('compasss_theme') as 'dark' | 'light' | null;
-    const initial = saved || 'dark';
+    const systemPref = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+    const initial = saved || systemPref;
     setTheme(initial); // eslint-disable-line react-hooks/set-state-in-effect -- sync com localStorage
     document.documentElement.setAttribute('data-theme', initial);
   }, []);
