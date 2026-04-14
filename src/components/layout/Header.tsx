@@ -37,6 +37,8 @@ export default function Header() {
     setTheme(next);
     document.documentElement.setAttribute('data-theme', next);
     localStorage.setItem('compasss_theme', next);
+    const tc = document.querySelector('meta[name="theme-color"]');
+    if (tc) tc.setAttribute('content', next === 'light' ? '#ffffff' : '#111111');
   };
 
   if (pathname.startsWith('/reports') || pathname === '/login') return null;

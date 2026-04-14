@@ -4,8 +4,8 @@
   "description": "Sistema de Gestão de Manutenção Preventiva - CompaSSS",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0a0a1a",
-  "theme_color": "#6c5ce7",
+  "background_color": "#111111",
+  "theme_color": "#111111",
   "orientation": "any",
   "icons": [
     {
