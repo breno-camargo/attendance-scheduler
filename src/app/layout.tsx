@@ -14,10 +14,6 @@ export const metadata: Metadata = {
   title: 'Gerador de Agenda CompaSSS',
   description: 'Sistema de Gestão de Manutenção Preventiva - CompaSSS',
   manifest: '/manifest.json',
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
-    { media: '(prefers-color-scheme: dark)', color: '#111111' },
-  ],
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
@@ -38,8 +34,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 try {
                   var theme = localStorage.getItem('compasss_theme') || 'dark';
                   document.documentElement.setAttribute('data-theme', theme);
-                  var tc = document.querySelector('meta[name="theme-color"]');
-                  if (tc) tc.setAttribute('content', theme === 'light' ? '#ffffff' : '#111111');
+                  var m = document.createElement('meta');
+                  m.name = 'theme-color';
+                  m.content = theme === 'light' ? '#ffffff' : '#111111';
+                  document.head.appendChild(m);
                 } catch(e) {
                   document.documentElement.setAttribute('data-theme', 'dark');
                 }
