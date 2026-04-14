@@ -37,7 +37,7 @@ export default function Header() {
     setTheme(next);
     document.documentElement.setAttribute('data-theme', next);
     localStorage.setItem('compasss_theme', next);
-    // atrasa 400ms pra sincronizar com a transição CSS (--transition-smooth)
+    // pequeno delay pra sincronizar com o início da transição CSS
     setTimeout(() => {
       const color = next === 'light' ? '#ffffff' : '#111111';
       const tc = document.querySelector('meta[name="theme-color"]');
@@ -48,7 +48,7 @@ export default function Header() {
         m.content = color;
         document.head.appendChild(m);
       }
-    }, 400);
+    }, 150);
   };
 
   if (pathname.startsWith('/reports') || pathname === '/login') return null;
