@@ -30,7 +30,7 @@ model Professional {
 /// Cliente (prédio, shopping, condomínio) que recebe manutenção.
 model Client {
   id           String        @id @default(cuid())
-  name         String
+  name         String        @unique
   phone        String?
   contracts    Contract[]
   appointments Appointment[]
@@ -57,6 +57,7 @@ model Contract {
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
+  @@unique([clientId, professionalId, systemTypes])
   @@index([professionalId])
   @@index([clientId])
 }

@@ -85,10 +85,27 @@ export async function POST(request: Request) {
     let techsCreated = 0;
     let clientsCreated = 0;
     const errors: string[] = [];
+    const emailDomain = process.env.EMAIL_DOMAIN || 'compasss.com.br';
+
+    // ── PASSADA 1: Parsear linhas e identificar o que precisa criar ──
+    interface ParsedRow {
+      clientName: string;
+      clientPhone: string;
+      systemTypes: string;
+      visitsPerMonth: number;
+      frequency: string;
+      preferredDays: string | null;
+      techKey: string | null;
+      techData: { name: string; email: string; phone: string | null; supervisorId: string | null } | null;
+    }
+
+    const parsedRows: ParsedRow[] = [];
+    const newTechs = new Map<string, { name: string; email: string; phone: string | null; supervisorId: string | null }>();
+    const newClients = new Map<string, { name: string; phone: string | null }>();
 
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
-      const lineNum = i + 2; // +2 pq linha 1 é cabeçalho
+      const lineNum = i + 2;
 
       const clientName = String(row['Cliente'] ?? '').trim();
       const clientPhone = String(row['Telefone'] ?? '').trim();
@@ -107,57 +124,6 @@ export async function POST(request: Request) {
         continue;
       }
 
-      // Resolve ou cria técnico
-      let professionalId: string | null = null;
-      if (techName) {
-        const techKey = techName.toLowerCase().trim();
-        let prof = profCache.get(techKey);
-        if (!prof) {
-          const emailDomain = process.env.EMAIL_DOMAIN || 'compasss.com.br';
-          const email = techEmail
-            ? (techEmail.includes('@') ? techEmail : `${techEmail}@${emailDomain}`)
-            : `${techName.toLowerCase().replace(/\s+/g, '.')}@${emailDomain}`;
-          const supervisorId = techScope ? (supervisorMap.get(techScope.toLowerCase()) || null) : null;
-          prof = await prisma.professional.create({
-            data: {
-              name: ApiUtils.capitalizeName(techName),
-              email,
-              phone: techPhone || null,
-              supervisorId,
-            },
-          });
-          profCache.set(techKey, prof);
-          techsCreated++;
-        }
-        professionalId = prof.id;
-      }
-
-      // Resolve ou cria cliente
-      const clientKey = clientName.toLowerCase().trim();
-      let client = clientCache.get(clientKey);
-
-      if (client) {
-        // Cliente já existe — verifica se já tem contrato com mesmo sistema
-        const hasContract = client.contracts?.some(
-          (c) => c.systemTypes?.toUpperCase() === systemTypes && c.professionalId === professionalId,
-        );
-        if (hasContract) {
-          skipped++;
-          continue;
-        }
-      } else {
-        client = await prisma.client.create({
-          data: {
-            name: ApiUtils.capitalizeName(clientName),
-            phone: clientPhone || null,
-          },
-          include: { contracts: true },
-        });
-        clientCache.set(clientKey, client);
-        clientsCreated++;
-      }
-
-      // Parse dias preferidos (aceita , ou ; como separador)
       const preferredDays = daysRaw
         ? daysRaw
             .split(/[,;]/)
@@ -166,19 +132,93 @@ export async function POST(request: Request) {
             .join(',')
         : null;
 
-      // Cria contrato
-      await prisma.contract.create({
-        data: {
-          clientId: client.id,
-          professionalId,
-          systemTypes: systemTypes || null,
-          visitsPerMonth,
-          frequency,
-          preferredDays,
-        },
-      });
+      let techKey: string | null = null;
+      let techData: ParsedRow['techData'] = null;
 
+      if (techName) {
+        techKey = techName.toLowerCase().trim();
+        if (!profCache.has(techKey) && !newTechs.has(techKey)) {
+          const email = techEmail
+            ? (techEmail.includes('@') ? techEmail : `${techEmail}@${emailDomain}`)
+            : `${techName.toLowerCase().replace(/\s+/g, '.')}@${emailDomain}`;
+          const supervisorId = techScope ? (supervisorMap.get(techScope.toLowerCase()) || null) : null;
+          techData = { name: ApiUtils.capitalizeName(techName), email, phone: techPhone || null, supervisorId };
+          newTechs.set(techKey, techData);
+        }
+      }
+
+      const clientKey = clientName.toLowerCase().trim();
+      if (!clientCache.has(clientKey) && !newClients.has(clientKey)) {
+        newClients.set(clientKey, { name: ApiUtils.capitalizeName(clientName), phone: clientPhone || null });
+      }
+
+      parsedRows.push({ clientName, clientPhone, systemTypes, visitsPerMonth, frequency, preferredDays, techKey, techData });
+    }
+
+    // ── PASSADA 2: Criar técnicos e clientes novos em batch ──
+    if (newTechs.size > 0) {
+      await prisma.professional.createMany({
+        data: Array.from(newTechs.values()),
+        skipDuplicates: true,
+      });
+      techsCreated = newTechs.size;
+      // Recarregar cache com IDs gerados
+      const freshProfs = await prisma.professional.findMany({
+        where: { name: { in: Array.from(newTechs.values()).map((t) => t.name) } },
+      });
+      freshProfs.forEach((p) => profCache.set(p.name.toLowerCase().trim(), p));
+    }
+
+    if (newClients.size > 0) {
+      await prisma.client.createMany({
+        data: Array.from(newClients.values()),
+        skipDuplicates: true,
+      });
+      clientsCreated = newClients.size;
+      const freshClients = await prisma.client.findMany({
+        where: { name: { in: Array.from(newClients.values()).map((c) => c.name) } },
+        include: { contracts: true },
+      });
+      freshClients.forEach((c) => clientCache.set(c.name.toLowerCase().trim(), c));
+    }
+
+    // ── PASSADA 3: Criar contratos em batch ──
+    const contractsToCreate: {
+      clientId: string;
+      professionalId: string | null;
+      systemTypes: string | null;
+      visitsPerMonth: number;
+      frequency: string;
+      preferredDays: string | null;
+    }[] = [];
+
+    for (const pr of parsedRows) {
+      const professionalId = pr.techKey ? (profCache.get(pr.techKey)?.id ?? null) : null;
+      const clientKey = pr.clientName.toLowerCase().trim();
+      const client = clientCache.get(clientKey);
+      if (!client) continue;
+
+      const hasContract = client.contracts?.some(
+        (c) => c.systemTypes?.toUpperCase() === pr.systemTypes && c.professionalId === professionalId,
+      );
+      if (hasContract) {
+        skipped++;
+        continue;
+      }
+
+      contractsToCreate.push({
+        clientId: client.id,
+        professionalId,
+        systemTypes: pr.systemTypes || null,
+        visitsPerMonth: pr.visitsPerMonth,
+        frequency: pr.frequency,
+        preferredDays: pr.preferredDays,
+      });
       created++;
+    }
+
+    if (contractsToCreate.length > 0) {
+      await prisma.contract.createMany({ data: contractsToCreate });
     }
 
     audit({ event: 'DATA_IMPORTED', details: `${created} criados, ${skipped} pulados, ${rows.length} total` });
