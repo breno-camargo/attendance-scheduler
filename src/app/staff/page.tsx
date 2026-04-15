@@ -178,15 +178,11 @@ function StaffItem({
 
         {canEdit && (
           <div className="card-actions">
-            <button
-              onClick={() => onEdit(s)}
-              className="btn-secondary"
-              style={{ padding: '0.6rem 1.2rem', fontSize: '0.85rem' }}
-            >
-              Editar
+            <button onClick={() => onEdit(s)} className="btn-icon btn-icon-orange">
+              <span style={{ fontSize: '1.1rem' }}>✏️</span>Editar
             </button>
-            <button onClick={() => onDelete(s.id, s.name)} className="btn-danger">
-              Excluir
+            <button onClick={() => onDelete(s.id, s.name)} className="btn-icon btn-icon-red">
+              <span style={{ fontSize: '1.1rem' }}>🗑️</span>Excluir
             </button>
           </div>
         )}

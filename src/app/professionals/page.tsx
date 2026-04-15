@@ -418,15 +418,11 @@ export default function ProfessionalsPage() {
                     </div>
                   </div>
                   <div className="card-actions">
-                    <button
-                      onClick={() => handleEdit(p)}
-                      className="btn-secondary"
-                      style={{ padding: '0.6rem 1.2rem', fontSize: '0.85rem' }}
-                    >
-                      Editar
+                    <button onClick={() => handleEdit(p)} className="btn-icon btn-icon-orange">
+                      <span style={{ fontSize: '1.1rem' }}>✏️</span>Editar
                     </button>
-                    <button onClick={() => handleDelete(p.id, p.name)} className="btn-danger">
-                      Excluir
+                    <button onClick={() => handleDelete(p.id, p.name)} className="btn-icon btn-icon-red">
+                      <span style={{ fontSize: '1.1rem' }}>🗑️</span>Excluir
                     </button>
                   </div>
                 </GlassCard>

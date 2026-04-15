@@ -501,6 +501,53 @@ li.client-card:hover {
   border-left: 1px solid var(--primary-border-subtle);
 }
 
+/* Schedule controls */
+.schedule-controls-row {
+  display: flex;
+  gap: 2rem;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.schedule-controls-buttons {
+  display: flex;
+  gap: 0.75rem;
+  flex: 1;
+  min-width: min(350px, 100%);
+}
+
+/* Holiday card */
+.holiday-card-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.holiday-info {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.holiday-date-badge {
+  min-width: 90px;
+  padding: 0.5rem 0.75rem;
+  background: var(--primary-subtle);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--primary);
+  letter-spacing: 0.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Holiday form: desktop visible, mobile hidden */
+.holiday-form-mobile {
+  display: none;
+}
+
 /* Modal form buttons — never wrap */
 .modal-panel .btn-primary,
 .modal-panel .btn-secondary {
@@ -799,7 +846,8 @@ select.form-input {
   /* ── Page header (title + button row) ──────────────────── */
   .page-header {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: center;
+    text-align: center;
     gap: 1rem;
     margin-bottom: 2rem;
   }
@@ -836,7 +884,7 @@ select.form-input {
     padding-top: 0.8rem;
     border-top: 1px solid var(--primary-border-subtle);
     width: 100%;
-    justify-content: flex-start;
+    justify-content: center;
   }
 
   /* ── Responsive cards → stack on mobile ─────────────────── */
@@ -853,13 +901,18 @@ select.form-input {
     width: 100%;
   }
 
-  /* ── Client table card actions ─────────────────────────── */
+  /* ── Card action buttons fill width on mobile ──────────── */
+  .card-actions .btn-icon,
+  .client-card-actions .btn-icon {
+    flex: 1;
+  }
+
   .client-card-actions {
     border-left: none !important;
     padding: 0.8rem 1.2rem !important;
     border-top: 1px solid var(--primary-border-subtle);
     width: 100%;
-    justify-content: flex-start;
+    justify-content: center;
     flex-wrap: wrap;
   }
 
@@ -873,7 +926,7 @@ select.form-input {
 
   .modal-backdrop {
     padding: 0.5rem;
-    align-items: flex-end;
+    align-items: center;
   }
 
   /* ── Buttons ───────────────────────────────────────────── */
@@ -894,5 +947,73 @@ select.form-input {
   .info-row-mobile {
     flex-direction: column !important;
     gap: 0.5rem !important;
+  }
+
+  /* ── Calendar ─────────────────────────────────────────── */
+  .desktop-only {
+    display: none !important;
+  }
+
+  .schedule-controls {
+    padding: 1.2rem !important;
+  }
+
+  .schedule-controls-row {
+    flex-direction: column !important;
+    gap: 1rem !important;
+    align-items: stretch !important;
+  }
+
+  .schedule-controls-row > div {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  .schedule-controls-buttons {
+    flex-direction: row !important;
+    min-width: 0 !important;
+  }
+
+  .schedule-controls-buttons .btn-primary,
+  .schedule-controls-buttons .btn-secondary {
+    height: 46px !important;
+    padding: 0 0.8rem !important;
+    font-size: 0.8rem !important;
+  }
+
+  .itinerary-panel {
+    position: static !important;
+    height: auto !important;
+    min-width: 0 !important;
+    max-height: 60vh;
+    border-left: none !important;
+    border-top: 4px solid var(--primary) !important;
+    width: 100%;
+  }
+
+  /* ── Holidays ─────────────────────────────────────────── */
+  .holiday-form-desktop {
+    display: none !important;
+  }
+
+  .holiday-form-mobile {
+    display: block !important;
+  }
+
+  .holiday-card-inner {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 1rem;
+  }
+
+  .holiday-info {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .holiday-card-inner .btn-icon {
+    width: 100%;
   }
 }

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { useConfirm } from '@/components/ui/confirm-modal';
 import { GlassCard } from '@/components/ui/glass-card';
+import { Modal } from '@/components/ui/modal';
 import { useToast } from '@/components/ui/toast';
 import { holidaysApi } from '@/lib/api-client';
 import type { Holiday } from '@/types';
@@ -26,6 +27,7 @@ export default function HolidaysPage() {
   const [date, setDate] = useState('');
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     const saved = sessionStorage.getItem('calendar-year');
@@ -62,6 +64,7 @@ export default function HolidaysPage() {
       setDate('');
       setName('');
       showToast('Feriado adicionado com sucesso');
+      setIsModalOpen(false);
       await fetchHolidays();
     } catch {
       showToast('Falha de conexão. Tente novamente.', 'error');
@@ -151,10 +154,16 @@ export default function HolidaysPage() {
             Gerencie os feriados para evitar agendamentos em datas comemorativas.
           </p>
         </div>
+        <button
+          className="btn-primary holiday-form-mobile"
+          onClick={() => setIsModalOpen(true)}
+        >
+          + Novo Feriado
+        </button>
       </div>
 
-      {/* Add holiday form */}
-      <GlassCard style={{ marginBottom: '2.5rem' }}>
+      {/* Add holiday form — inline on desktop */}
+      <GlassCard className="holiday-form-desktop" style={{ marginBottom: '2.5rem' }}>
         <h2
           style={{
             fontSize: '1rem',
@@ -170,7 +179,7 @@ export default function HolidaysPage() {
           onSubmit={handleAdd}
           style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-end' }}
         >
-          <div className="form-field" style={{ flex: '0 0 auto' }}>
+          <div className="form-field" style={{ flex: '1 1 140px' }}>
             <label htmlFor="holiday-date" className="form-label">
               Data
             </label>
@@ -181,7 +190,6 @@ export default function HolidaysPage() {
               value={date}
               onChange={(e) => setDate(e.target.value)}
               required
-              style={{ minWidth: '160px' }}
             />
           </div>
           <div className="form-field" style={{ flex: '1 1 200px' }}>
@@ -198,18 +206,48 @@ export default function HolidaysPage() {
               required
             />
           </div>
-          <div className="form-field" style={{ flex: '0 0 auto' }}>
-            <button
-              type="submit"
-              className="btn-primary"
-              disabled={loading}
-              style={{ whiteSpace: 'nowrap' }}
-            >
-              {loading ? 'Adicionando...' : 'Adicionar'}
-            </button>
-          </div>
+          <button
+            type="submit"
+            className="btn-primary"
+            disabled={loading}
+            style={{ whiteSpace: 'nowrap' }}
+          >
+            {loading ? 'Adicionando...' : 'Adicionar'}
+          </button>
         </form>
       </GlassCard>
+
+      {/* Add holiday — modal on mobile */}
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Novo Feriado">
+        <form onSubmit={handleAdd} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <div className="form-field">
+            <label htmlFor="holiday-date-modal" className="form-label">Data</label>
+            <input
+              id="holiday-date-modal"
+              className="form-input"
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              required
+            />
+          </div>
+          <div className="form-field">
+            <label htmlFor="holiday-name-modal" className="form-label">Nome do Feriado</label>
+            <input
+              id="holiday-name-modal"
+              className="form-input"
+              type="text"
+              placeholder="Ex: Natal"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
+          </div>
+          <button type="submit" className="btn-primary" disabled={loading} style={{ width: '100%' }}>
+            {loading ? 'Adicionando...' : 'Adicionar'}
+          </button>
+        </form>
+      </Modal>
 
       {/* Holidays list */}
       {holidays.length === 0 ? (
@@ -217,7 +255,7 @@ export default function HolidaysPage() {
           Nenhum feriado cadastrado para {year}.
         </p>
       ) : (
-        <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+        <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {holidays.map((holiday, index) => (
             <li
               key={holiday.id}
@@ -226,78 +264,58 @@ export default function HolidaysPage() {
                 opacity: 0,
               }}
             >
-              <GlassCard
-                style={{
-                  marginBottom: '12px',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '1.25rem 1.75rem',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-                  {/* Date badge */}
-                  <div
-                    style={{
-                      minWidth: '90px',
-                      padding: '0.5rem 0.75rem',
-                      background: 'var(--primary-subtle)',
-                      border: '1px solid var(--border)',
-                      borderRadius: '10px',
-                      textAlign: 'center',
-                      fontWeight: 700,
-                      fontSize: '0.9rem',
-                      color: 'var(--primary)',
-                      letterSpacing: '0.5px',
-                      fontVariantNumeric: 'tabular-nums',
-                    }}
-                  >
-                    {formatDate(holiday.date)}
+              <GlassCard>
+                <div className="holiday-card-inner">
+                  <div className="holiday-info">
+                    {/* Date badge */}
+                    <div className="holiday-date-badge">
+                      {formatDate(holiday.date)}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                      <span
+                        style={{
+                          fontSize: '1.05rem',
+                          fontWeight: 600,
+                          color: 'var(--foreground)',
+                        }}
+                      >
+                        {holiday.name}
+                      </span>
+                      {holiday.fixed &&
+                        (() => {
+                          const isSP = SP_HOLIDAYS.includes(holiday.name);
+                          return (
+                            <span
+                              style={{
+                                fontSize: '0.7rem',
+                                fontWeight: 700,
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.5px',
+                                padding: '0.2rem 0.6rem',
+                                borderRadius: '6px',
+                                background: isSP
+                                  ? 'rgba(59, 130, 246, 0.1)'
+                                  : 'var(--primary-subtle)',
+                                color: isSP ? '#3b82f6' : 'var(--primary)',
+                                border: `1px solid ${isSP ? 'rgba(59, 130, 246, 0.25)' : 'var(--border)'}`,
+                              }}
+                            >
+                              {isSP ? 'Estadual (SP)' : 'Nacional'}
+                            </span>
+                          );
+                        })()}
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span
-                      style={{
-                        fontSize: '1.05rem',
-                        fontWeight: 600,
-                        color: 'var(--foreground)',
-                      }}
+                  {!holiday.fixed && (
+                    <button
+                      onClick={() => handleDelete(holiday.id, holiday.name)}
+                      className="btn-icon btn-icon-red"
+                      style={{ flexShrink: 0 }}
                     >
-                      {holiday.name}
-                    </span>
-                    {holiday.fixed &&
-                      (() => {
-                        const isSP = SP_HOLIDAYS.includes(holiday.name);
-                        return (
-                          <span
-                            style={{
-                              fontSize: '0.7rem',
-                              fontWeight: 700,
-                              textTransform: 'uppercase',
-                              letterSpacing: '0.5px',
-                              padding: '0.2rem 0.6rem',
-                              borderRadius: '6px',
-                              background: isSP
-                                ? 'rgba(59, 130, 246, 0.1)'
-                                : 'var(--primary-subtle)',
-                              color: isSP ? '#3b82f6' : 'var(--primary)',
-                              border: `1px solid ${isSP ? 'rgba(59, 130, 246, 0.25)' : 'var(--border)'}`,
-                            }}
-                          >
-                            {isSP ? 'Estadual (SP)' : 'Nacional'}
-                          </span>
-                        );
-                      })()}
-                  </div>
+                      <span style={{ fontSize: '1.1rem' }}>🗑️</span>Excluir
+                    </button>
+                  )}
                 </div>
-                {!holiday.fixed && (
-                  <button
-                    onClick={() => handleDelete(holiday.id, holiday.name)}
-                    className="btn-danger"
-                    style={{ flexShrink: 0 }}
-                  >
-                    Excluir
-                  </button>
-                )}
               </GlassCard>
             </li>
           ))}
