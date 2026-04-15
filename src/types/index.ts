@@ -28,6 +28,7 @@ export interface Contract {
   preferredDays?: string | null;
   contactsJson?: string | null;
   active: boolean;
+  _count?: { appointments: number };
 }
 
 export interface Appointment {

@@ -26,6 +26,7 @@ export async function GET(request: Request) {
         contracts: {
           include: {
             professional: { select: { id: true, name: true, email: true, phone: true } },
+            _count: { select: { appointments: true } },
           },
         },
       },

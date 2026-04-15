@@ -260,6 +260,7 @@ export default function ClientTable({
               contract?.frequency === 'MONTHLY'
                 ? `${contract?.visitsPerMonth}x / mês`
                 : (FREQ_LABELS[contract?.frequency ?? ''] ?? '—');
+            const hasSchedule = (contract?._count?.appointments ?? 0) > 0;
             const systems: string[] = contract?.systemTypes ? contract.systemTypes.split(',') : [];
             const pDays = contract?.preferredDays
               ? contract.preferredDays
@@ -306,19 +307,35 @@ export default function ClientTable({
 
                   {/* Content */}
                   <div style={{ flex: 1, padding: '1.2rem 1.4rem', minWidth: 0 }}>
-                    <strong
-                      style={{
-                        fontSize: '1.2rem',
-                        color: 'var(--primary)',
-                        display: 'block',
-                        marginBottom: '10px',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      {c.name}
-                    </strong>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                      <strong
+                        style={{
+                          fontSize: '1.2rem',
+                          color: 'var(--primary)',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {c.name}
+                      </strong>
+                      {!hasSchedule && (
+                        <span style={{
+                          fontSize: '0.65rem',
+                          fontWeight: 700,
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.5px',
+                          padding: '0.15rem 0.5rem',
+                          borderRadius: '6px',
+                          background: 'rgba(251, 146, 60, 0.1)',
+                          color: '#fb923c',
+                          border: '1px solid rgba(251, 146, 60, 0.25)',
+                          flexShrink: 0,
+                        }}>
+                          Sem agenda
+                        </span>
+                      )}
+                    </div>
 
                     <div
                       style={{
