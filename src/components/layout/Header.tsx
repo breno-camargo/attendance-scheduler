@@ -69,7 +69,9 @@ export default function Header() {
       <header className="topbar">
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <h1 style={{ margin: 0 }}>
-            <Logo size="md" />
+            <Link href="/" style={{ textDecoration: 'none' }}>
+              <Logo size="md" />
+            </Link>
           </h1>
         </div>
 
