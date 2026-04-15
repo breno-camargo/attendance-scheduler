@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 
 import type { Appointment } from '@/types';
 
@@ -10,6 +10,7 @@ interface CalendarGridProps {
   filterContractId: string | null;
   holidays: { date: string; name: string }[];
   onDayClick: (dateStr: string) => void;
+  onMoveAppointment?: (appointmentId: string, newDate: string) => void;
 }
 
 const MONTHS = [
@@ -41,7 +42,9 @@ export default function CalendarGrid({
   filterContractId,
   holidays,
   onDayClick,
+  onMoveAppointment,
 }: CalendarGridProps) {
+  const [dragOverDate, setDragOverDate] = useState<string | null>(null);
   // pre-computa maps pra não ficar fazendo find/filter em cada célula do calendário
   const appointmentsByDate = useMemo(() => {
     const map = new Map<string, Appointment[]>();
@@ -73,6 +76,31 @@ export default function CalendarGrid({
   };
 
   const isHoliday = (dateStr: string) => holidaySet.has(dateStr);
+
+  const handleDragStart = useCallback((e: React.DragEvent, apt: Appointment) => {
+    e.dataTransfer.setData('text/plain', apt.id);
+    e.dataTransfer.effectAllowed = 'move';
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent, dateStr: string, hasApt: boolean) => {
+    if (hasApt) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverDate(dateStr);
+  }, []);
+
+  const handleDragLeave = useCallback(() => {
+    setDragOverDate(null);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent, dateStr: string) => {
+    e.preventDefault();
+    setDragOverDate(null);
+    const aptId = e.dataTransfer.getData('text/plain');
+    if (aptId && onMoveAppointment) {
+      onMoveAppointment(aptId, dateStr);
+    }
+  }, [onMoveAppointment]);
 
   const getColor = (apt: Appointment | undefined, dateStr: string) => {
     if (!apt) {
@@ -153,24 +181,33 @@ export default function CalendarGrid({
                 const aptCount = getAppointmentCount(dateStr);
                 const color = getColor(apt, dateStr);
 
+                const isDragTarget = !apt && dragOverDate === dateStr;
+
                 return (
                   <div
                     key={d}
+                    draggable={!!apt}
                     onClick={() => onDayClick(dateStr)}
+                    onDragStart={apt ? (e) => handleDragStart(e, apt) : undefined}
+                    onDragOver={(e) => handleDragOver(e, dateStr, !!apt)}
+                    onDragLeave={handleDragLeave}
+                    onDrop={(e) => handleDrop(e, dateStr)}
                     style={{
                       padding: '8px 0',
                       textAlign: 'center',
                       fontSize: '0.85rem',
                       fontWeight: 'bold',
-                      background: color,
+                      background: isDragTarget ? 'rgba(16, 185, 129, 0.25)' : color,
                       color: apt
                         ? apt.type === 'TESTE_SDAI'
                           ? '#000'
                           : 'white'
                         : 'var(--text-muted)',
                       borderRadius: '6px',
-                      cursor: 'pointer',
-                      border: apt ? 'none' : '1px solid rgba(255,255,255,0.03)',
+                      cursor: apt ? 'grab' : 'pointer',
+                      border: isDragTarget
+                        ? '2px dashed var(--primary)'
+                        : apt ? 'none' : '1px solid rgba(255,255,255,0.03)',
                       transition: 'var(--transition-fast)',
                       boxShadow:
                         apt && apt.type === 'TESTE_SDAI' ? '0 0 15px var(--primary-glow)' : 'none',
@@ -189,7 +226,7 @@ export default function CalendarGrid({
                     onMouseLeave={(e) => {
                       e.currentTarget.style.transform = 'translateY(0) scale(1)';
                       e.currentTarget.style.zIndex = '1';
-                      if (!apt) e.currentTarget.style.borderColor = 'rgba(255,255,255,0.03)';
+                      if (!apt && !isDragTarget) e.currentTarget.style.borderColor = 'rgba(255,255,255,0.03)';
                     }}
                     title={
                       apt

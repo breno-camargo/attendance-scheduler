@@ -42,6 +42,10 @@ export default function CalendarPage() {
     if (yearInitialized) sessionStorage.setItem('calendar-year', String(year));
   }, [year, yearInitialized]);
 
+  useEffect(() => {
+    if (professionalId) sessionStorage.setItem('calendar-professional', professionalId);
+  }, [professionalId]);
+
   // Only show clients that appear in the current professional's appointments
   const linkedClients = useMemo(() => {
     const contractIds = new Set(appointments.map((a) => a.contractId));
@@ -54,7 +58,11 @@ export default function CalendarPage() {
     professionalsApi.list().then(({ data }) => {
       const profs = data ?? [];
       setProfessionals(profs);
-      if (profs.length > 0) setProfessionalId(profs[0].id);
+      if (profs.length > 0) {
+        const saved = sessionStorage.getItem('calendar-professional');
+        const match = saved && profs.find((p) => p.id === saved);
+        setProfessionalId(match ? saved : profs[0].id);
+      }
     });
   }, []);
 
@@ -257,6 +265,20 @@ export default function CalendarPage() {
     showToast('Agenda excluída com sucesso');
   };
 
+  const handleMoveAppointment = async (appointmentId: string, newDate: string) => {
+    try {
+      const res = await scheduleApi.update(appointmentId, { date: newDate });
+      if (res.ok) {
+        fetchAppointments();
+        showToast('Visita movida com sucesso');
+      } else {
+        showToast(res.error || 'Erro ao mover visita', 'error');
+      }
+    } catch {
+      showToast('Falha de conexão. Tente novamente.', 'error');
+    }
+  };
+
   // TODO: filtro por sistema (SDAI, CFTV, etc) — o pessoal pediu pra poder ver só visitas de um tipo
   const getAppointment = (dateStr: string) => {
     return appointments.find((a) => {
@@ -410,7 +432,7 @@ export default function CalendarPage() {
           </div>
           <Link
             href="/"
-            className="btn-secondary"
+            className="btn-secondary desktop-only"
             style={{
               textDecoration: 'none',
               display: 'flex',
@@ -439,6 +461,7 @@ export default function CalendarPage() {
           filterContractId={filterContractId}
           holidays={holidays}
           onDayClick={handleDayClick}
+          onMoveAppointment={handleMoveAppointment}
         />
       </div>
 

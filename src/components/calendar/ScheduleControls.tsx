@@ -24,22 +24,15 @@ export default function ScheduleControls({
   contractIds,
 }: ScheduleControlsProps) {
   return (
-    <div className="glass-panel" style={{ marginBottom: '2.5rem', padding: '2rem' }}>
-      <div
-        style={{
-          display: 'flex',
-          gap: '2rem',
-          alignItems: 'flex-end',
-          flexWrap: 'wrap',
-        }}
-      >
+    <div className="glass-panel schedule-controls" style={{ marginBottom: '2.5rem', padding: '2rem' }}>
+      <div className="schedule-controls-row">
         <div
           style={{
             display: 'flex',
             flexDirection: 'column',
             gap: '0.6rem',
             flex: '1',
-            minWidth: '250px',
+            minWidth: '200px',
           }}
         >
           <label
@@ -55,16 +48,12 @@ export default function ScheduleControls({
           </label>
           <select
             id="cal-professional"
+            className="form-input"
             value={professionalId}
             onChange={(e) => setProfessionalId(e.target.value)}
             style={{
               width: '100%',
               padding: '1rem',
-              borderRadius: '8px',
-              border: '1px solid var(--border)',
-              background: 'rgba(0,0,0,0.4)',
-              color: 'white',
-              transition: 'var(--transition-fast)',
               fontSize: '1rem',
               fontWeight: '600',
             }}
@@ -78,14 +67,7 @@ export default function ScheduleControls({
           </select>
         </div>
 
-        <div
-          style={{
-            display: 'flex',
-            gap: '1rem',
-            flex: '1',
-            minWidth: 'min(350px, 100%)',
-          }}
-        >
+        <div className="schedule-controls-buttons">
           <button
             onClick={onGenerate}
             className="btn-primary"
@@ -102,7 +84,7 @@ export default function ScheduleControls({
             {loading
               ? '⌛ Agendando...'
               : appointments.length > 0
-                ? '🔄 Re-gerar Agenda'
+                ? '🔄 Re-gerar'
                 : '📅 Gerar Agenda'}
           </button>
           <button
@@ -130,9 +112,10 @@ export default function ScheduleControls({
               justifyContent: 'center',
               gap: '0.5rem',
               whiteSpace: 'nowrap',
+              flex: 1,
             }}
           >
-            🖨️ Gerar {contractIds.length} PDF{contractIds.length !== 1 ? 's' : ''}
+            🖨️ {contractIds.length} PDF{contractIds.length !== 1 ? 's' : ''}
           </button>
           <button
             onClick={onClear}
@@ -142,8 +125,8 @@ export default function ScheduleControls({
               background: 'rgba(239, 68, 68, 0.1)',
               color: '#ef4444',
               border: '1px solid rgba(239, 68, 68, 0.2)',
-              flex: '0.4',
               height: '54px',
+              flex: 1,
             }}
           >
             🗑️ Limpar

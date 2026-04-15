@@ -23,7 +23,7 @@ export default function ItineraryPanel({
 
   return (
     <section
-      className="glass-panel"
+      className="glass-panel itinerary-panel"
       style={{
         flex: '1',
         minWidth: '350px',
