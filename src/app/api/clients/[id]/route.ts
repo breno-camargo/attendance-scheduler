@@ -27,7 +27,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 
     const client = await prisma.client.findUnique({
       where: { id },
-      include: { contracts: true },
+      include: { contracts: { select: { id: true } } },
     });
 
     if (!client) {
@@ -66,7 +66,13 @@ export async function PUT(request: Request, { params }: { params: { id: string }
               },
             },
       },
-      include: { contracts: { include: { professional: true } } },
+      include: {
+        contracts: {
+          include: {
+            professional: { select: { id: true, name: true, email: true, phone: true } },
+          },
+        },
+      },
     });
 
     return ApiUtils.success(updatedClient);

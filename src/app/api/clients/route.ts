@@ -78,7 +78,13 @@ export async function POST(request: Request) {
           },
         },
       },
-      include: { contracts: { include: { professional: true } } },
+      include: {
+        contracts: {
+          include: {
+            professional: { select: { id: true, name: true, email: true, phone: true } },
+          },
+        },
+      },
     });
 
     return ApiUtils.success(client, 201);

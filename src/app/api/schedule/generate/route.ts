@@ -90,7 +90,11 @@ export async function POST(request: Request) {
 
     const professional = await prisma.professional.findUnique({
       where: { id: professionalId },
-      include: { contracts: { include: { client: true } } },
+      include: {
+        contracts: {
+          include: { client: { select: { id: true, name: true } } },
+        },
+      },
     });
 
     if (!professional || professional.contracts.length === 0) {
