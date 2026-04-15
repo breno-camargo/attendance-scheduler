@@ -139,5 +139,11 @@ export const contactsApi = {
 
 export const statsApi = {
   get: () =>
-    apiFetch<{ clients: number; professionals: number; totalContracts: number; contractsWithSchedule: number }>('/api/stats'),
+    apiFetch<{
+      clients: number;
+      professionals: number;
+      totalContracts: number;
+      contractsWithSchedule: number;
+      contractsDetail: { id: string; clientName: string; professionalName: string | null; systemTypes: string | null; hasSchedule: boolean }[];
+    }>('/api/stats'),
 };

@@ -3,13 +3,23 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
+import { Modal } from '@/components/ui/modal';
 import { statsApi } from '@/lib/api-client';
+
+interface ContractDetail {
+  id: string;
+  clientName: string;
+  professionalName: string | null;
+  systemTypes: string | null;
+  hasSchedule: boolean;
+}
 
 interface Stats {
   clients: number;
   professionals: number;
   totalContracts: number;
   contractsWithSchedule: number;
+  contractsDetail: ContractDetail[];
 }
 
 function StatBadge({
@@ -74,6 +84,7 @@ function StatBadge({
 
 export default function Home() {
   const [stats, setStats] = useState<Stats | null>(null);
+  const [showContracts, setShowContracts] = useState(false);
 
   useEffect(() => {
     statsApi.get().then(({ data }) => {
@@ -99,11 +110,13 @@ export default function Home() {
             label="Técnicos"
             loading={stats === null}
           />
-          <StatBadge
-            value={stats?.contractsWithSchedule ?? null}
-            label={`Agendas geradas${stats ? ` de ${stats.totalContracts}` : ''}`}
-            loading={stats === null}
-          />
+          <div onClick={() => stats && setShowContracts(true)} style={{ cursor: stats ? 'pointer' : 'default' }}>
+            <StatBadge
+              value={stats?.contractsWithSchedule ?? null}
+              label={`Agendas geradas${stats ? ` de ${stats.totalContracts}` : ''}`}
+              loading={stats === null}
+            />
+          </div>
         </div>
       </header>
 
@@ -249,6 +262,37 @@ export default function Home() {
           </Link>
         </section>
       </div>
+
+      <Modal isOpen={showContracts} onClose={() => setShowContracts(false)} title="Técnicos sem agenda" maxWidth="400px">
+        {stats?.contractsDetail && (() => {
+          const pending = stats.contractsDetail.filter((c) => !c.hasSchedule);
+          const techNames = Array.from(new Set(pending.map((c) => c.professionalName ?? 'Sem técnico'))).sort();
+          if (techNames.length === 0) {
+            return <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '2rem 0' }}>Todos os técnicos possuem agenda gerada.</p>;
+          }
+          return (
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {techNames.map((name) => (
+                <li
+                  key={name}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '0.7rem 1rem',
+                    borderRadius: '10px',
+                    background: 'rgba(251, 146, 60, 0.08)',
+                    border: '1px solid rgba(251, 146, 60, 0.2)',
+                  }}
+                >
+                  <span style={{ fontSize: '1.1rem', flexShrink: 0 }}>⚠️</span>
+                  <strong style={{ fontSize: '0.9rem', color: 'var(--foreground)' }}>{name}</strong>
+                </li>
+              ))}
+            </ul>
+          );
+        })()}
+      </Modal>
 
       <footer
         style={{

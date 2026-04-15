@@ -20,20 +20,42 @@ export async function GET() {
 
     const contractFilter = profIds ? { professionalId: { in: profIds } } : undefined;
 
-    const [clients, professionals, totalContracts, contractsWithSchedule] = await Promise.all([
+    const [clients, professionals, allContracts, scheduledContractIds] = await Promise.all([
       prisma.client.count({ where: clientFilter }),
       prisma.professional.count({ where: profFilter }),
-      prisma.contract.count({ where: contractFilter }),
+      prisma.contract.findMany({
+        where: contractFilter,
+        select: {
+          id: true,
+          systemTypes: true,
+          client: { select: { name: true } },
+          professional: { select: { name: true } },
+        },
+      }),
       prisma.appointment
         .findMany({
           where: { ...aptFilter, contractId: { not: null } },
           distinct: ['contractId'],
           select: { contractId: true },
         })
-        .then((rows) => rows.length),
+        .then((rows) => new Set(rows.map((r) => r.contractId))),
     ]);
 
-    return ApiUtils.success({ clients, professionals, totalContracts, contractsWithSchedule });
+    const contractsDetail = allContracts.map((c) => ({
+      id: c.id,
+      clientName: c.client.name,
+      professionalName: c.professional?.name ?? null,
+      systemTypes: c.systemTypes,
+      hasSchedule: scheduledContractIds.has(c.id),
+    }));
+
+    return ApiUtils.success({
+      clients,
+      professionals,
+      totalContracts: allContracts.length,
+      contractsWithSchedule: scheduledContractIds.size,
+      contractsDetail,
+    });
   } catch (error: unknown) {
     return ApiUtils.error('Erro ao buscar estatísticas', error);
   }
