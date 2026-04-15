@@ -69,6 +69,27 @@ export async function PATCH(request: Request, { params }: { params: { id: string
       },
     });
 
+    // Após mover data, renumerar todas as visitas do mesmo contrato em ordem cronológica
+    if (date && updated.contractId) {
+      const allVisits = await prisma.appointment.findMany({
+        where: {
+          contractId: updated.contractId,
+          type: 'VISITA_TECNICA',
+        },
+        orderBy: { date: 'asc' },
+      });
+
+      for (let i = 0; i < allVisits.length; i++) {
+        const newObs = `Visita ${(i + 1).toString().padStart(2, '0')}`;
+        if (allVisits[i].observation !== newObs) {
+          await prisma.appointment.update({
+            where: { id: allVisits[i].id },
+            data: { observation: newObs },
+          });
+        }
+      }
+    }
+
     return ApiUtils.success(updated);
   } catch (error: unknown) {
     return ApiUtils.error('Erro ao atualizar agendamento', error);

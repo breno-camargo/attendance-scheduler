@@ -300,6 +300,23 @@ export async function POST(request: Request) {
       });
     }
 
+    // ── RENUMERAR VISITAS EM ORDEM CRONOLÓGICA ──
+    // O algoritmo acima atribui números conforme agenda (mês a mês, contrato a
+    // contrato), mas a ordem de processamento não é cronológica. Aqui reordena
+    // por data dentro de cada contrato e renumera sequencialmente.
+    const visitsByContract = new Map<string, AppointmentData[]>();
+    for (const apt of appointmentsToCreate) {
+      if (apt.type !== 'VISITA_TECNICA') continue;
+      if (!visitsByContract.has(apt.contractId)) visitsByContract.set(apt.contractId, []);
+      visitsByContract.get(apt.contractId)!.push(apt);
+    }
+    Array.from(visitsByContract.values()).forEach((visits: AppointmentData[]) => {
+      visits.sort((a: AppointmentData, b: AppointmentData) => a.date.getTime() - b.date.getTime());
+      visits.forEach((v: AppointmentData, i: number) => {
+        v.observation = `Visita ${(i + 1).toString().padStart(2, '0')}`;
+      });
+    });
+
     // ── OPERAÇÃO ATÔMICA ──
     // Aprendemos da pior forma: uma vez a geração falhou no meio e ficou metade
     // da agenda antiga com metade da nova. Transação resolve isso — ou gera tudo
