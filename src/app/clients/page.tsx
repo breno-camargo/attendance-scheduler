@@ -31,8 +31,10 @@ export default function ClientsPage() {
 
       if (resC.data) setClients(resC.data);
       if (resP.data) setProfessionals(resP.data);
-    } catch {}
-  }, []);
+    } catch {
+      showToast('Erro ao carregar dados', 'error');
+    }
+  }, [showToast]);
 
   useEffect(() => {
     carregarDados(); // eslint-disable-line react-hooks/set-state-in-effect -- fetch inicial

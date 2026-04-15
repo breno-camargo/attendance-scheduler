@@ -57,7 +57,6 @@ export async function POST(request: Request) {
 
     return GENERIC_RESPONSE;
   } catch (error: unknown) {
-    console.error('Forgot password error:', error);
-    return ApiUtils.error('Erro ao processar solicitação', null);
+    return ApiUtils.error('Erro ao processar solicitação', error);
   }
 }

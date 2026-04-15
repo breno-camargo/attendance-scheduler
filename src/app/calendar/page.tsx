@@ -87,8 +87,10 @@ export default function CalendarPage() {
         fetchHolidays(),
       ]);
       if (aptsRes.ok) setAppointments(aptsRes.data ?? []);
-    } catch {}
-  }, [professionalId, year, yearInitialized, fetchHolidays]);
+    } catch {
+      showToast('Erro ao carregar agendamentos', 'error');
+    }
+  }, [professionalId, year, yearInitialized, fetchHolidays, showToast]);
 
   // Detecta o ano que tem agenda — só na primeira carga ou ao trocar de técnico
   useEffect(() => {
@@ -287,15 +289,6 @@ export default function CalendarPage() {
     }
   };
 
-  // TODO: filtro por sistema (SDAI, CFTV, etc) — o pessoal pediu pra poder ver só visitas de um tipo
-  const getAppointment = (dateStr: string) => {
-    return appointments.find((a) => {
-      const isDateMatch = new Date(a.date).toISOString().split('T')[0] === dateStr;
-      if (!isDateMatch) return false;
-      if (filterContractId && a.contractId !== filterContractId) return false;
-      return true;
-    });
-  };
 
   return (
     <main

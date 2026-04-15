@@ -232,7 +232,6 @@ export async function POST(request: Request) {
       total: rows.length,
     });
   } catch (error: unknown) {
-    console.error('Import error:', error);
     return ApiUtils.error('Erro ao processar planilha', error);
   }
 }

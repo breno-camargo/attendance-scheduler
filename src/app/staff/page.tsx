@@ -217,8 +217,10 @@ export default function StaffPage() {
           })),
         );
       }
-    } catch {}
-  }, []);
+    } catch {
+      showToast('Erro ao carregar dados', 'error');
+    }
+  }, [showToast]);
 
   useEffect(() => {
     carregarDados(); // eslint-disable-line react-hooks/set-state-in-effect -- fetch inicial
