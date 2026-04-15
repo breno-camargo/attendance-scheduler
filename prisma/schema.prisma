@@ -115,6 +115,8 @@ model InternalContact {
   users          User[]
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
+
+  @@index([role])
 }
 
 /// Usuário do sistema com senha hash (bcrypt).

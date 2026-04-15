@@ -55,15 +55,23 @@ export default function CalendarPage() {
   }, [clients, appointments]);
 
   useEffect(() => {
-    professionalsApi.list().then(({ data }) => {
-      const profs = data ?? [];
+    const init = async () => {
+      const [profsRes, clientsRes] = await Promise.all([
+        professionalsApi.list(),
+        clientsApi.list(),
+      ]);
+      const profs = profsRes.data ?? [];
       setProfessionals(profs);
+      const cls = clientsRes.data ?? [];
+      setClients(cls);
+      if (cls.length > 0) setManualClientId(cls[0].id);
       if (profs.length > 0) {
         const saved = sessionStorage.getItem('calendar-professional');
         const match = saved && profs.find((p) => p.id === saved);
         setProfessionalId(match ? saved : profs[0].id);
       }
-    });
+    };
+    init();
   }, []);
 
   const fetchHolidays = useCallback(async () => {
@@ -74,36 +82,30 @@ export default function CalendarPage() {
   const fetchAppointments = useCallback(async () => {
     if (!professionalId || !yearInitialized) return;
     try {
-      const [yearRes, aptsRes] = await Promise.all([
-        scheduleApi.getExistingYear(professionalId),
+      const [aptsRes] = await Promise.all([
         scheduleApi.listByYear(professionalId, year),
         fetchHolidays(),
       ]);
-      if (yearRes.ok) {
-        const ey = yearRes.data?.existingYear ?? null;
-        setExistingYear(ey);
-        // Na primeira carga, se não tinha ano salvo na sessão, ir pro ano que tem agenda
-        if (ey !== null && typeof window !== 'undefined' && !sessionStorage.getItem('calendar-year')) {
-          setYear(ey);
-          return; // vai re-fetchar com o ano correto
-        }
-      }
       if (aptsRes.ok) setAppointments(aptsRes.data ?? []);
     } catch {}
   }, [professionalId, year, yearInitialized, fetchHolidays]);
 
-  const fetchClients = useCallback(async () => {
-    const { data } = await clientsApi.list();
-    if (data) {
-      setClients(data);
-      if (data.length > 0) setManualClientId(data[0].id);
-    }
-  }, []);
-
+  // Detecta o ano que tem agenda — só na primeira carga ou ao trocar de técnico
   useEffect(() => {
-    fetchClients();
-  }, [fetchClients]);
+    if (!professionalId) return;
+    scheduleApi.getExistingYear(professionalId).then((res) => {
+      if (res.ok) {
+        const ey = res.data?.existingYear ?? null;
+        setExistingYear(ey);
+        if (ey !== null && !sessionStorage.getItem('calendar-year')) {
+          setYear(ey);
+        }
+      }
+    });
+  }, [professionalId]);
+
   // fetchHolidays já é chamado dentro de fetchAppointments via Promise.all
+  // clients são carregados no init junto com professionals
   useEffect(() => {
     fetchAppointments();
   }, [fetchAppointments]);
@@ -266,15 +268,21 @@ export default function CalendarPage() {
   };
 
   const handleMoveAppointment = async (appointmentId: string, newDate: string) => {
+    // Atualização otimista — move no state local antes da resposta do servidor
+    const prev = appointments;
+    setAppointments((apts) =>
+      apts.map((a) => (a.id === appointmentId ? { ...a, date: newDate } : a))
+    );
     try {
       const res = await scheduleApi.update(appointmentId, { date: newDate });
       if (res.ok) {
-        fetchAppointments();
-        showToast('Visita movida com sucesso');
+        fetchAppointments(); // sincroniza renumeração
       } else {
+        setAppointments(prev); // reverte em caso de erro
         showToast(res.error || 'Erro ao mover visita', 'error');
       }
     } catch {
+      setAppointments(prev);
       showToast('Falha de conexão. Tente novamente.', 'error');
     }
   };

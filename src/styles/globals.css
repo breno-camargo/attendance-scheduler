@@ -17,8 +17,8 @@
   --body-gradient-2: #065f46;
 
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
-  --transition-smooth: all 0.4s var(--ease-out-expo);
-  --transition-fast: all 0.2s var(--ease-out-expo);
+  --transition-smooth: color 0.4s var(--ease-out-expo), background 0.4s var(--ease-out-expo), border-color 0.4s var(--ease-out-expo), box-shadow 0.4s var(--ease-out-expo), transform 0.4s var(--ease-out-expo), opacity 0.4s var(--ease-out-expo);
+  --transition-fast: color 0.2s var(--ease-out-expo), background 0.2s var(--ease-out-expo), border-color 0.2s var(--ease-out-expo), box-shadow 0.2s var(--ease-out-expo), transform 0.2s var(--ease-out-expo), opacity 0.2s var(--ease-out-expo);
 
   /* Semantic surface tokens */
   --surface-input: rgba(255, 255, 255, 0.02);

@@ -300,7 +300,7 @@ export default function ImportPage() {
             padding: '3rem 2rem',
             textAlign: 'center',
             background: dragging ? 'var(--primary-subtle)' : 'transparent',
-            transition: 'all 0.2s ease',
+            transition: 'background 0.2s ease',
             cursor: 'pointer',
           }}
           onClick={() => document.getElementById('file-input')?.click()}

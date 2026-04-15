@@ -77,16 +77,17 @@ export async function PATCH(request: Request, { params }: { params: { id: string
           type: 'VISITA_TECNICA',
         },
         orderBy: { date: 'asc' },
+        select: { id: true, observation: true },
       });
 
-      for (let i = 0; i < allVisits.length; i++) {
-        const newObs = `Visita ${(i + 1).toString().padStart(2, '0')}`;
-        if (allVisits[i].observation !== newObs) {
-          await prisma.appointment.update({
-            where: { id: allVisits[i].id },
-            data: { observation: newObs },
-          });
-        }
+      const updates = allVisits
+        .map((v, i) => ({ id: v.id, obs: `Visita ${(i + 1).toString().padStart(2, '0')}`, old: v.observation }))
+        .filter((v) => v.obs !== v.old);
+
+      if (updates.length > 0) {
+        await prisma.$transaction(
+          updates.map((v) => prisma.appointment.update({ where: { id: v.id }, data: { observation: v.obs } }))
+        );
       }
     }
 

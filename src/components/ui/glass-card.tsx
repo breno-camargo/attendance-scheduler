@@ -21,7 +21,7 @@ export const GlassCard: React.FC<GlassCardProps> = ({
     borderRadius: '16px',
     padding: '24px',
     boxShadow: '0 10px 40px rgba(0, 0, 0, 0.12)',
-    transition: 'all 0.5s var(--ease-out-expo)',
+    transition: 'transform 0.3s var(--ease-out-expo), box-shadow 0.3s var(--ease-out-expo), border-color 0.3s var(--ease-out-expo)',
     position: 'relative',
     overflow: 'hidden',
     ...style,

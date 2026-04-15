@@ -191,7 +191,7 @@ export default function ContractFormModal({
     fontWeight: 700,
     cursor: disabled ? 'not-allowed' : 'pointer',
     opacity: disabled ? 0.3 : 1,
-    transition: 'all 0.15s',
+    transition: 'opacity 0.15s, background 0.15s',
   });
 
   return (

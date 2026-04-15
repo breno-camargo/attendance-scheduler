@@ -431,7 +431,7 @@ export default function ContactListModal({
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
-                transition: 'all 0.2s',
+                transition: 'opacity 0.2s, background 0.2s',
               }}
               title="Preencher campos vazios com a equipe oficial da Staff"
             >

@@ -25,11 +25,12 @@ export async function GET() {
       prisma.professional.count({ where: profFilter }),
       prisma.contract.count({ where: contractFilter }),
       prisma.appointment
-        .groupBy({
-          by: ['contractId'],
+        .findMany({
           where: { ...aptFilter, contractId: { not: null } },
+          distinct: ['contractId'],
+          select: { contractId: true },
         })
-        .then((groups) => groups.length),
+        .then((rows) => rows.length),
     ]);
 
     return ApiUtils.success({ clients, professionals, totalContracts, contractsWithSchedule });
