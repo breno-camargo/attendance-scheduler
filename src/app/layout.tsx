@@ -26,32 +26,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="pt-BR">
       <head>
         <link rel="apple-touch-icon" href="/logo.png" />
-        {/* Anti-flash: aplica o tema salvo ANTES do React renderizar, evitando piscar */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                try {
-                  var saved = localStorage.getItem('compasss_theme');
-                  var systemPref = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
-                  var theme = saved || systemPref;
-                  document.documentElement.setAttribute('data-theme', theme);
-                  var m = document.createElement('meta');
-                  m.name = 'theme-color';
-                  m.content = theme === 'light' ? '#ffffff' : '#111111';
-                  document.head.appendChild(m);
-                } catch(e) {
-                  document.documentElement.setAttribute('data-theme', 'dark');
-                }
-              })();
-              if ('serviceWorker' in navigator) {
-                window.addEventListener('load', function() {
-                  navigator.serviceWorker.register('/sw.js');
-                });
-              }
-            `,
-          }}
-        />
+        {/* Script externo (public/init.js) aplica tema antes do React renderizar
+            e registra o service worker. Externo pra permitir CSP sem unsafe-inline. */}
+        <script src="/init.js" />
       </head>
       <body className={outfit.className}>
         <Providers>
