@@ -1,6 +1,7 @@
 import { Analytics } from '@vercel/analytics/react';
 import type { Metadata } from 'next';
 import { Outfit } from 'next/font/google';
+import Script from 'next/script';
 
 import '@/styles/globals.css';
 import Header from '@/components/layout/Header';
@@ -26,9 +27,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="pt-BR">
       <head>
         <link rel="apple-touch-icon" href="/logo.png" />
-        {/* Script externo (public/init.js) aplica tema antes do React renderizar
-            e registra o service worker. Externo pra permitir CSP sem unsafe-inline. */}
-        <script src="/init.js" />
+        {/* next/script com beforeInteractive carrega antes de qualquer hydration,
+            garantindo que o tema seja aplicado sem flash. */}
+        <Script src="/init.js" strategy="beforeInteractive" />
       </head>
       <body className={outfit.className}>
         <Providers>
