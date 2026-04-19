@@ -1,4 +1,11 @@
-import { ApiUtils, getClientIp, getScopedProfessionalIds, parsePagination, requireAuth, requireAuthWithScope } from '@/lib/api-utils';
+import {
+  ApiUtils,
+  getClientIp,
+  getScopedProfessionalIds,
+  parsePagination,
+  requireAuth,
+  requireAuthWithScope,
+} from '@/lib/api-utils';
 import prisma from '@/lib/prisma';
 import { checkApiRateLimit } from '@/lib/rate-limit';
 import { clientSchema } from '@/lib/schemas';
@@ -15,7 +22,8 @@ export async function GET(request: Request) {
   const { auth } = result;
 
   const allowed = await checkApiRateLimit(getClientIp(request));
-  if (!allowed) return ApiUtils.error('Muitas requisições. Tente novamente em alguns minutos.', null, 429);
+  if (!allowed)
+    return ApiUtils.error('Muitas requisições. Tente novamente em alguns minutos.', null, 429);
 
   try {
     const { skip, take } = parsePagination(request.url);

@@ -73,7 +73,8 @@ export default function ChangePasswordPage() {
             left: 0,
             right: 0,
             height: '3px',
-            background: 'linear-gradient(90deg, transparent, var(--primary), var(--accent), transparent)',
+            background:
+              'linear-gradient(90deg, transparent, var(--primary), var(--accent), transparent)',
             borderRadius: '12px 12px 0 0',
           }}
         />
@@ -84,20 +85,38 @@ export default function ChangePasswordPage() {
           </h1>
         </div>
 
-        <div style={{ height: '1px', background: 'var(--primary-border-subtle)', marginBottom: '1.5rem' }} />
+        <div
+          style={{
+            height: '1px',
+            background: 'var(--primary-border-subtle)',
+            marginBottom: '1.5rem',
+          }}
+        />
 
         <h2 style={{ textAlign: 'center', margin: '0 0 0.5rem', fontSize: '1.2rem' }}>
           {session?.user?.mustChangePassword ? 'Defina sua nova senha' : 'Alterar Senha'}
         </h2>
         {session?.user?.mustChangePassword && (
-          <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.9rem', margin: '0 0 1.5rem' }}>
+          <p
+            style={{
+              textAlign: 'center',
+              color: 'var(--text-muted)',
+              fontSize: '0.9rem',
+              margin: '0 0 1.5rem',
+            }}
+          >
             Este é seu primeiro acesso. Por segurança, escolha uma senha pessoal.
           </p>
         )}
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.4rem' }}>
+        <form
+          onSubmit={handleSubmit}
+          style={{ display: 'flex', flexDirection: 'column', gap: '1.4rem' }}
+        >
           <div className="form-field">
-            <label className="form-label" htmlFor="new-password">Nova Senha</label>
+            <label className="form-label" htmlFor="new-password">
+              Nova Senha
+            </label>
             <input
               id="new-password"
               className="form-input"
@@ -110,7 +129,9 @@ export default function ChangePasswordPage() {
             />
           </div>
           <div className="form-field">
-            <label className="form-label" htmlFor="confirm-password">Confirmar Senha</label>
+            <label className="form-label" htmlFor="confirm-password">
+              Confirmar Senha
+            </label>
             <input
               id="confirm-password"
               className="form-input"

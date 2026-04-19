@@ -94,7 +94,8 @@ export const professionalsApi = {
 };
 
 export const holidaysApi = {
-  list: (year?: number) => apiFetch<Holiday[]>(year ? `/api/holidays?year=${year}` : '/api/holidays'),
+  list: (year?: number) =>
+    apiFetch<Holiday[]>(year ? `/api/holidays?year=${year}` : '/api/holidays'),
   create: (data: { date: string; name: string }) => post<Holiday>('/api/holidays', data),
   delete: (id: string) => del(`/api/holidays/${id}`),
 };
@@ -144,6 +145,12 @@ export const statsApi = {
       professionals: number;
       totalContracts: number;
       contractsWithSchedule: number;
-      contractsDetail: { id: string; clientName: string; professionalName: string | null; systemTypes: string | null; hasSchedule: boolean }[];
+      contractsDetail: {
+        id: string;
+        clientName: string;
+        professionalName: string | null;
+        systemTypes: string | null;
+        hasSchedule: boolean;
+      }[];
     }>('/api/stats'),
 };

@@ -25,7 +25,9 @@ vi.mock('next/server', () => ({
   },
 }));
 
-const mockGetServerSession = vi.fn().mockResolvedValue({ user: { name: 'Admin', role: 'Coordenador' } });
+const mockGetServerSession = vi
+  .fn()
+  .mockResolvedValue({ user: { name: 'Admin', role: 'Coordenador' } });
 vi.mock('next-auth', () => ({
   getServerSession: (...args: any[]) => mockGetServerSession(...args),
 }));
@@ -85,7 +87,12 @@ describe('GET /api/stats', () => {
 
     expect(response.status).toBe(200);
     const body = await response.json();
-    expect(body).toEqual({ clients: 0, professionals: 0, totalContracts: 0, contractsWithSchedule: 0 });
+    expect(body).toEqual({
+      clients: 0,
+      professionals: 0,
+      totalContracts: 0,
+      contractsWithSchedule: 0,
+    });
   });
 
   it('returns 500 when a Prisma call throws', async () => {

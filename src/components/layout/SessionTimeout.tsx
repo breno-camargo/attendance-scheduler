@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { useSession, signOut } from 'next-auth/react';
+import { useEffect, useState } from 'react';
 
 const SESSION_MAX_AGE = 8 * 60 * 60; // mesma config do auth.ts
 const WARNING_BEFORE = 5 * 60; // avisa 5 min antes
@@ -59,12 +59,18 @@ export default function SessionTimeout() {
         boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
       }}
     >
-      <p style={{ margin: '0 0 0.5rem', fontWeight: 600, fontSize: '0.85rem', color: 'var(--warning, #f59e0b)' }}>
+      <p
+        style={{
+          margin: '0 0 0.5rem',
+          fontWeight: 600,
+          fontSize: '0.85rem',
+          color: 'var(--warning, #f59e0b)',
+        }}
+      >
         Sessão expirando
       </p>
       <p style={{ margin: '0 0 0.75rem', fontSize: '0.8rem', color: 'var(--text-muted, #9ca3af)' }}>
-        Sua sessão expira em {minutes}:{seconds.toString().padStart(2, '0')}.
-        Salve seu trabalho.
+        Sua sessão expira em {minutes}:{seconds.toString().padStart(2, '0')}. Salve seu trabalho.
       </p>
       <button
         onClick={() => signOut({ callbackUrl: '/login' })}

@@ -97,7 +97,10 @@ export default function HolidaysPage() {
       <div className="page-header">
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-            <h1 className="title" style={{ margin: 0, fontSize: '3.2rem', letterSpacing: '-1.5px' }}>
+            <h1
+              className="title"
+              style={{ margin: 0, fontSize: '3.2rem', letterSpacing: '-1.5px' }}
+            >
               Feriados {year}
             </h1>
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -154,10 +157,7 @@ export default function HolidaysPage() {
             Gerencie os feriados para evitar agendamentos em datas comemorativas.
           </p>
         </div>
-        <button
-          className="btn-primary holiday-form-mobile"
-          onClick={() => setIsModalOpen(true)}
-        >
+        <button className="btn-primary holiday-form-mobile" onClick={() => setIsModalOpen(true)}>
           + Novo Feriado
         </button>
       </div>
@@ -219,9 +219,14 @@ export default function HolidaysPage() {
 
       {/* Add holiday — modal on mobile */}
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Novo Feriado">
-        <form onSubmit={handleAdd} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <form
+          onSubmit={handleAdd}
+          style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
+        >
           <div className="form-field">
-            <label htmlFor="holiday-date-modal" className="form-label">Data</label>
+            <label htmlFor="holiday-date-modal" className="form-label">
+              Data
+            </label>
             <input
               id="holiday-date-modal"
               className="form-input"
@@ -232,7 +237,9 @@ export default function HolidaysPage() {
             />
           </div>
           <div className="form-field">
-            <label htmlFor="holiday-name-modal" className="form-label">Nome do Feriado</label>
+            <label htmlFor="holiday-name-modal" className="form-label">
+              Nome do Feriado
+            </label>
             <input
               id="holiday-name-modal"
               className="form-input"
@@ -243,7 +250,12 @@ export default function HolidaysPage() {
               required
             />
           </div>
-          <button type="submit" className="btn-primary" disabled={loading} style={{ width: '100%' }}>
+          <button
+            type="submit"
+            className="btn-primary"
+            disabled={loading}
+            style={{ width: '100%' }}
+          >
             {loading ? 'Adicionando...' : 'Adicionar'}
           </button>
         </form>
@@ -255,7 +267,16 @@ export default function HolidaysPage() {
           Nenhum feriado cadastrado para {year}.
         </p>
       ) : (
-        <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <ul
+          style={{
+            listStyle: 'none',
+            padding: 0,
+            margin: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '12px',
+          }}
+        >
           {holidays.map((holiday, index) => (
             <li
               key={holiday.id}
@@ -268,10 +289,15 @@ export default function HolidaysPage() {
                 <div className="holiday-card-inner">
                   <div className="holiday-info">
                     {/* Date badge */}
-                    <div className="holiday-date-badge">
-                      {formatDate(holiday.date)}
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                    <div className="holiday-date-badge">{formatDate(holiday.date)}</div>
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px',
+                        flexWrap: 'wrap',
+                      }}
+                    >
                       <span
                         style={{
                           fontSize: '1.05rem',

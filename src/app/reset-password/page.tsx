@@ -70,12 +70,15 @@ function ResetForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.4rem' }}>
-      <h2 style={{ textAlign: 'center', margin: '0 0 0.5rem', fontSize: '1.2rem' }}>
-        Nova Senha
-      </h2>
+    <form
+      onSubmit={handleSubmit}
+      style={{ display: 'flex', flexDirection: 'column', gap: '1.4rem' }}
+    >
+      <h2 style={{ textAlign: 'center', margin: '0 0 0.5rem', fontSize: '1.2rem' }}>Nova Senha</h2>
       <div className="form-field">
-        <label className="form-label" htmlFor="reset-password">Nova Senha</label>
+        <label className="form-label" htmlFor="reset-password">
+          Nova Senha
+        </label>
         <input
           id="reset-password"
           className="form-input"
@@ -88,7 +91,9 @@ function ResetForm() {
         />
       </div>
       <div className="form-field">
-        <label className="form-label" htmlFor="reset-confirm">Confirmar Senha</label>
+        <label className="form-label" htmlFor="reset-confirm">
+          Confirmar Senha
+        </label>
         <input
           id="reset-confirm"
           className="form-input"
@@ -102,7 +107,12 @@ function ResetForm() {
       {error && (
         <p style={{ color: 'var(--danger, #f87171)', fontSize: '0.85rem', margin: 0 }}>{error}</p>
       )}
-      <button type="submit" className="btn-primary" style={{ padding: '0.9rem' }} disabled={loading}>
+      <button
+        type="submit"
+        className="btn-primary"
+        style={{ padding: '0.9rem' }}
+        disabled={loading}
+      >
         {loading ? 'Salvando...' : 'Redefinir Senha'}
       </button>
     </form>
@@ -131,7 +141,8 @@ export default function ResetPasswordPage() {
             left: 0,
             right: 0,
             height: '3px',
-            background: 'linear-gradient(90deg, transparent, var(--primary), var(--accent), transparent)',
+            background:
+              'linear-gradient(90deg, transparent, var(--primary), var(--accent), transparent)',
             borderRadius: '12px 12px 0 0',
           }}
         />
@@ -140,8 +151,18 @@ export default function ResetPasswordPage() {
             <Logo size="md" />
           </h1>
         </div>
-        <div style={{ height: '1px', background: 'var(--primary-border-subtle)', marginBottom: '1.5rem' }} />
-        <Suspense fallback={<p style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Carregando...</p>}>
+        <div
+          style={{
+            height: '1px',
+            background: 'var(--primary-border-subtle)',
+            marginBottom: '1.5rem',
+          }}
+        />
+        <Suspense
+          fallback={
+            <p style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Carregando...</p>
+          }
+        >
           <ResetForm />
         </Suspense>
       </div>

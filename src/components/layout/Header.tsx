@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
-import { signOut, useSession } from 'next-auth/react';
 import { usePathname } from 'next/navigation';
+import { signOut, useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
 
 import { Logo } from '@/components/ui/logo';
@@ -14,7 +14,9 @@ export default function Header() {
 
   useEffect(() => {
     const saved = localStorage.getItem('compasss_theme') as 'dark' | 'light' | null;
-    const systemPref = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+    const systemPref = window.matchMedia('(prefers-color-scheme: light)').matches
+      ? 'light'
+      : 'dark';
     const initial = saved || systemPref;
     setTheme(initial); // eslint-disable-line react-hooks/set-state-in-effect -- sync com localStorage
     document.documentElement.setAttribute('data-theme', initial);
@@ -148,7 +150,16 @@ export default function Header() {
               textDecoration: 'none',
             }}
           >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg
+              width="15"
+              height="15"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
               <path d="M7 11V7a5 5 0 0 1 10 0v4" />
             </svg>
@@ -172,7 +183,16 @@ export default function Header() {
               transition: 'var(--transition-smooth)',
             }}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
               <polyline points="16 17 21 12 16 7" />
               <line x1="21" y1="12" x2="9" y2="12" />
@@ -265,7 +285,16 @@ export default function Header() {
               gap: '8px',
             }}
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
               <polyline points="16 17 21 12 16 7" />
               <line x1="21" y1="12" x2="9" y2="12" />

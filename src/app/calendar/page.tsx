@@ -49,9 +49,7 @@ export default function CalendarPage() {
   // Only show clients that appear in the current professional's appointments
   const linkedClients = useMemo(() => {
     const contractIds = new Set(appointments.map((a) => a.contractId));
-    return clients.filter((c) =>
-      c.contracts?.some((ct) => contractIds.has(ct.id)),
-    );
+    return clients.filter((c) => c.contracts?.some((ct) => contractIds.has(ct.id)));
   }, [clients, appointments]);
 
   useEffect(() => {
@@ -273,7 +271,7 @@ export default function CalendarPage() {
     // Atualização otimista — move no state local antes da resposta do servidor
     const prev = appointments;
     setAppointments((apts) =>
-      apts.map((a) => (a.id === appointmentId ? { ...a, date: newDate } : a))
+      apts.map((a) => (a.id === appointmentId ? { ...a, date: newDate } : a)),
     );
     try {
       const res = await scheduleApi.update(appointmentId, { date: newDate });
@@ -288,7 +286,6 @@ export default function CalendarPage() {
       showToast('Falha de conexão. Tente novamente.', 'error');
     }
   };
-
 
   return (
     <main

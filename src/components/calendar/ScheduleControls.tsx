@@ -24,7 +24,10 @@ export default function ScheduleControls({
   contractIds,
 }: ScheduleControlsProps) {
   return (
-    <div className="glass-panel schedule-controls" style={{ marginBottom: '2.5rem', padding: '2rem' }}>
+    <div
+      className="glass-panel schedule-controls"
+      style={{ marginBottom: '2.5rem', padding: '2rem' }}
+    >
       <div className="schedule-controls-row">
         <div
           style={{

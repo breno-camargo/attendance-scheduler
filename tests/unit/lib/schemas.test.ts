@@ -357,39 +357,59 @@ describe('appointmentPatchSchema', () => {
 // ─────────────────────────────────────────────
 describe('generateScheduleSchema', () => {
   it('accepts a valid object with professionalId and year', () => {
-    const result = generateScheduleSchema.safeParse({ professionalId: 'cabcdefghijklmnopqrstuvwx', year: 2026 });
+    const result = generateScheduleSchema.safeParse({
+      professionalId: 'cabcdefghijklmnopqrstuvwx',
+      year: 2026,
+    });
     expect(result.success).toBe(true);
   });
 
   it('coerces year from a string to a number', () => {
-    const result = generateScheduleSchema.safeParse({ professionalId: 'cabcdefghijklmnopqrstuvwx', year: '2025' });
+    const result = generateScheduleSchema.safeParse({
+      professionalId: 'cabcdefghijklmnopqrstuvwx',
+      year: '2025',
+    });
     expect(result.success).toBe(true);
     if (result.success) expect(result.data.year).toBe(2025);
   });
 
   it('defaults year to the current year when not provided', () => {
-    const result = generateScheduleSchema.safeParse({ professionalId: 'cabcdefghijklmnopqrstuvwx' });
+    const result = generateScheduleSchema.safeParse({
+      professionalId: 'cabcdefghijklmnopqrstuvwx',
+    });
     expect(result.success).toBe(true);
     if (result.success) expect(result.data.year).toBe(new Date().getFullYear());
   });
 
   it('rejects year below minimum (2019)', () => {
-    const result = generateScheduleSchema.safeParse({ professionalId: 'cabcdefghijklmnopqrstuvwx', year: 2019 });
+    const result = generateScheduleSchema.safeParse({
+      professionalId: 'cabcdefghijklmnopqrstuvwx',
+      year: 2019,
+    });
     expect(result.success).toBe(false);
   });
 
   it('accepts year at minimum boundary (2020)', () => {
-    const result = generateScheduleSchema.safeParse({ professionalId: 'cabcdefghijklmnopqrstuvwx', year: 2020 });
+    const result = generateScheduleSchema.safeParse({
+      professionalId: 'cabcdefghijklmnopqrstuvwx',
+      year: 2020,
+    });
     expect(result.success).toBe(true);
   });
 
   it('accepts year at maximum boundary (2100)', () => {
-    const result = generateScheduleSchema.safeParse({ professionalId: 'cabcdefghijklmnopqrstuvwx', year: 2100 });
+    const result = generateScheduleSchema.safeParse({
+      professionalId: 'cabcdefghijklmnopqrstuvwx',
+      year: 2100,
+    });
     expect(result.success).toBe(true);
   });
 
   it('rejects year above maximum (2101)', () => {
-    const result = generateScheduleSchema.safeParse({ professionalId: 'cabcdefghijklmnopqrstuvwx', year: 2101 });
+    const result = generateScheduleSchema.safeParse({
+      professionalId: 'cabcdefghijklmnopqrstuvwx',
+      year: 2101,
+    });
     expect(result.success).toBe(false);
   });
 

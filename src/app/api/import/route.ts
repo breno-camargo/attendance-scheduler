@@ -96,11 +96,19 @@ export async function POST(request: Request) {
       frequency: string;
       preferredDays: string | null;
       techKey: string | null;
-      techData: { name: string; email: string; phone: string | null; supervisorId: string | null } | null;
+      techData: {
+        name: string;
+        email: string;
+        phone: string | null;
+        supervisorId: string | null;
+      } | null;
     }
 
     const parsedRows: ParsedRow[] = [];
-    const newTechs = new Map<string, { name: string; email: string; phone: string | null; supervisorId: string | null }>();
+    const newTechs = new Map<
+      string,
+      { name: string; email: string; phone: string | null; supervisorId: string | null }
+    >();
     const newClients = new Map<string, { name: string; phone: string | null }>();
 
     for (let i = 0; i < rows.length; i++) {
@@ -109,11 +117,17 @@ export async function POST(request: Request) {
 
       const clientName = String(row['Cliente'] ?? '').trim();
       const clientPhone = String(row['Telefone'] ?? '').trim();
-      const systemTypes = String(row['Sistemas'] ?? '').trim().toUpperCase();
+      const systemTypes = String(row['Sistemas'] ?? '')
+        .trim()
+        .toUpperCase();
       const visitsPerMonth = parseInt(String(row['Visitas/Mês'] ?? row['Visitas'] ?? '2')) || 2;
-      const freqRaw = String(row['Frequência'] ?? row['Frequencia'] ?? 'mensal').trim().toLowerCase();
+      const freqRaw = String(row['Frequência'] ?? row['Frequencia'] ?? 'mensal')
+        .trim()
+        .toLowerCase();
       const frequency = FREQ_MAP[freqRaw] || 'MONTHLY';
-      const daysRaw = String(row['Dias Preferidos'] ?? row['Dias'] ?? '').trim().toLowerCase();
+      const daysRaw = String(row['Dias Preferidos'] ?? row['Dias'] ?? '')
+        .trim()
+        .toLowerCase();
       const techName = String(row['Técnico'] ?? row['Tecnico'] ?? '').trim();
       const techPhone = String(row['Telefone Técnico'] ?? row['Tel Técnico'] ?? '').trim();
       const techEmail = String(row['Email Técnico'] ?? row['E-mail Técnico'] ?? '').trim();
@@ -139,20 +153,41 @@ export async function POST(request: Request) {
         techKey = techName.toLowerCase().trim();
         if (!profCache.has(techKey) && !newTechs.has(techKey)) {
           const email = techEmail
-            ? (techEmail.includes('@') ? techEmail : `${techEmail}@${emailDomain}`)
+            ? techEmail.includes('@')
+              ? techEmail
+              : `${techEmail}@${emailDomain}`
             : `${techName.toLowerCase().replace(/\s+/g, '.')}@${emailDomain}`;
-          const supervisorId = techScope ? (supervisorMap.get(techScope.toLowerCase()) || null) : null;
-          techData = { name: ApiUtils.capitalizeName(techName), email, phone: techPhone || null, supervisorId };
+          const supervisorId = techScope
+            ? supervisorMap.get(techScope.toLowerCase()) || null
+            : null;
+          techData = {
+            name: ApiUtils.capitalizeName(techName),
+            email,
+            phone: techPhone || null,
+            supervisorId,
+          };
           newTechs.set(techKey, techData);
         }
       }
 
       const clientKey = clientName.toLowerCase().trim();
       if (!clientCache.has(clientKey) && !newClients.has(clientKey)) {
-        newClients.set(clientKey, { name: ApiUtils.capitalizeName(clientName), phone: clientPhone || null });
+        newClients.set(clientKey, {
+          name: ApiUtils.capitalizeName(clientName),
+          phone: clientPhone || null,
+        });
       }
 
-      parsedRows.push({ clientName, clientPhone, systemTypes, visitsPerMonth, frequency, preferredDays, techKey, techData });
+      parsedRows.push({
+        clientName,
+        clientPhone,
+        systemTypes,
+        visitsPerMonth,
+        frequency,
+        preferredDays,
+        techKey,
+        techData,
+      });
     }
 
     // ── PASSADA 2: Criar técnicos e clientes novos em batch ──
@@ -199,7 +234,8 @@ export async function POST(request: Request) {
       if (!client) continue;
 
       const hasContract = client.contracts?.some(
-        (c) => c.systemTypes?.toUpperCase() === pr.systemTypes && c.professionalId === professionalId,
+        (c) =>
+          c.systemTypes?.toUpperCase() === pr.systemTypes && c.professionalId === professionalId,
       );
       if (hasContract) {
         skipped++;
@@ -221,7 +257,10 @@ export async function POST(request: Request) {
       await prisma.contract.createMany({ data: contractsToCreate });
     }
 
-    audit({ event: 'DATA_IMPORTED', details: `${created} criados, ${skipped} pulados, ${rows.length} total` });
+    audit({
+      event: 'DATA_IMPORTED',
+      details: `${created} criados, ${skipped} pulados, ${rows.length} total`,
+    });
 
     return ApiUtils.success({
       created,

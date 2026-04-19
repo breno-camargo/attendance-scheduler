@@ -97,7 +97,9 @@ interface RunResult {
   deleteManyArgs: any;
 }
 
-async function runGenerate(body: any = { professionalId: VALID_PROF_ID, year: 2027 }): Promise<RunResult> {
+async function runGenerate(
+  body: any = { professionalId: VALID_PROF_ID, year: 2027 },
+): Promise<RunResult> {
   const req = new Request('http://localhost/api/schedule/generate', {
     method: 'POST',
     body: JSON.stringify(body),
@@ -182,9 +184,7 @@ describe('POST /api/schedule/generate — estado inválido', () => {
   });
 
   it('retorna 404 quando técnico não tem contratos', async () => {
-    prismaMock.professional.findUnique.mockResolvedValue(
-      makeProfessional([]) as any,
-    );
+    prismaMock.professional.findUnique.mockResolvedValue(makeProfessional([]) as any);
     const { status } = await runGenerate();
     expect(status).toBe(404);
   });
@@ -229,7 +229,9 @@ describe('POST /api/schedule/generate — persistência', () => {
 describe('POST /api/schedule/generate — SDAI', () => {
   it('gera TESTE_SDAI para contrato MONTHLY com SDAI em systemTypes', async () => {
     prismaMock.professional.findUnique.mockResolvedValue(
-      makeProfessional([{ frequency: 'MONTHLY', systemTypes: 'SDAI,CFTV', visitsPerMonth: 2 }]) as any,
+      makeProfessional([
+        { frequency: 'MONTHLY', systemTypes: 'SDAI,CFTV', visitsPerMonth: 2 },
+      ]) as any,
     );
     const { appointments } = await runGenerate();
     const sdai = appointments.filter((a) => a.type === 'TESTE_SDAI');
@@ -238,7 +240,9 @@ describe('POST /api/schedule/generate — SDAI', () => {
 
   it('NÃO gera TESTE_SDAI quando systemTypes não inclui SDAI', async () => {
     prismaMock.professional.findUnique.mockResolvedValue(
-      makeProfessional([{ frequency: 'MONTHLY', systemTypes: 'CFTV,SAP', visitsPerMonth: 2 }]) as any,
+      makeProfessional([
+        { frequency: 'MONTHLY', systemTypes: 'CFTV,SAP', visitsPerMonth: 2 },
+      ]) as any,
     );
     const { appointments } = await runGenerate();
     expect(appointments.filter((a) => a.type === 'TESTE_SDAI')).toHaveLength(0);
@@ -246,7 +250,9 @@ describe('POST /api/schedule/generate — SDAI', () => {
 
   it('NÃO gera TESTE_SDAI automático para contrato não-MONTHLY', async () => {
     prismaMock.professional.findUnique.mockResolvedValue(
-      makeProfessional([{ frequency: 'BIMONTHLY', systemTypes: 'SDAI,CFTV', visitsPerMonth: 2 }]) as any,
+      makeProfessional([
+        { frequency: 'BIMONTHLY', systemTypes: 'SDAI,CFTV', visitsPerMonth: 2 },
+      ]) as any,
     );
     const { appointments } = await runGenerate();
     expect(appointments.filter((a) => a.type === 'TESTE_SDAI')).toHaveLength(0);
@@ -437,9 +443,7 @@ describe('POST /api/schedule/generate — frequências', () => {
 
   it('visitsPerMonth=0 não gera visitas', async () => {
     prismaMock.professional.findUnique.mockResolvedValue(
-      makeProfessional([
-        { frequency: 'MONTHLY', systemTypes: 'CFTV', visitsPerMonth: 0 },
-      ]) as any,
+      makeProfessional([{ frequency: 'MONTHLY', systemTypes: 'CFTV', visitsPerMonth: 0 }]) as any,
     );
     const { appointments } = await runGenerate();
     expect(appointments.filter((a) => a.type === 'VISITA_TECNICA')).toHaveLength(0);

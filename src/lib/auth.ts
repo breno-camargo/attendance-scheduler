@@ -19,7 +19,8 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials, req) {
         const forwarded = req?.headers?.['x-forwarded-for'];
-        const ip = (typeof forwarded === 'string' ? forwarded.split(',')[0]?.trim() : null) || 'unknown';
+        const ip =
+          (typeof forwarded === 'string' ? forwarded.split(',')[0]?.trim() : null) || 'unknown';
         const allowed = await checkLoginRateLimit(ip);
         if (!allowed) {
           audit({ event: 'LOGIN_RATE_LIMITED', ip });
@@ -35,7 +36,11 @@ export const authOptions: NextAuthOptions = {
         // Lockout por conta — bloqueia após 5 tentativas falhas na mesma conta
         const accountAllowed = await checkAccountRateLimit(username);
         if (!accountAllowed) {
-          audit({ event: 'LOGIN_RATE_LIMITED', ip, details: `account locked: ${username.charAt(0)}***` });
+          audit({
+            event: 'LOGIN_RATE_LIMITED',
+            ip,
+            details: `account locked: ${username.charAt(0)}***`,
+          });
           return null;
         }
 
@@ -73,8 +78,10 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user, trigger }) {
       if (user) {
         token.role = (user as { role?: string }).role || null;
-        token.internalContactId = (user as { internalContactId?: string }).internalContactId || null;
-        token.mustChangePassword = (user as { mustChangePassword?: boolean }).mustChangePassword ?? false;
+        token.internalContactId =
+          (user as { internalContactId?: string }).internalContactId || null;
+        token.mustChangePassword =
+          (user as { mustChangePassword?: boolean }).mustChangePassword ?? false;
         token.userId = (user as { id: string }).id;
       }
       // Quando o frontend pede pra atualizar a sessão (após trocar senha)
@@ -86,8 +93,10 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (session.user) {
         (session.user as { role?: string | null }).role = token.role as string | null;
-        (session.user as { internalContactId?: string | null }).internalContactId = token.internalContactId as string | null;
-        (session.user as { mustChangePassword?: boolean }).mustChangePassword = token.mustChangePassword as boolean;
+        (session.user as { internalContactId?: string | null }).internalContactId =
+          token.internalContactId as string | null;
+        (session.user as { mustChangePassword?: boolean }).mustChangePassword =
+          token.mustChangePassword as boolean;
         (session.user as { id?: string }).id = token.userId as string;
       }
       return session;

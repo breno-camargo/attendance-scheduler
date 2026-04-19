@@ -1,5 +1,6 @@
-import nodemailer from 'nodemailer';
 import path from 'path';
+
+import nodemailer from 'nodemailer';
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || 'smtp.gmail.com',
@@ -12,7 +13,11 @@ const transporter = nodemailer.createTransport({
 });
 
 export async function sendResetPasswordEmail(to: string, resetUrl: string) {
-  const recipientName = to.split('@')[0].split('.').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  const recipientName = to
+    .split('@')[0]
+    .split('.')
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ');
   const logoPath = path.join(process.cwd(), 'public', 'logo-email.png');
 
   await transporter.sendMail({

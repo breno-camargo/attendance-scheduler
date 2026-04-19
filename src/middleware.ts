@@ -1,6 +1,6 @@
-import { getToken } from 'next-auth/jwt';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { getToken } from 'next-auth/jwt';
 
 export async function middleware(request: NextRequest) {
   // Proteção CSRF: requests mutáveis devem vir do mesmo origin
@@ -34,5 +34,7 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!api/auth|api/ping|_next/static|_next/image|icon\\.png|favicon.ico|login|reset-password|logo|icons|corner).*)'],
+  matcher: [
+    '/((?!api/auth|api/ping|_next/static|_next/image|icon\\.png|favicon.ico|login|reset-password|logo|icons|corner).*)',
+  ],
 };

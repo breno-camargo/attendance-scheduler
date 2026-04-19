@@ -1,0 +1,3 @@
+# Normaliza line endings para LF em qualquer OS (Windows + Linux).
+# Git detecta binários automaticamente via text=auto.
+* text=auto eol=lf

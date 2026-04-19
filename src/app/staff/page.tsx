@@ -197,7 +197,9 @@ export default function StaffPage() {
   const [confirmModal, confirm] = useConfirm();
   const [staff, setStaff] = useState<StaffMember[]>([]);
 
-  const isAdmin = !session?.user?.internalContactId || (session?.user?.role || '').toLowerCase().includes('coordenador');
+  const isAdmin =
+    !session?.user?.internalContactId ||
+    (session?.user?.role || '').toLowerCase().includes('coordenador');
   const myContactId = session?.user?.internalContactId;
   const [name, setName] = useState('');
   const [role, setRole] = useState('');
@@ -430,7 +432,14 @@ export default function StaffPage() {
           ) : (
             <ul style={{ listStyle: 'none', padding: 0 }}>
               {maintGroup.map((s, i) => (
-                <StaffItem key={s.id} s={s} index={i} onEdit={handleEdit} onDelete={handleDelete} canEdit={isAdmin || s.id === myContactId} />
+                <StaffItem
+                  key={s.id}
+                  s={s}
+                  index={i}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                  canEdit={isAdmin || s.id === myContactId}
+                />
               ))}
             </ul>
           )}

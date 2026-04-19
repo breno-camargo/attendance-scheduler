@@ -147,16 +147,18 @@ export default function AppointmentModal({
               🚀 Mover Visita
             </button>
             {error && (
-              <p style={{
-                margin: 0,
-                padding: '0.6rem 0.8rem',
-                borderRadius: '8px',
-                background: 'rgba(239, 68, 68, 0.1)',
-                border: '1px solid rgba(239, 68, 68, 0.25)',
-                color: '#ef4444',
-                fontSize: '0.82rem',
-                fontWeight: 600,
-              }}>
+              <p
+                style={{
+                  margin: 0,
+                  padding: '0.6rem 0.8rem',
+                  borderRadius: '8px',
+                  background: 'rgba(239, 68, 68, 0.1)',
+                  border: '1px solid rgba(239, 68, 68, 0.25)',
+                  color: '#ef4444',
+                  fontSize: '0.82rem',
+                  fontWeight: 600,
+                }}
+              >
                 {error}
               </p>
             )}

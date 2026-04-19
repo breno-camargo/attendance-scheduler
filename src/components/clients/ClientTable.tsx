@@ -96,29 +96,30 @@ function SystemBadge({ system }: { system: string }) {
   );
 }
 
-export default function ClientTable({
-  clients,
-  onEdit,
-  onDelete,
-}: ClientTableProps) {
+export default function ClientTable({ clients, onEdit, onDelete }: ClientTableProps) {
   const [search, setSearch] = useState('');
   const [techFilter, setTechFilter] = useState('');
 
   // Técnicos únicos vinculados a contratos
-  const techs = useMemo(() => Array.from(
-    new Map(
-      clients
-        .flatMap((c) => c.contracts || [])
-        .filter((ct) => ct.professional)
-        .map((ct) => [ct.professional!.id, ct.professional!.name]),
-    ).entries(),
-  ), [clients]);
+  const techs = useMemo(
+    () =>
+      Array.from(
+        new Map(
+          clients
+            .flatMap((c) => c.contracts || [])
+            .filter((ct) => ct.professional)
+            .map((ct) => [ct.professional!.id, ct.professional!.name]),
+        ).entries(),
+      ),
+    [clients],
+  );
 
   const filtered = useMemo(() => {
     const searchLower = search.toLowerCase();
     return clients.filter((c) => {
       const matchesSearch = c.name.toLowerCase().includes(searchLower);
-      const matchesTech = !techFilter || c.contracts?.some((ct) => ct.professionalId === techFilter);
+      const matchesTech =
+        !techFilter || c.contracts?.some((ct) => ct.professionalId === techFilter);
       return matchesSearch && matchesTech;
     });
   }, [clients, search, techFilter]);
@@ -138,12 +139,21 @@ export default function ClientTable({
       >
         <h2 style={{ margin: 0 }}>Contratos Vigentes</h2>
         <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>
-          {search || techFilter ? `${filteredContracts} de ${totalContracts}` : totalContracts} contrato
+          {search || techFilter ? `${filteredContracts} de ${totalContracts}` : totalContracts}{' '}
+          contrato
           {totalContracts !== 1 ? 's' : ''}
         </span>
       </div>
 
-      <div style={{ marginBottom: '1.5rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
+      <div
+        style={{
+          marginBottom: '1.5rem',
+          display: 'flex',
+          gap: '0.75rem',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+        }}
+      >
         <div style={{ flex: '1 1 200px', position: 'relative' }}>
           <svg
             width="15"
@@ -154,7 +164,13 @@ export default function ClientTable({
             strokeWidth="2.5"
             strokeLinecap="round"
             strokeLinejoin="round"
-            style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}
+            style={{
+              position: 'absolute',
+              left: '12px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              pointerEvents: 'none',
+            }}
           >
             <circle cx="11" cy="11" r="8" />
             <line x1="21" y1="21" x2="16.65" y2="16.65" />
@@ -187,7 +203,13 @@ export default function ClientTable({
               strokeWidth="2.5"
               strokeLinecap="round"
               strokeLinejoin="round"
-              style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}
+              style={{
+                position: 'absolute',
+                left: '12px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                pointerEvents: 'none',
+              }}
             >
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
               <circle cx="12" cy="7" r="4" />
@@ -200,7 +222,9 @@ export default function ClientTable({
                 width: '100%',
                 padding: '0.7rem 1rem 0.7rem 2.4rem',
                 borderRadius: '10px',
-                border: techFilter ? '1px solid var(--primary)' : '1px solid var(--primary-border-subtle)',
+                border: techFilter
+                  ? '1px solid var(--primary)'
+                  : '1px solid var(--primary-border-subtle)',
                 background: techFilter ? 'var(--primary-subtle)' : 'var(--input-bg)',
                 color: techFilter ? 'var(--foreground)' : 'var(--text-muted)',
                 fontSize: '0.95rem',
@@ -211,7 +235,9 @@ export default function ClientTable({
             >
               <option value="">Todos os técnicos</option>
               {techs.map(([id, name]) => (
-                <option key={id} value={id}>{name}</option>
+                <option key={id} value={id}>
+                  {name}
+                </option>
               ))}
             </select>
             <svg
@@ -223,7 +249,13 @@ export default function ClientTable({
               strokeWidth="2.5"
               strokeLinecap="round"
               strokeLinejoin="round"
-              style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}
+              style={{
+                position: 'absolute',
+                right: '12px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                pointerEvents: 'none',
+              }}
             >
               <polyline points="6 9 12 15 18 9" />
             </svg>
@@ -307,7 +339,14 @@ export default function ClientTable({
 
                   {/* Content */}
                   <div style={{ flex: 1, padding: '1.2rem 1.4rem', minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        marginBottom: '10px',
+                      }}
+                    >
                       <strong
                         style={{
                           fontSize: '1.2rem',
@@ -320,18 +359,20 @@ export default function ClientTable({
                         {c.name}
                       </strong>
                       {!hasSchedule && (
-                        <span style={{
-                          fontSize: '0.65rem',
-                          fontWeight: 700,
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.5px',
-                          padding: '0.15rem 0.5rem',
-                          borderRadius: '6px',
-                          background: 'rgba(251, 146, 60, 0.1)',
-                          color: '#fb923c',
-                          border: '1px solid rgba(251, 146, 60, 0.25)',
-                          flexShrink: 0,
-                        }}>
+                        <span
+                          style={{
+                            fontSize: '0.65rem',
+                            fontWeight: 700,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px',
+                            padding: '0.15rem 0.5rem',
+                            borderRadius: '6px',
+                            background: 'rgba(251, 146, 60, 0.1)',
+                            color: '#fb923c',
+                            border: '1px solid rgba(251, 146, 60, 0.25)',
+                            flexShrink: 0,
+                          }}
+                        >
                           Sem agenda
                         </span>
                       )}

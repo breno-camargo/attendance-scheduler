@@ -15,8 +15,12 @@ export async function GET() {
   try {
     const profIds = await getScopedProfessionalIds(auth);
     const profFilter = profIds ? { id: { in: profIds } } : undefined;
-    const clientFilter = profIds ? { contracts: { some: { professionalId: { in: profIds } } } } : undefined;
-    const aptFilter = profIds ? { professionalId: { in: profIds }, status: 'SCHEDULED' as const } : { status: 'SCHEDULED' as const };
+    const clientFilter = profIds
+      ? { contracts: { some: { professionalId: { in: profIds } } } }
+      : undefined;
+    const aptFilter = profIds
+      ? { professionalId: { in: profIds }, status: 'SCHEDULED' as const }
+      : { status: 'SCHEDULED' as const };
 
     const contractFilter = profIds ? { professionalId: { in: profIds } } : undefined;
 

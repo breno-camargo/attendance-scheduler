@@ -126,9 +126,7 @@ function allocateSdaiDates<C extends ScheduleContract>(
       // Offset determinístico (idx + mês + charCodeAt) — varia entre contratos
       // e meses sem ser aleatório (mesma geração 2x dá mesma agenda).
       const startOffset =
-        saturdays.length > 0
-          ? (idx + month + contract.id.charCodeAt(0)) % saturdays.length
-          : 0;
+        saturdays.length > 0 ? (idx + month + contract.id.charCodeAt(0)) % saturdays.length : 0;
 
       // Folga mínima entre testes SDAI no mesmo mês: mais de 7 dias. Ex: se um
       // teste cai no dia 4, o próximo sábado (dia 11) é pulado — mínimo dia 18.

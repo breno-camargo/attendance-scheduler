@@ -20,7 +20,9 @@ export default function ProfessionalsPage() {
   const [phone, setPhone] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [unassignedContracts, setUnassignedContracts] = useState<(Contract & { clientName: string })[]>([]);
+  const [unassignedContracts, setUnassignedContracts] = useState<
+    (Contract & { clientName: string })[]
+  >([]);
   const [selectedContracts, setSelectedContracts] = useState<string[]>([]);
   const [supervisors, setSupervisors] = useState<InternalContact[]>([]);
   const [supervisorId, setSupervisorId] = useState<string>('');
@@ -35,7 +37,9 @@ export default function ProfessionalsPage() {
       if (profsRes.data) setProfessionals(profsRes.data);
       if (staffRes.data) {
         const supRoles = ['técnico de sistemas (líder)', 'supervisor'];
-        setSupervisors(staffRes.data.filter((s) => supRoles.includes((s.role || '').toLowerCase())));
+        setSupervisors(
+          staffRes.data.filter((s) => supRoles.includes((s.role || '').toLowerCase())),
+        );
       }
       if (clientsRes.data) {
         const unassigned = clientsRes.data.flatMap((c) =>
@@ -66,7 +70,12 @@ export default function ProfessionalsPage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    const payload: Record<string, unknown> = { name, email: `${emailPrefix.split('@')[0]}@${EMAIL_DOMAIN}`, phone, supervisorId: supervisorId || null };
+    const payload: Record<string, unknown> = {
+      name,
+      email: `${emailPrefix.split('@')[0]}@${EMAIL_DOMAIN}`,
+      phone,
+      supervisorId: supervisorId || null,
+    };
     if (!editingId && selectedContracts.length > 0) {
       payload.contractIds = selectedContracts;
     }
@@ -219,9 +228,7 @@ export default function ProfessionalsPage() {
           )}
           {!editingId && unassignedContracts.length > 0 && (
             <div className="form-field">
-              <label className="form-label">
-                Vincular Contratos sem Técnico
-              </label>
+              <label className="form-label">Vincular Contratos sem Técnico</label>
               <div
                 style={{
                   maxHeight: '160px',
@@ -250,9 +257,7 @@ export default function ProfessionalsPage() {
                       checked={selectedContracts.includes(ct.id)}
                       onChange={(e) => {
                         setSelectedContracts((prev) =>
-                          e.target.checked
-                            ? [...prev, ct.id]
-                            : prev.filter((id) => id !== ct.id),
+                          e.target.checked ? [...prev, ct.id] : prev.filter((id) => id !== ct.id),
                         );
                       }}
                       style={{ accentColor: 'var(--primary)' }}
@@ -361,15 +366,17 @@ export default function ProfessionalsPage() {
                         </strong>
                         <Badge variant="primary">Técnico</Badge>
                         {p.supervisor && (
-                          <span style={{
-                            fontSize: '0.72rem',
-                            fontWeight: 600,
-                            padding: '2px 8px',
-                            borderRadius: '6px',
-                            background: 'rgba(168, 85, 247, 0.1)',
-                            color: '#c084fc',
-                            border: '1px solid rgba(168, 85, 247, 0.25)',
-                          }}>
+                          <span
+                            style={{
+                              fontSize: '0.72rem',
+                              fontWeight: 600,
+                              padding: '2px 8px',
+                              borderRadius: '6px',
+                              background: 'rgba(168, 85, 247, 0.1)',
+                              color: '#c084fc',
+                              border: '1px solid rgba(168, 85, 247, 0.25)',
+                            }}
+                          >
                             {p.supervisor.name}
                           </span>
                         )}
@@ -423,7 +430,10 @@ export default function ProfessionalsPage() {
                     <button onClick={() => handleEdit(p)} className="btn-icon btn-icon-orange">
                       <span style={{ fontSize: '1.1rem' }}>✏️</span>Editar
                     </button>
-                    <button onClick={() => handleDelete(p.id, p.name)} className="btn-icon btn-icon-red">
+                    <button
+                      onClick={() => handleDelete(p.id, p.name)}
+                      className="btn-icon btn-icon-red"
+                    >
                       <span style={{ fontSize: '1.1rem' }}>🗑️</span>Excluir
                     </button>
                   </div>

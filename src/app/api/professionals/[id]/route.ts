@@ -69,7 +69,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         name: ApiUtils.capitalizeName(data.name),
         email,
         phone: data.phone || null,
-        supervisorId: body.supervisorId !== undefined ? (body.supervisorId || null) : undefined,
+        supervisorId: body.supervisorId !== undefined ? body.supervisorId || null : undefined,
       },
     });
 

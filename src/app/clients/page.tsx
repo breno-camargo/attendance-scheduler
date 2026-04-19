@@ -24,10 +24,7 @@ export default function ClientsPage() {
   // Carregamento Inicial
   const carregarDados = useCallback(async () => {
     try {
-      const [resC, resP] = await Promise.all([
-        clientsApi.list(),
-        professionalsApi.list(),
-      ]);
+      const [resC, resP] = await Promise.all([clientsApi.list(), professionalsApi.list()]);
 
       if (resC.data) setClients(resC.data);
       if (resP.data) setProfessionals(resP.data);
@@ -104,11 +101,7 @@ export default function ClientsPage() {
       </div>
 
       {/* Tabela de Clientes */}
-      <ClientTable
-        clients={clients}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-      />
+      <ClientTable clients={clients} onEdit={handleEdit} onDelete={handleDelete} />
 
       {/* Modal de Formulário (Novo/Editar) */}
       <ContractFormModal

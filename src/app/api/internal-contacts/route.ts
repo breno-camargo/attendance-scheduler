@@ -1,4 +1,10 @@
-import { ApiUtils, getClientIp, parsePagination, requireAuth, requireAuthWithScope } from '@/lib/api-utils';
+import {
+  ApiUtils,
+  getClientIp,
+  parsePagination,
+  requireAuth,
+  requireAuthWithScope,
+} from '@/lib/api-utils';
 import { UNIQUE_ROLES } from '@/lib/constants';
 import prisma from '@/lib/prisma';
 import { checkApiRateLimit } from '@/lib/rate-limit';
@@ -14,7 +20,8 @@ export async function GET(request: Request) {
   if (authError) return authError;
 
   const allowed = await checkApiRateLimit(getClientIp(request));
-  if (!allowed) return ApiUtils.error('Muitas requisições. Tente novamente em alguns minutos.', null, 429);
+  if (!allowed)
+    return ApiUtils.error('Muitas requisições. Tente novamente em alguns minutos.', null, 429);
 
   try {
     const { skip, take } = parsePagination(request.url);
@@ -54,7 +61,9 @@ export async function POST(request: Request) {
           where: { role: data.role },
         });
         if (existing) {
-          throw new Error(`UNIQUE_ROLE:O cargo de '${data.role}' já está ocupado por ${existing.name}.`);
+          throw new Error(
+            `UNIQUE_ROLE:O cargo de '${data.role}' já está ocupado por ${existing.name}.`,
+          );
         }
       }
 

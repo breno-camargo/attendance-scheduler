@@ -93,14 +93,17 @@ export default function CalendarGrid({
     setDragOverDate(null);
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent, dateStr: string) => {
-    e.preventDefault();
-    setDragOverDate(null);
-    const aptId = e.dataTransfer.getData('text/plain');
-    if (aptId && onMoveAppointment) {
-      onMoveAppointment(aptId, dateStr);
-    }
-  }, [onMoveAppointment]);
+  const handleDrop = useCallback(
+    (e: React.DragEvent, dateStr: string) => {
+      e.preventDefault();
+      setDragOverDate(null);
+      const aptId = e.dataTransfer.getData('text/plain');
+      if (aptId && onMoveAppointment) {
+        onMoveAppointment(aptId, dateStr);
+      }
+    },
+    [onMoveAppointment],
+  );
 
   const getColor = (apt: Appointment | undefined, dateStr: string) => {
     if (!apt) {
@@ -207,7 +210,9 @@ export default function CalendarGrid({
                       cursor: apt ? 'grab' : 'pointer',
                       border: isDragTarget
                         ? '2px dashed var(--primary)'
-                        : apt ? 'none' : '1px solid rgba(255,255,255,0.03)',
+                        : apt
+                          ? 'none'
+                          : '1px solid rgba(255,255,255,0.03)',
                       transition: 'var(--transition-fast)',
                       boxShadow:
                         apt && apt.type === 'TESTE_SDAI' ? '0 0 15px var(--primary-glow)' : 'none',
@@ -226,7 +231,8 @@ export default function CalendarGrid({
                     onMouseLeave={(e) => {
                       e.currentTarget.style.transform = 'translateY(0) scale(1)';
                       e.currentTarget.style.zIndex = '1';
-                      if (!apt && !isDragTarget) e.currentTarget.style.borderColor = 'rgba(255,255,255,0.03)';
+                      if (!apt && !isDragTarget)
+                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.03)';
                     }}
                     title={
                       apt

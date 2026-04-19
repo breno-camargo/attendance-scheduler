@@ -1,9 +1,9 @@
 import bcrypt from 'bcryptjs';
 import { getServerSession } from 'next-auth';
 
-import { authOptions } from '@/lib/auth';
 import { ApiUtils } from '@/lib/api-utils';
 import { audit } from '@/lib/audit';
+import { authOptions } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 
 export async function POST(request: Request) {
@@ -15,8 +15,17 @@ export async function POST(request: Request) {
   try {
     const { newPassword } = await request.json();
 
-    if (!newPassword || newPassword.length < 8 || !/[a-zA-Z]/.test(newPassword) || !/\d/.test(newPassword)) {
-      return ApiUtils.error('A senha deve ter no mínimo 8 caracteres, com pelo menos uma letra e um número', null, 400);
+    if (
+      !newPassword ||
+      newPassword.length < 8 ||
+      !/[a-zA-Z]/.test(newPassword) ||
+      !/\d/.test(newPassword)
+    ) {
+      return ApiUtils.error(
+        'A senha deve ter no mínimo 8 caracteres, com pelo menos uma letra e um número',
+        null,
+        400,
+      );
     }
 
     const hash = await bcrypt.hash(newPassword, 10);

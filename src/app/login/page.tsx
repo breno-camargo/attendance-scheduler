@@ -135,7 +135,6 @@ export default function LoginPage() {
           >
             {loading ? 'Entrando...' : 'Entrar'}
           </button>
-
         </form>
 
         <div style={{ textAlign: 'center', marginTop: '1.2rem' }}>
@@ -158,14 +157,23 @@ export default function LoginPage() {
               Não consegue acessar? <span style={{ fontWeight: 600 }}>Recuperar senha</span>
             </button>
           ) : forgotSent ? (
-            <div style={{
-              padding: '1.2rem',
-              borderRadius: '10px',
-              background: 'rgba(99, 102, 241, 0.06)',
-              border: '1px solid rgba(99, 102, 241, 0.15)',
-            }}>
+            <div
+              style={{
+                padding: '1.2rem',
+                borderRadius: '10px',
+                background: 'rgba(99, 102, 241, 0.06)',
+                border: '1px solid rgba(99, 102, 241, 0.15)',
+              }}
+            >
               <div style={{ fontSize: '1.8rem', marginBottom: '0.5rem' }}>📩</div>
-              <p style={{ color: 'var(--foreground)', fontWeight: 600, margin: '0 0 0.3rem', fontSize: '0.95rem' }}>
+              <p
+                style={{
+                  color: 'var(--foreground)',
+                  fontWeight: 600,
+                  margin: '0 0 0.3rem',
+                  fontSize: '0.95rem',
+                }}
+              >
                 E-mail enviado!
               </p>
               <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', margin: '0 0 1rem' }}>
@@ -175,19 +183,32 @@ export default function LoginPage() {
                 type="button"
                 className="btn-secondary"
                 style={{ padding: '0.6rem 1.2rem', fontSize: '0.82rem' }}
-                onClick={() => { setForgotMode(false); setForgotSent(false); setForgotEmail(''); }}
+                onClick={() => {
+                  setForgotMode(false);
+                  setForgotSent(false);
+                  setForgotEmail('');
+                }}
               >
                 Voltar ao login
               </button>
             </div>
           ) : (
-            <div style={{
-              padding: '1.2rem',
-              borderRadius: '10px',
-              background: 'rgba(99, 102, 241, 0.04)',
-              border: '1px solid var(--primary-border-subtle)',
-            }}>
-              <p style={{ color: 'var(--foreground)', fontWeight: 600, margin: '0 0 0.8rem', fontSize: '0.9rem' }}>
+            <div
+              style={{
+                padding: '1.2rem',
+                borderRadius: '10px',
+                background: 'rgba(99, 102, 241, 0.04)',
+                border: '1px solid var(--primary-border-subtle)',
+              }}
+            >
+              <p
+                style={{
+                  color: 'var(--foreground)',
+                  fontWeight: 600,
+                  margin: '0 0 0.8rem',
+                  fontSize: '0.9rem',
+                }}
+              >
                 Recuperar senha
               </p>
               <form
@@ -219,23 +240,36 @@ export default function LoginPage() {
                   type="email"
                   placeholder="seu.email@compasss.com.br"
                   value={forgotEmail}
-                  onChange={(e) => { setForgotEmail(e.target.value); setForgotError(''); }}
+                  onChange={(e) => {
+                    setForgotEmail(e.target.value);
+                    setForgotError('');
+                  }}
                   required
                   autoFocus
                   style={{ fontSize: '0.9rem' }}
                 />
                 {forgotError && (
-                  <p style={{ color: 'var(--danger, #f87171)', fontSize: '0.82rem', margin: 0 }}>{forgotError}</p>
+                  <p style={{ color: 'var(--danger, #f87171)', fontSize: '0.82rem', margin: 0 }}>
+                    {forgotError}
+                  </p>
                 )}
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <button type="submit" className="btn-primary" style={{ flex: 1, padding: '0.75rem', fontSize: '0.85rem' }} disabled={forgotLoading}>
+                  <button
+                    type="submit"
+                    className="btn-primary"
+                    style={{ flex: 1, padding: '0.75rem', fontSize: '0.85rem' }}
+                    disabled={forgotLoading}
+                  >
                     {forgotLoading ? 'Enviando...' : 'Enviar link de recuperação'}
                   </button>
                   <button
                     type="button"
                     className="btn-secondary"
                     style={{ padding: '0.75rem', fontSize: '0.85rem' }}
-                    onClick={() => { setForgotMode(false); setForgotSent(false); }}
+                    onClick={() => {
+                      setForgotMode(false);
+                      setForgotSent(false);
+                    }}
                   >
                     Voltar
                   </button>

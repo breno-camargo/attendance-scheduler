@@ -63,7 +63,13 @@ export default function ImportPage() {
   const { showToast } = useToast();
   const [dragging, setDragging] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [importResult, setImportResult] = useState<{ created: number; skipped: number; techsCreated: number; clientsCreated: number; errors: string[] } | null>(null);
+  const [importResult, setImportResult] = useState<{
+    created: number;
+    skipped: number;
+    techsCreated: number;
+    clientsCreated: number;
+    errors: string[];
+  } | null>(null);
 
   const downloadTemplate = async () => {
     const wb = new ExcelJS.Workbook();
@@ -100,9 +106,29 @@ export default function ImportPage() {
 
     // Exemplos
     const examples = [
-      ['Paulista Office Park', '(11) 99999-0000', 'SDAI,CFTV', 2, 'Mensal', 'Seg,Qua,Sex', 'João Silva', '(11) 97777-0000', 'joao.silva'],
+      [
+        'Paulista Office Park',
+        '(11) 99999-0000',
+        'SDAI,CFTV',
+        2,
+        'Mensal',
+        'Seg,Qua,Sex',
+        'João Silva',
+        '(11) 97777-0000',
+        'joao.silva',
+      ],
       ['Shopping Center Norte', '(11) 98888-0000', 'SDAI', 1, 'Mensal', '', 'João Silva', '', ''],
-      ['Condomínio Alphaville', '', 'SCA,SAP', 1, 'Trimestral', 'Ter,Qui', 'Maria Santos', '(11) 96666-0000', 'maria.santos'],
+      [
+        'Condomínio Alphaville',
+        '',
+        'SCA,SAP',
+        1,
+        'Trimestral',
+        'Ter,Qui',
+        'Maria Santos',
+        '(11) 96666-0000',
+        'maria.santos',
+      ],
     ];
 
     examples.forEach((row) => {
@@ -152,7 +178,9 @@ export default function ImportPage() {
 
     // Gera e baixa
     const buffer = await wb.xlsx.writeBuffer();
-    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const blob = new Blob([buffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -180,7 +208,13 @@ export default function ImportPage() {
           return;
         }
 
-        setImportResult({ created: data.created, skipped: data.skipped, techsCreated: data.techsCreated || 0, clientsCreated: data.clientsCreated || 0, errors: data.errors || [] });
+        setImportResult({
+          created: data.created,
+          skipped: data.skipped,
+          techsCreated: data.techsCreated || 0,
+          clientsCreated: data.clientsCreated || 0,
+          errors: data.errors || [],
+        });
       } catch {
         showToast('Falha de conexão. Tente novamente.', 'error');
       } finally {
@@ -279,9 +313,10 @@ export default function ImportPage() {
             color: 'var(--text-muted)',
           }}
         >
-          <strong style={{ color: 'var(--foreground)' }}>Colunas da planilha:</strong>{' '}
-          Cliente, Telefone, Sistemas (SDAI, CFTV, SCA...), Visitas/Mês, Frequência
-          (Mensal, Trimestral...), Dias Preferidos (Seg, Ter...), Técnico, Telefone Técnico, Email Técnico, Escopo (Victor Lopes ou Gabriel Domingos)
+          <strong style={{ color: 'var(--foreground)' }}>Colunas da planilha:</strong> Cliente,
+          Telefone, Sistemas (SDAI, CFTV, SCA...), Visitas/Mês, Frequência (Mensal, Trimestral...),
+          Dias Preferidos (Seg, Ter...), Técnico, Telefone Técnico, Email Técnico, Escopo (Victor
+          Lopes ou Gabriel Domingos)
         </div>
       </GlassCard>
 
@@ -312,9 +347,7 @@ export default function ImportPage() {
             onChange={handleFileChange}
             style={{ display: 'none' }}
           />
-          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>
-            {loading ? '...' : '📁'}
-          </div>
+          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>{loading ? '...' : '📁'}</div>
           <p
             style={{
               fontSize: '1.1rem',
@@ -332,141 +365,230 @@ export default function ImportPage() {
       </GlassCard>
 
       {/* Modal de resultado */}
-      {importResult && typeof document !== 'undefined' && createPortal(
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.7)',
-            zIndex: 99999,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            backdropFilter: 'blur(6px)',
-          }}
-          onClick={() => setImportResult(null)}
-        >
+      {importResult &&
+        typeof document !== 'undefined' &&
+        createPortal(
           <div
-            className="glass-panel animate-fade-in"
             style={{
-              maxWidth: '420px',
-              width: '90%',
-              padding: '2.5rem',
-              textAlign: 'center',
-              border: importResult.errors.length > 0
-                ? '1px solid rgba(239, 68, 68, 0.3)'
-                : '1px solid rgba(16, 185, 129, 0.3)',
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(0,0,0,0.7)',
+              zIndex: 99999,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backdropFilter: 'blur(6px)',
             }}
-            onClick={(e) => e.stopPropagation()}
+            onClick={() => setImportResult(null)}
           >
-            {/* Accent line */}
             <div
+              className="glass-panel animate-fade-in"
               style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                height: '3px',
-                background: importResult.errors.length > 0
-                  ? 'linear-gradient(90deg, transparent, #ef4444, transparent)'
-                  : 'linear-gradient(90deg, transparent, #34d399, transparent)',
-                borderRadius: '12px 12px 0 0',
+                maxWidth: '420px',
+                width: '90%',
+                padding: '2.5rem',
+                textAlign: 'center',
+                border:
+                  importResult.errors.length > 0
+                    ? '1px solid rgba(239, 68, 68, 0.3)'
+                    : '1px solid rgba(16, 185, 129, 0.3)',
               }}
-            />
-
-            <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>
-              {importResult.errors.length > 0 ? '⚠️' : '✅'}
-            </div>
-
-            <h2 style={{ margin: '0 0 1.5rem', fontSize: '1.3rem', fontWeight: 700 }}>
-              Importação Concluída
-            </h2>
-
-            <div style={{ display: 'flex', gap: '1.2rem', justifyContent: 'center', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
-              {importResult.created > 0 && (
-                <div style={{ textAlign: 'center', minWidth: '70px' }}>
-                  <div style={{ fontSize: '2.2rem', fontWeight: 800, color: '#34d399', lineHeight: 1 }}>
-                    {importResult.created}
-                  </div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, marginTop: '4px' }}>
-                    {importResult.created === 1 ? 'Contrato' : 'Contratos'}
-                  </div>
-                </div>
-              )}
-              {importResult.clientsCreated > 0 && (
-                <div style={{ textAlign: 'center', minWidth: '70px' }}>
-                  <div style={{ fontSize: '2.2rem', fontWeight: 800, color: '#60a5fa', lineHeight: 1 }}>
-                    {importResult.clientsCreated}
-                  </div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, marginTop: '4px' }}>
-                    {importResult.clientsCreated === 1 ? 'Cliente novo' : 'Clientes novos'}
-                  </div>
-                </div>
-              )}
-              {importResult.techsCreated > 0 && (
-                <div style={{ textAlign: 'center', minWidth: '70px' }}>
-                  <div style={{ fontSize: '2.2rem', fontWeight: 800, color: '#c084fc', lineHeight: 1 }}>
-                    {importResult.techsCreated}
-                  </div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, marginTop: '4px' }}>
-                    {importResult.techsCreated === 1 ? 'Técnico novo' : 'Técnicos novos'}
-                  </div>
-                </div>
-              )}
-              {importResult.skipped > 0 && (
-                <div style={{ textAlign: 'center', minWidth: '70px' }}>
-                  <div style={{ fontSize: '2.2rem', fontWeight: 800, color: '#fbbf24', lineHeight: 1 }}>
-                    {importResult.skipped}
-                  </div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, marginTop: '4px' }}>
-                    Já {importResult.skipped === 1 ? 'existia' : 'existiam'}
-                  </div>
-                </div>
-              )}
-              {importResult.errors.length > 0 && (
-                <div style={{ textAlign: 'center', minWidth: '70px' }}>
-                  <div style={{ fontSize: '2.2rem', fontWeight: 800, color: '#f87171', lineHeight: 1 }}>
-                    {importResult.errors.length}
-                  </div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, marginTop: '4px' }}>
-                    {importResult.errors.length === 1 ? 'Erro' : 'Erros'}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {importResult.errors.length > 0 && (
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Accent line */}
               <div
                 style={{
-                  textAlign: 'left',
-                  padding: '0.8rem 1rem',
-                  borderRadius: '10px',
-                  background: 'rgba(239, 68, 68, 0.06)',
-                  border: '1px solid rgba(239, 68, 68, 0.15)',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: '3px',
+                  background:
+                    importResult.errors.length > 0
+                      ? 'linear-gradient(90deg, transparent, #ef4444, transparent)'
+                      : 'linear-gradient(90deg, transparent, #34d399, transparent)',
+                  borderRadius: '12px 12px 0 0',
+                }}
+              />
+
+              <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>
+                {importResult.errors.length > 0 ? '⚠️' : '✅'}
+              </div>
+
+              <h2 style={{ margin: '0 0 1.5rem', fontSize: '1.3rem', fontWeight: 700 }}>
+                Importação Concluída
+              </h2>
+
+              <div
+                style={{
+                  display: 'flex',
+                  gap: '1.2rem',
+                  justifyContent: 'center',
                   marginBottom: '1.5rem',
-                  maxHeight: '120px',
-                  overflowY: 'auto',
+                  flexWrap: 'wrap',
                 }}
               >
-                {importResult.errors.map((err, i) => (
-                  <p key={i} style={{ margin: i > 0 ? '4px 0 0' : 0, fontSize: '0.82rem', color: '#f87171' }}>
-                    {err}
-                  </p>
-                ))}
+                {importResult.created > 0 && (
+                  <div style={{ textAlign: 'center', minWidth: '70px' }}>
+                    <div
+                      style={{
+                        fontSize: '2.2rem',
+                        fontWeight: 800,
+                        color: '#34d399',
+                        lineHeight: 1,
+                      }}
+                    >
+                      {importResult.created}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: '0.75rem',
+                        color: 'var(--text-muted)',
+                        fontWeight: 600,
+                        marginTop: '4px',
+                      }}
+                    >
+                      {importResult.created === 1 ? 'Contrato' : 'Contratos'}
+                    </div>
+                  </div>
+                )}
+                {importResult.clientsCreated > 0 && (
+                  <div style={{ textAlign: 'center', minWidth: '70px' }}>
+                    <div
+                      style={{
+                        fontSize: '2.2rem',
+                        fontWeight: 800,
+                        color: '#60a5fa',
+                        lineHeight: 1,
+                      }}
+                    >
+                      {importResult.clientsCreated}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: '0.75rem',
+                        color: 'var(--text-muted)',
+                        fontWeight: 600,
+                        marginTop: '4px',
+                      }}
+                    >
+                      {importResult.clientsCreated === 1 ? 'Cliente novo' : 'Clientes novos'}
+                    </div>
+                  </div>
+                )}
+                {importResult.techsCreated > 0 && (
+                  <div style={{ textAlign: 'center', minWidth: '70px' }}>
+                    <div
+                      style={{
+                        fontSize: '2.2rem',
+                        fontWeight: 800,
+                        color: '#c084fc',
+                        lineHeight: 1,
+                      }}
+                    >
+                      {importResult.techsCreated}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: '0.75rem',
+                        color: 'var(--text-muted)',
+                        fontWeight: 600,
+                        marginTop: '4px',
+                      }}
+                    >
+                      {importResult.techsCreated === 1 ? 'Técnico novo' : 'Técnicos novos'}
+                    </div>
+                  </div>
+                )}
+                {importResult.skipped > 0 && (
+                  <div style={{ textAlign: 'center', minWidth: '70px' }}>
+                    <div
+                      style={{
+                        fontSize: '2.2rem',
+                        fontWeight: 800,
+                        color: '#fbbf24',
+                        lineHeight: 1,
+                      }}
+                    >
+                      {importResult.skipped}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: '0.75rem',
+                        color: 'var(--text-muted)',
+                        fontWeight: 600,
+                        marginTop: '4px',
+                      }}
+                    >
+                      Já {importResult.skipped === 1 ? 'existia' : 'existiam'}
+                    </div>
+                  </div>
+                )}
+                {importResult.errors.length > 0 && (
+                  <div style={{ textAlign: 'center', minWidth: '70px' }}>
+                    <div
+                      style={{
+                        fontSize: '2.2rem',
+                        fontWeight: 800,
+                        color: '#f87171',
+                        lineHeight: 1,
+                      }}
+                    >
+                      {importResult.errors.length}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: '0.75rem',
+                        color: 'var(--text-muted)',
+                        fontWeight: 600,
+                        marginTop: '4px',
+                      }}
+                    >
+                      {importResult.errors.length === 1 ? 'Erro' : 'Erros'}
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
 
-            <button
-              onClick={() => setImportResult(null)}
-              className="btn-primary"
-              style={{ width: '100%', padding: '0.8rem' }}
-            >
-              Fechar
-            </button>
-          </div>
-        </div>,
-        document.body,
-      )}
+              {importResult.errors.length > 0 && (
+                <div
+                  style={{
+                    textAlign: 'left',
+                    padding: '0.8rem 1rem',
+                    borderRadius: '10px',
+                    background: 'rgba(239, 68, 68, 0.06)',
+                    border: '1px solid rgba(239, 68, 68, 0.15)',
+                    marginBottom: '1.5rem',
+                    maxHeight: '120px',
+                    overflowY: 'auto',
+                  }}
+                >
+                  {importResult.errors.map((err, i) => (
+                    <p
+                      key={i}
+                      style={{
+                        margin: i > 0 ? '4px 0 0' : 0,
+                        fontSize: '0.82rem',
+                        color: '#f87171',
+                      }}
+                    >
+                      {err}
+                    </p>
+                  ))}
+                </div>
+              )}
+
+              <button
+                onClick={() => setImportResult(null)}
+                className="btn-primary"
+                style={{ width: '100%', padding: '0.8rem' }}
+              >
+                Fechar
+              </button>
+            </div>
+          </div>,
+          document.body,
+        )}
     </main>
   );
 }

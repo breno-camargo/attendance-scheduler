@@ -33,7 +33,15 @@ export default function ReportContactTables({
       <table className="contact-table" style={{ marginBottom: '4px' }}>
         <thead>
           <tr>
-            <th colSpan={6} style={{ textAlign: 'center', letterSpacing: '1.5px', fontSize: '0.55rem', padding: '8px' }}>
+            <th
+              colSpan={6}
+              style={{
+                textAlign: 'center',
+                letterSpacing: '1.5px',
+                fontSize: '0.55rem',
+                padding: '8px',
+              }}
+            >
               LISTA DE CONTATOS
             </th>
           </tr>
@@ -54,9 +62,7 @@ export default function ReportContactTables({
         </thead>
         <tbody>
           <tr>
-            <td style={{ fontWeight: 800 }}>
-              1° Contato
-            </td>
+            <td style={{ fontWeight: 800 }}>1° Contato</td>
             <td
               rowSpan={maintenance.length + 1}
               style={{

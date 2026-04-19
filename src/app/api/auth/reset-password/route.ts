@@ -13,7 +13,11 @@ export async function POST(request: Request) {
     }
 
     if (newPassword.length < 8 || !/[a-zA-Z]/.test(newPassword) || !/\d/.test(newPassword)) {
-      return ApiUtils.error('A senha deve ter no mínimo 8 caracteres, com pelo menos uma letra e um número', null, 400);
+      return ApiUtils.error(
+        'A senha deve ter no mínimo 8 caracteres, com pelo menos uma letra e um número',
+        null,
+        400,
+      );
     }
 
     // Transaction atômica pra evitar race condition (mesmo token usado 2x simultâneo)

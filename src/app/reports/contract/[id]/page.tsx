@@ -63,8 +63,11 @@ export default async function ContractReportPage({
   // Se o supervisor é o Supervisor → mostra Supervisor + Coordenador (sem Líder)
   // Se não tem supervisor → mostra os 3
   // Busca o supervisor do técnico diretamente (caso o include não traga nested)
-  const profSupervisorId = (contract.professional as { supervisorId?: string } | null)?.supervisorId;
-  const supervisorContact = profSupervisorId ? internalStaff.find((s) => s.id === profSupervisorId) : null;
+  const profSupervisorId = (contract.professional as { supervisorId?: string } | null)
+    ?.supervisorId;
+  const supervisorContact = profSupervisorId
+    ? internalStaff.find((s) => s.id === profSupervisorId)
+    : null;
   const supervisorRole = (supervisorContact?.role || '').toLowerCase();
   const isLiderScope = supervisorRole.includes('líder') || supervisorRole.includes('lider');
   const isSupervisorScope = supervisorRole.includes('supervisor');
@@ -72,14 +75,32 @@ export default async function ContractReportPage({
   const maintenanceDefaults: ReportContact[] = [];
   let contactNum = 2;
   if (!isSupervisorScope) {
-    maintenanceDefaults.push({ action: `${contactNum}° Contato`, role: 'Técnico de Sistemas (Líder)', name: '', phone: '', email: '' });
+    maintenanceDefaults.push({
+      action: `${contactNum}° Contato`,
+      role: 'Técnico de Sistemas (Líder)',
+      name: '',
+      phone: '',
+      email: '',
+    });
     contactNum++;
   }
   if (!isLiderScope) {
-    maintenanceDefaults.push({ action: `${contactNum}° Contato`, role: 'Supervisor', name: '', phone: '', email: '' });
+    maintenanceDefaults.push({
+      action: `${contactNum}° Contato`,
+      role: 'Supervisor',
+      name: '',
+      phone: '',
+      email: '',
+    });
     contactNum++;
   }
-  maintenanceDefaults.push({ action: `${contactNum}° Contato`, role: 'Coordenador', name: '', phone: '', email: '' });
+  maintenanceDefaults.push({
+    action: `${contactNum}° Contato`,
+    role: 'Coordenador',
+    name: '',
+    phone: '',
+    email: '',
+  });
 
   const defaultContactsData = {
     maintenance: maintenanceDefaults,
@@ -123,12 +144,15 @@ export default async function ContractReportPage({
   };
 
   // Determina o ano: usa query param ?year=, senão pega o ano mais recente dos agendamentos.
-  const appointmentYears = Array.from(new Set(contract.appointments.map((a) => new Date(a.date).getFullYear())));
-  const year = yearParam && !isNaN(yearParam)
-    ? yearParam
-    : appointmentYears.length > 0
-      ? Math.max(...appointmentYears)
-      : new Date().getFullYear();
+  const appointmentYears = Array.from(
+    new Set(contract.appointments.map((a) => new Date(a.date).getFullYear())),
+  );
+  const year =
+    yearParam && !isNaN(yearParam)
+      ? yearParam
+      : appointmentYears.length > 0
+        ? Math.max(...appointmentYears)
+        : new Date().getFullYear();
 
   // Filtra appointments apenas do ano selecionado
   const filteredAppointments = contract.appointments.filter(
