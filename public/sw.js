@@ -1,4 +1,4 @@
-const CACHE_NAME = 'compasss-v1';
+const CACHE_NAME = 'compasss-v2';
 
 // Assets to pre-cache on install
 const PRECACHE_ASSETS = ['/manifest.json', '/offline.html'];
