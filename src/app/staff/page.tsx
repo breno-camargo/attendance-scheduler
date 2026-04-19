@@ -8,8 +8,8 @@ import { GlassCard } from '@/components/ui/glass-card';
 import { Modal } from '@/components/ui/modal';
 import { useToast } from '@/components/ui/toast';
 import { staffApi } from '@/lib/api-client';
-import { ApiUtils } from '@/lib/api-utils';
 import { EMAIL_DOMAIN, UNIQUE_ROLES, MAINT_ROLES, migrateRole } from '@/lib/constants';
+import { formatPhone } from '@/lib/formatting';
 import type { InternalContact } from '@/types';
 
 type StaffMember = InternalContact;
@@ -278,7 +278,7 @@ export default function StaffPage() {
     setName(full.name);
     setRole(migrateRole(full.role || ''));
     setEmailPrefix(full.email?.split('@')[0] || '');
-    setPhone(ApiUtils.formatPhone(full.phone || ''));
+    setPhone(formatPhone(full.phone || ''));
     setIsModalOpen(true);
   };
 
@@ -407,7 +407,7 @@ export default function StaffPage() {
               type="text"
               placeholder="(11) 99999-9999"
               value={phone}
-              onChange={(e) => setPhone(ApiUtils.formatPhone(e.target.value))}
+              onChange={(e) => setPhone(formatPhone(e.target.value))}
               maxLength={15}
             />
           </div>

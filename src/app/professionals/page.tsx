@@ -7,8 +7,8 @@ import { GlassCard } from '@/components/ui/glass-card';
 import { Modal } from '@/components/ui/modal';
 import { useToast } from '@/components/ui/toast';
 import { clientsApi, professionalsApi, staffApi } from '@/lib/api-client';
-import { ApiUtils } from '@/lib/api-utils';
 import { EMAIL_DOMAIN } from '@/lib/constants';
+import { capitalizeName, formatPhone } from '@/lib/formatting';
 import type { Contract, InternalContact, Professional } from '@/types';
 
 export default function ProfessionalsPage() {
@@ -105,7 +105,7 @@ export default function ProfessionalsPage() {
     setEditingId(full.id);
     setName(full.name);
     setEmailPrefix(full.email?.split('@')[0] || '');
-    setPhone(ApiUtils.formatPhone(full.phone || ''));
+    setPhone(formatPhone(full.phone || ''));
     setSupervisorId(full.supervisorId || '');
     setIsModalOpen(true);
   };
@@ -200,7 +200,7 @@ export default function ProfessionalsPage() {
               type="text"
               placeholder="(11) 99999-9999"
               value={phone}
-              onChange={(e) => setPhone(ApiUtils.formatPhone(e.target.value))}
+              onChange={(e) => setPhone(formatPhone(e.target.value))}
               required
               maxLength={15}
             />
@@ -362,7 +362,7 @@ export default function ProfessionalsPage() {
                             letterSpacing: '-0.3px',
                           }}
                         >
-                          {ApiUtils.capitalizeName(p.name)}
+                          {capitalizeName(p.name)}
                         </strong>
                         <Badge variant="primary">Técnico</Badge>
                         {p.supervisor && (

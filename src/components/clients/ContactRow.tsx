@@ -1,6 +1,6 @@
 'use client';
 
-import { ApiUtils } from '@/lib/api-utils';
+import { formatPhone, maskPII } from '@/lib/formatting';
 import type { Contact } from '@/types';
 
 interface ContactRowProps {
@@ -133,22 +133,18 @@ export default function ContactRow({
 
       <input
         value={
-          focusedField === `${prefix}-phone-${idx}`
-            ? row.phone
-            : (ApiUtils.maskPII(row.phone) as string)
+          focusedField === `${prefix}-phone-${idx}` ? row.phone : (maskPII(row.phone) as string)
         }
         onFocus={() => setFocusedField(`${prefix}-phone-${idx}`)}
         onBlur={() => setFocusedField(null)}
-        onChange={(e) => onUpdate(idx, 'phone', ApiUtils.formatPhone(e.target.value))}
+        onChange={(e) => onUpdate(idx, 'phone', formatPhone(e.target.value))}
         placeholder="Telefone"
         style={inputStyle}
       />
 
       <input
         value={
-          focusedField === `${prefix}-email-${idx}`
-            ? row.email
-            : (ApiUtils.maskPII(row.email) as string)
+          focusedField === `${prefix}-email-${idx}` ? row.email : (maskPII(row.email) as string)
         }
         onFocus={() => setFocusedField(`${prefix}-email-${idx}`)}
         onBlur={() => setFocusedField(null)}

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 
 import { Modal } from '@/components/ui/modal';
 import { useToast } from '@/components/ui/toast';
-import { ApiUtils } from '@/lib/api-utils';
+import { capitalizeName, formatPhone } from '@/lib/formatting';
 import type { Client, Professional } from '@/types';
 
 interface ContractFormModalProps {
@@ -58,7 +58,7 @@ export default function ContractFormModal({
     if (isOpen) {
       if (editingId && initialData) {
         setName(initialData.name || '');
-        setPhone(ApiUtils.formatPhone(initialData.phone || ''));
+        setPhone(formatPhone(initialData.phone || ''));
         const contract = initialData.contracts?.[0];
         if (contract) {
           setVisitsPerMonth(contract.visitsPerMonth?.toString() || '2');
@@ -151,7 +151,7 @@ export default function ContractFormModal({
     e.preventDefault();
     setSaving(true);
     const payload = {
-      name: ApiUtils.capitalizeName(name),
+      name: capitalizeName(name),
       phone,
       visitsPerMonth,
       frequency,
@@ -227,7 +227,7 @@ export default function ContractFormModal({
               type="text"
               placeholder="(11) 99999-9999"
               value={phone}
-              onChange={(e) => setPhone(ApiUtils.formatPhone(e.target.value))}
+              onChange={(e) => setPhone(formatPhone(e.target.value))}
               maxLength={15}
             />
           </div>
