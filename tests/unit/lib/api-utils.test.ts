@@ -307,15 +307,22 @@ describe('ApiUtils.error', () => {
     expect(res.data.details).toBe('Consulte os logs do servidor.');
   });
 
-  it('logs error details to console.error when details are provided', () => {
+  it('logs error details to console.error for server errors (>=500) with details', () => {
     const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
     ApiUtils.error('Failure', { reason: 'timeout' });
-    expect(spy).toHaveBeenCalledWith('[API ERROR] Failure:', { reason: 'timeout' });
+    expect(spy).toHaveBeenCalledWith('[API ERROR 500] Failure:', { reason: 'timeout' });
   });
 
   it('does NOT call console.error when details are null', () => {
     const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
     ApiUtils.error('Failure', null);
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it('does NOT call console.error for client errors (4xx) even with details', () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    ApiUtils.error('Dados inválidos', { field: 'name' }, 400);
+    ApiUtils.error('Não encontrado', { id: 'abc' }, 404);
     expect(spy).not.toHaveBeenCalled();
   });
 });

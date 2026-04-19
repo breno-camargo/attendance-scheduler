@@ -82,8 +82,10 @@ export const ApiUtils = {
   error: (message: string, details: unknown = null, status = 500) => {
     const isProduction = process.env.NODE_ENV === 'production';
 
-    if (details) {
-      console.error(`[API ERROR] ${message}:`, details);
+    // Loga só erros de servidor (>=500) — validação 400/404 são esperados
+    // e poluíam os logs sem agregar informação útil.
+    if (details && status >= 500) {
+      console.error(`[API ERROR ${status}] ${message}:`, details);
     }
 
     return NextResponse.json(
