@@ -1,6 +1,5 @@
 'use client';
 
-import ExcelJS from 'exceljs';
 import { useCallback, useState } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -72,6 +71,8 @@ export default function ImportPage() {
   } | null>(null);
 
   const downloadTemplate = async () => {
+    // Dynamic import: exceljs é ~500KB; carrega só quando o user clica em baixar
+    const ExcelJS = (await import('exceljs')).default;
     const wb = new ExcelJS.Workbook();
     wb.creator = 'CompaSSS';
     const ws = wb.addWorksheet('Contratos', {
