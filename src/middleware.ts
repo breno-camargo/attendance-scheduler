@@ -35,6 +35,9 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!api/auth|api/ping|_next/static|_next/image|icon\\.png|favicon.ico|login|reset-password|logo|icons|corner).*)',
+    // sw.js e manifest.json precisam ser públicos pro PWA funcionar. offline.html
+    // é servido pelo SW em modo offline. Sem isso, o browser recebe o HTML do
+    // login em vez do JS do SW e nunca atualiza pra versão nova.
+    '/((?!api/auth|api/ping|_next/static|_next/image|icon\\.png|favicon.ico|login|reset-password|logo|icons|corner|sw\\.js|manifest\\.json|offline\\.html).*)',
   ],
 };
