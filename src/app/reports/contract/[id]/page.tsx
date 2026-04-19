@@ -8,6 +8,10 @@ import prisma from '@/lib/prisma';
 
 import './print.css';
 
+// Relatório sempre fresco: evita browser servir versão stale com nome desatualizado.
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 interface ReportContact {
   action?: string;
   contact?: string;

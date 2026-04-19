@@ -25,8 +25,12 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const { request } = event;
 
-  // Skip non-GET requests and API calls
-  if (request.method !== 'GET' || request.url.includes('/api/')) {
+  // Skip non-GET, API calls e relatórios (PDF precisa sempre refletir estado atual do banco).
+  if (
+    request.method !== 'GET' ||
+    request.url.includes('/api/') ||
+    request.url.includes('/reports/')
+  ) {
     return;
   }
 

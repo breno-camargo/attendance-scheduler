@@ -3,6 +3,18 @@ const nextConfig = {
   async headers() {
     return [
       {
+        // Relatórios não podem ser cacheados pelo browser — dados mudam
+        // (nome do cliente, contatos, agenda) e PDF gerado via window.print
+        // precisa sempre refletir o estado atual do banco.
+        source: '/reports/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-store, must-revalidate',
+          },
+        ],
+      },
+      {
         source: '/(.*)',
         headers: [
           {
