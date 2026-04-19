@@ -3,13 +3,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { mockDeep } from 'vitest-mock-extended';
 import { mockReset } from 'vitest-mock-extended';
 
-// --------------------------------------------------------------------------
-// The vi.mock factory is hoisted to the top of the file by Vitest, so any
-// module-level variable assigned BELOW it (including imports) is not yet
-// initialised when the factory runs. The reliable pattern is to create the
-// mock INSIDE the factory, store it on a shared mutable object, and import
-// the mocked module to get it back out.
-// --------------------------------------------------------------------------
 vi.mock('@/lib/prisma', async () => {
   const { mockDeep } = await import('vitest-mock-extended');
   return { default: mockDeep<PrismaClient>() };
@@ -33,11 +26,9 @@ vi.mock('next-auth', () => ({
 }));
 vi.mock('@/lib/auth', () => ({ authOptions: {} }));
 
-// Import the mocked prisma AFTER vi.mock declarations so we get the mock instance
 import { GET } from '@/app/api/stats/route';
 import prisma from '@/lib/prisma';
 
-// Cast to the deep mock type to get full mock API
 const prismaMock = prisma as unknown as ReturnType<typeof mockDeep<PrismaClient>>;
 
 beforeEach(() => {
@@ -59,44 +50,98 @@ describe('GET /api/stats', () => {
   it('returns correct counts for clients, professionals, contracts and schedules', async () => {
     prismaMock.client.count.mockResolvedValue(5);
     prismaMock.professional.count.mockResolvedValue(3);
-    prismaMock.contract.count.mockResolvedValue(7);
-    (prismaMock.appointment.groupBy as any).mockResolvedValue([
+    prismaMock.contract.findMany.mockResolvedValue([
+      {
+        id: 'c1',
+        systemTypes: 'SDAI,CFTV',
+        client: { name: 'Client 1' },
+        professional: { name: 'Tec A' },
+      },
+      {
+        id: 'c2',
+        systemTypes: 'CFTV',
+        client: { name: 'Client 2' },
+        professional: { name: 'Tec B' },
+      },
+      {
+        id: 'c3',
+        systemTypes: null,
+        client: { name: 'Client 3' },
+        professional: null,
+      },
+      {
+        id: 'c4',
+        systemTypes: null,
+        client: { name: 'Client 4' },
+        professional: null,
+      },
+      {
+        id: 'c5',
+        systemTypes: null,
+        client: { name: 'Client 5' },
+        professional: null,
+      },
+      {
+        id: 'c6',
+        systemTypes: null,
+        client: { name: 'Client 6' },
+        professional: null,
+      },
+      {
+        id: 'c7',
+        systemTypes: null,
+        client: { name: 'Client 7' },
+        professional: null,
+      },
+    ] as any);
+    prismaMock.appointment.findMany.mockResolvedValue([
       { contractId: 'c1' },
       { contractId: 'c2' },
-    ]);
+    ] as any);
 
     const response = await GET();
 
     expect(response.status).toBe(200);
     const body = await response.json();
-    expect(body).toEqual({
+    expect(body).toMatchObject({
       clients: 5,
       professionals: 3,
       totalContracts: 7,
       contractsWithSchedule: 2,
+    });
+    expect(body.contractsDetail).toHaveLength(7);
+    expect(body.contractsDetail[0]).toMatchObject({
+      id: 'c1',
+      clientName: 'Client 1',
+      professionalName: 'Tec A',
+      hasSchedule: true,
     });
   });
 
   it('returns zero counts when database is empty', async () => {
     prismaMock.client.count.mockResolvedValue(0);
     prismaMock.professional.count.mockResolvedValue(0);
-    prismaMock.contract.count.mockResolvedValue(0);
-    (prismaMock.appointment.groupBy as any).mockResolvedValue([]);
+    prismaMock.contract.findMany.mockResolvedValue([]);
+    prismaMock.appointment.findMany.mockResolvedValue([]);
 
     const response = await GET();
 
     expect(response.status).toBe(200);
     const body = await response.json();
-    expect(body).toEqual({
+    expect(body).toMatchObject({
       clients: 0,
       professionals: 0,
       totalContracts: 0,
       contractsWithSchedule: 0,
+      contractsDetail: [],
     });
   });
 
   it('returns 500 when a Prisma call throws', async () => {
     prismaMock.client.count.mockRejectedValue(new Error('DB connection failed'));
+    prismaMock.professional.count.mockResolvedValue(0);
+    prismaMock.contract.findMany.mockResolvedValue([]);
+    prismaMock.appointment.findMany.mockResolvedValue([]);
 
     const response = await GET();
 
@@ -105,10 +150,11 @@ describe('GET /api/stats', () => {
     expect(body).toHaveProperty('error');
   });
 
-  it('returns 500 when appointment.groupBy throws', async () => {
+  it('returns 500 when appointment.findMany throws', async () => {
     prismaMock.client.count.mockResolvedValue(2);
     prismaMock.professional.count.mockResolvedValue(1);
-    (prismaMock.appointment.groupBy as any).mockRejectedValue(new Error('groupBy failure'));
+    prismaMock.contract.findMany.mockResolvedValue([]);
+    prismaMock.appointment.findMany.mockRejectedValue(new Error('findMany failure'));
 
     const response = await GET();
 
