@@ -291,7 +291,7 @@ export default function CalendarPage() {
   };
 
   return (
-    <main
+    <div
       style={{
         padding: '4rem 2rem',
         maxWidth: '1400px',
@@ -473,6 +473,6 @@ export default function CalendarPage() {
         linkedClients={linkedClients}
         onDayClick={handleDayClick}
       />
-    </main>
+    </div>
   );
 }

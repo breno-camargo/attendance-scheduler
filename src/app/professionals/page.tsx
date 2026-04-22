@@ -129,7 +129,7 @@ export default function ProfessionalsPage() {
   };
 
   return (
-    <main style={{ padding: '4rem 2rem', maxWidth: '1000px', margin: '0 auto' }}>
+    <div style={{ padding: '4rem 2rem', maxWidth: '1000px', margin: '0 auto' }}>
       <div className="page-header">
         <div>
           <h1 className="title" style={{ margin: 0 }}>
@@ -445,6 +445,6 @@ export default function ProfessionalsPage() {
       </div>
 
       {confirmModal}
-    </main>
+    </div>
   );
 }

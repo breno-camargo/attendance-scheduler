@@ -72,7 +72,7 @@ export default function ClientsPage() {
   };
 
   return (
-    <main style={{ padding: '4rem 2rem', maxWidth: '1000px', margin: '0 auto' }}>
+    <div style={{ padding: '4rem 2rem', maxWidth: '1000px', margin: '0 auto' }}>
       {/* Header */}
       <div
         className="page-header"
@@ -117,6 +117,6 @@ export default function ClientsPage() {
       />
 
       {confirmModal}
-    </main>
+    </div>
   );
 }

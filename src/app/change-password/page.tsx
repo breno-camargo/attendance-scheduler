@@ -53,7 +53,7 @@ export default function ChangePasswordPage() {
   };
 
   return (
-    <main
+    <div
       style={{
         minHeight: '100vh',
         display: 'flex',
@@ -159,6 +159,6 @@ export default function ChangePasswordPage() {
           </button>
         </form>
       </div>
-    </main>
+    </div>
   );
 }

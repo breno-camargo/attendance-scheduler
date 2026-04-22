@@ -46,7 +46,7 @@ export default function LoginPage() {
   };
 
   return (
-    <main
+    <div
       style={{
         minHeight: '100vh',
         display: 'flex',
@@ -279,6 +279,6 @@ export default function LoginPage() {
           )}
         </div>
       </div>
-    </main>
+    </div>
   );
 }

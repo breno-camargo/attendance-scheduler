@@ -303,7 +303,7 @@ export default function StaffPage() {
     .sort((a, b) => getRank(a.role) - getRank(b.role));
 
   return (
-    <main style={{ padding: '4rem 2rem', maxWidth: '1000px', margin: '0 auto' }}>
+    <div style={{ padding: '4rem 2rem', maxWidth: '1000px', margin: '0 auto' }}>
       <div className="page-header">
         <div>
           <h1 className="title" style={{ margin: 0, fontSize: '3.2rem', letterSpacing: '-1.5px' }}>
@@ -468,6 +468,6 @@ export default function StaffPage() {
       </div>
 
       {confirmModal}
-    </main>
+    </div>
   );
 }

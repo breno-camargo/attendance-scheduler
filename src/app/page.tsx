@@ -72,12 +72,6 @@ function StatBadge({
       >
         {label}
       </span>
-      <style>{`
-        @keyframes statPulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.45; }
-        }
-      `}</style>
     </div>
   );
 }
@@ -93,7 +87,7 @@ export default function Home() {
   }, []);
 
   return (
-    <main
+    <div
       style={{ padding: '6rem 4rem', maxWidth: '1400px', margin: '0 auto' }}
       className="home-main"
     >
@@ -336,6 +330,6 @@ export default function Home() {
           Sistemas
         </p>
       </footer>
-    </main>
+    </div>
   );
 }

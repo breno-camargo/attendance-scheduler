@@ -121,7 +121,7 @@ function ResetForm() {
 
 export default function ResetPasswordPage() {
   return (
-    <main
+    <div
       style={{
         minHeight: '100vh',
         display: 'flex',
@@ -166,6 +166,6 @@ export default function ResetPasswordPage() {
           <ResetForm />
         </Suspense>
       </div>
-    </main>
+    </div>
   );
 }

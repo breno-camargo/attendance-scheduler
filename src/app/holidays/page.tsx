@@ -93,7 +93,7 @@ export default function HolidaysPage() {
   };
 
   return (
-    <main style={{ padding: '4rem 2rem', maxWidth: '800px', margin: '0 auto' }}>
+    <div style={{ padding: '4rem 2rem', maxWidth: '800px', margin: '0 auto' }}>
       <div className="page-header">
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
@@ -349,6 +349,6 @@ export default function HolidaysPage() {
       )}
 
       {confirmModal}
-    </main>
+    </div>
   );
 }
