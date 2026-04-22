@@ -1,4 +1,4 @@
-import * as XLSX from 'xlsx';
+import type { Worksheet } from 'exceljs';
 
 import { ApiUtils, requireAuth } from '@/lib/api-utils';
 import { audit } from '@/lib/audit';
@@ -6,6 +6,42 @@ import { parseSystemTypes } from '@/lib/formatting';
 import prisma from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
+
+function cellToString(value: unknown): string {
+  if (value == null) return '';
+  if (value instanceof Date) return value.toISOString();
+  if (typeof value === 'object') {
+    const v = value as { richText?: { text: string }[]; result?: unknown; text?: string };
+    if (Array.isArray(v.richText)) return v.richText.map((rt) => rt.text).join('');
+    if ('result' in v) return cellToString(v.result);
+    if (typeof v.text === 'string') return v.text;
+    return '';
+  }
+  return String(value);
+}
+
+function sheetToJson(sheet: Worksheet): Record<string, string>[] {
+  const headers: string[] = [];
+  const headerRow = sheet.getRow(1);
+  headerRow.eachCell({ includeEmpty: false }, (cell, col) => {
+    headers[col - 1] = cellToString(cell.value).trim();
+  });
+
+  const rows: Record<string, string>[] = [];
+  for (let r = 2; r <= sheet.rowCount; r++) {
+    const row = sheet.getRow(r);
+    const obj: Record<string, string> = {};
+    let hasValue = false;
+    headers.forEach((header, idx) => {
+      if (!header) return;
+      const value = cellToString(row.getCell(idx + 1).value);
+      obj[header] = value;
+      if (value) hasValue = true;
+    });
+    if (hasValue) rows.push(obj);
+  }
+  return rows;
+}
 
 const FREQ_MAP: Record<string, string> = {
   mensal: 'MONTHLY',
@@ -53,10 +89,18 @@ export async function POST(request: Request) {
       return ApiUtils.error('Formato inválido. Envie um arquivo .xlsx', null, 400);
     }
 
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const workbook = XLSX.read(buffer, { type: 'buffer' });
-    const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json<Record<string, string>>(sheet, { defval: '' });
+    const arrayBuffer = await file.arrayBuffer();
+    const ExcelJS = (await import('exceljs')).default;
+    const workbook = new ExcelJS.Workbook();
+    // exceljs 4.4 espera Buffer legado; @types/node retorna Buffer<ArrayBuffer> parametrizado.
+    // Compatível em runtime.
+    // @ts-expect-error exceljs types lag behind @types/node Buffer generic
+    await workbook.xlsx.load(Buffer.from(arrayBuffer));
+    const sheet = workbook.worksheets[0];
+    if (!sheet) {
+      return ApiUtils.error('Planilha vazia', null, 400);
+    }
+    const rows = sheetToJson(sheet);
 
     if (rows.length === 0) {
       return ApiUtils.error('Planilha vazia', null, 400);

@@ -10,7 +10,7 @@ Sistema de agendamento de manutenção preventiva para a CompaSSS. Gera calendá
 - **Database:** PostgreSQL (Supabase) + Prisma ORM
 - **Validation:** Zod v4
 - **Email:** Nodemailer (SMTP/Gmail)
-- **Export:** ExcelJS, XLSX
+- **Export/Import:** ExcelJS
 - **Rate Limiting:** Upstash Redis (prod) / in-memory (dev)
 - **Deploy:** Vercel
 - **Tests:** Vitest (unit/API) + Playwright (E2E)
