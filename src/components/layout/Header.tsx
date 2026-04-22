@@ -8,7 +8,7 @@ import { Logo } from '@/components/ui/logo';
 
 export default function Header() {
   const pathname = usePathname();
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -124,13 +124,43 @@ export default function Header() {
           >
             {theme === 'dark' ? '☀️' : '🌙'}
           </button>
-          <div style={{ textAlign: 'right' }}>
-            <p style={{ fontSize: '0.8rem', fontWeight: '600', color: 'var(--foreground)' }}>
-              {session?.user?.name || 'Usuário'}
-            </p>
-            <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-              {session?.user?.role || 'Compasss Brasil'}
-            </p>
+          <div style={{ textAlign: 'right', minWidth: '90px' }}>
+            {status === 'loading' ? (
+              <>
+                <span
+                  style={{
+                    display: 'block',
+                    width: '80px',
+                    height: '0.8rem',
+                    borderRadius: '4px',
+                    background: 'var(--primary-border-subtle)',
+                    marginLeft: 'auto',
+                    marginBottom: '4px',
+                    animation: 'statPulse 1.4s ease-in-out infinite',
+                  }}
+                />
+                <span
+                  style={{
+                    display: 'block',
+                    width: '60px',
+                    height: '0.7rem',
+                    borderRadius: '4px',
+                    background: 'var(--primary-border-subtle)',
+                    marginLeft: 'auto',
+                    animation: 'statPulse 1.4s ease-in-out infinite',
+                  }}
+                />
+              </>
+            ) : (
+              <>
+                <p style={{ fontSize: '0.8rem', fontWeight: '600', color: 'var(--foreground)' }}>
+                  {session?.user?.name ?? ''}
+                </p>
+                <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                  {(session?.user as { role?: string } | undefined)?.role ?? ''}
+                </p>
+              </>
+            )}
           </div>
           <Link
             href="/change-password"
