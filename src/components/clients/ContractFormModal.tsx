@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 
 import { Modal } from '@/components/ui/modal';
 import { useToast } from '@/components/ui/toast';
-import { capitalizeName, formatPhone } from '@/lib/formatting';
+import { capitalizeName, formatPhone, parseSystemTypes } from '@/lib/formatting';
 import type { Client, Professional } from '@/types';
 
 interface ContractFormModalProps {
@@ -16,6 +16,8 @@ interface ContractFormModalProps {
   professionals: Professional[];
 }
 
+const DEFAULT_SYSTEMS = ['SDAI', 'CFTV', 'SAP', 'SCA', 'SAI'];
+
 export default function ContractFormModal({
   isOpen,
   onClose,
@@ -25,7 +27,6 @@ export default function ContractFormModal({
   professionals,
 }: ContractFormModalProps) {
   const { showToast } = useToast();
-  const defaultSystems = ['SDAI', 'CFTV', 'SAP', 'SCA', 'SAI'];
   const monthNames = [
     'Jan',
     'Fev',
@@ -48,7 +49,7 @@ export default function ContractFormModal({
   const [frequency, setFrequency] = useState('MONTHLY');
   const [targetMonths, setTargetMonths] = useState<number[]>([]);
   const [professionalId, setProfessionalId] = useState('');
-  const [availableSystems, setAvailableSystems] = useState<string[]>(defaultSystems);
+  const [availableSystems, setAvailableSystems] = useState<string[]>(DEFAULT_SYSTEMS);
   const [selectedSystems, setSelectedSystems] = useState<string[]>(['SDAI', 'CFTV']);
   const [preferredDays, setPreferredDays] = useState<number[]>([]);
   const [saving, setSaving] = useState(false);
@@ -64,10 +65,10 @@ export default function ContractFormModal({
           setVisitsPerMonth(contract.visitsPerMonth?.toString() || '2');
           setFrequency(contract.frequency || 'MONTHLY');
           setProfessionalId(contract.professionalId || '');
-          const savedSystems = contract.systemTypes ? contract.systemTypes.split(',') : [];
+          const savedSystems = parseSystemTypes(contract.systemTypes);
           setSelectedSystems(savedSystems);
-          const currentAvailable = [...defaultSystems];
-          savedSystems.forEach((s: string) => {
+          const currentAvailable = [...DEFAULT_SYSTEMS];
+          savedSystems.forEach((s) => {
             if (!currentAvailable.includes(s)) currentAvailable.push(s);
           });
           setAvailableSystems(currentAvailable);
@@ -85,7 +86,7 @@ export default function ContractFormModal({
         setFrequency('MONTHLY');
         setTargetMonths([]);
         setProfessionalId(professionals[0]?.id || '');
-        setAvailableSystems([...defaultSystems]);
+        setAvailableSystems([...DEFAULT_SYSTEMS]);
         setSelectedSystems(['SDAI', 'CFTV']);
         setPreferredDays([]);
       }
@@ -134,7 +135,7 @@ export default function ContractFormModal({
 
   const removeSystem = (e: React.MouseEvent, sys: string) => {
     e.stopPropagation();
-    if (defaultSystems.includes(sys)) return;
+    if (DEFAULT_SYSTEMS.includes(sys)) return;
     setAvailableSystems(availableSystems.filter((s) => s !== sys));
     setSelectedSystems(selectedSystems.filter((s) => s !== sys));
   };
@@ -407,12 +408,12 @@ export default function ContractFormModal({
                     style={{
                       ...toggleBtnStyle(selectedSystems.includes(sys)),
                       padding: '7px 14px',
-                      paddingRight: !defaultSystems.includes(sys) ? '26px' : '14px',
+                      paddingRight: !DEFAULT_SYSTEMS.includes(sys) ? '26px' : '14px',
                     }}
                   >
                     {sys}
                   </button>
-                  {!defaultSystems.includes(sys) && (
+                  {!DEFAULT_SYSTEMS.includes(sys) && (
                     <span
                       onClick={(e) => removeSystem(e, sys)}
                       style={{

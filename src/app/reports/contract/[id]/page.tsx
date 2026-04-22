@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 
 import PrintTrigger from '@/components/reports/PrintTrigger';
 import ReportContactTables from '@/components/reports/ReportContactTables';
+import { parseSystemTypes } from '@/lib/formatting';
 import { getHolidaysForYear } from '@/lib/holidays';
 import prisma from '@/lib/prisma';
 
@@ -19,11 +20,6 @@ interface ReportContact {
   name: string;
   phone: string;
   email: string;
-}
-
-interface ContactsData {
-  maintenance: ReportContact[];
-  escalation: ReportContact[];
 }
 
 interface RowData {
@@ -59,9 +55,6 @@ export default async function ContractReportPage({
   if (!contract) return notFound();
   const internalStaff = await prisma.internalContact.findMany();
 
-  const savedJson = contract.contactsJson ?? null;
-
-  // Contatos editáveis salvos (ou valores padrão)
   // Monta cadeia de contatos baseada no escopo do técnico:
   // Se o supervisor é o Líder → mostra Líder + Coordenador (sem Supervisor)
   // Se o supervisor é o Supervisor → mostra Supervisor + Coordenador (sem Líder)
@@ -196,7 +189,8 @@ export default async function ContractReportPage({
     return 'bg-green'; // Fallback to green for any other planned visit
   };
 
-  const systems = contract.systemTypes ? contract.systemTypes.split(',') : ['SDAI'];
+  const parsedSystems = parseSystemTypes(contract.systemTypes);
+  const systems = parsedSystems.length > 0 ? parsedSystems : ['SDAI'];
 
   // Decide entre layout de coluna única ou dupla
   const isSingleColumn = filteredAppointments.length <= 16;

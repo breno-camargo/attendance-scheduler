@@ -66,6 +66,17 @@ export function maskPII<T>(data: T): T {
   return data;
 }
 
+// Normaliza string CSV de sistemas: trim de cada token, uppercase, remove vazios.
+// Necessário pq o importer aceita "SDAI, CFTV" do Excel — sem normalizar tokens
+// individualmente, " CFTV" não bate com DEFAULT_SYSTEMS no front e vira "custom".
+export function parseSystemTypes(raw: string | null | undefined): string[] {
+  if (!raw) return [];
+  return raw
+    .split(',')
+    .map((s) => s.trim().toUpperCase())
+    .filter(Boolean);
+}
+
 export function formatPhone(value: string): string {
   if (!value) return '';
   let v = value.replace(/[^\d*]/g, '');

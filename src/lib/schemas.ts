@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { parseSystemTypes } from './formatting';
+
 // Esquema para Clientes (Prédios/Shoppings)
 export const clientSchema = z.object({
   name: z.string().min(2, 'Nome do cliente é obrigatório').max(200),
@@ -11,7 +13,12 @@ export const clientSchema = z.object({
   frequency: z.enum(['MONTHLY', 'BIMONTHLY', 'QUARTERLY', 'SEMIANNUAL', 'ANNUAL']),
   targetMonths: z.string().max(50).optional(),
   professionalId: z.string().max(50).optional(),
-  systemTypes: z.string().max(200).optional(),
+  // Normaliza tokens individualmente — protege contra inputs com espaço (Excel) ou case misto
+  systemTypes: z
+    .string()
+    .max(200)
+    .optional()
+    .transform((v) => (v ? parseSystemTypes(v).join(',') : v)),
   preferredDays: z.string().max(20).optional(),
 });
 

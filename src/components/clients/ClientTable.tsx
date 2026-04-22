@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { GlassCard } from '@/components/ui/glass-card';
+import { parseSystemTypes } from '@/lib/formatting';
 import type { Client } from '@/types';
 
 interface ClientTableProps {
@@ -293,7 +294,7 @@ export default function ClientTable({ clients, onEdit, onDelete }: ClientTablePr
                 ? `${contract?.visitsPerMonth}x / mês`
                 : (FREQ_LABELS[contract?.frequency ?? ''] ?? '—');
             const hasSchedule = (contract?._count?.appointments ?? 0) > 0;
-            const systems: string[] = contract?.systemTypes ? contract.systemTypes.split(',') : [];
+            const systems = parseSystemTypes(contract?.systemTypes);
             const pDays = contract?.preferredDays
               ? contract.preferredDays
                   .split(',')

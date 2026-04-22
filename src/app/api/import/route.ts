@@ -2,6 +2,7 @@ import * as XLSX from 'xlsx';
 
 import { ApiUtils, requireAuth } from '@/lib/api-utils';
 import { audit } from '@/lib/audit';
+import { parseSystemTypes } from '@/lib/formatting';
 import prisma from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
@@ -117,9 +118,9 @@ export async function POST(request: Request) {
 
       const clientName = String(row['Cliente'] ?? '').trim();
       const clientPhone = String(row['Telefone'] ?? '').trim();
-      const systemTypes = String(row['Sistemas'] ?? '')
-        .trim()
-        .toUpperCase();
+      // Normaliza tokens individualmente (trim + upper) e re-junta sem espaços
+      // pra que o front consiga bater com DEFAULT_SYSTEMS no .includes()
+      const systemTypes = parseSystemTypes(String(row['Sistemas'] ?? '')).join(',');
       const visitsPerMonth = parseInt(String(row['Visitas/Mês'] ?? row['Visitas'] ?? '2')) || 2;
       const freqRaw = String(row['Frequência'] ?? row['Frequencia'] ?? 'mensal')
         .trim()
@@ -233,9 +234,12 @@ export async function POST(request: Request) {
       const client = clientCache.get(clientKey);
       if (!client) continue;
 
+      // Normaliza ambos lados pra que dados legados com espaço ("SDAI, CFTV")
+      // batam com a versão normalizada ("SDAI,CFTV") e não criem duplicata
       const hasContract = client.contracts?.some(
         (c) =>
-          c.systemTypes?.toUpperCase() === pr.systemTypes && c.professionalId === professionalId,
+          parseSystemTypes(c.systemTypes).join(',') === pr.systemTypes &&
+          c.professionalId === professionalId,
       );
       if (hasContract) {
         skipped++;
