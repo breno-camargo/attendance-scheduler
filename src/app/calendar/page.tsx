@@ -206,15 +206,18 @@ export default function CalendarPage() {
   };
 
   const handleDayClick = (dateStr: string) => {
-    // busca sem filtro pra não ter dead end quando sidebar filtra por contrato
-    const anyApt = appointments.find(
+    // Match a prioridade do CalendarGrid: contrato filtrado primeiro, fallback
+    // pra qualquer visita do dia. Dimming garante que apt de outro contrato
+    // continua clicável sem precisar limpar filtro.
+    const aptsOnDay = appointments.filter(
       (a) => new Date(a.date).toISOString().split('T')[0] === dateStr,
     );
-    if (anyApt) {
-      if (filterContractId && anyApt.contractId !== filterContractId) {
-        setFilterContractId(null); // limpa filtro pra mostrar a visita que o cara clicou
-      }
-      setSelectedApt(anyApt);
+    const apt = filterContractId
+      ? (aptsOnDay.find((a) => a.contractId === filterContractId) ?? aptsOnDay[0])
+      : aptsOnDay[0];
+
+    if (apt) {
+      setSelectedApt(apt);
       setNewDate(dateStr);
     } else {
       setManualDate(dateStr);
