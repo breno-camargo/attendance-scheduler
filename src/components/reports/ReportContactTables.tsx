@@ -18,6 +18,16 @@ export default function ReportContactTables({
   escalation,
   professional,
 }: ReportContactTablesProps) {
+  // Linhas com contact vazio herdam o contact da linha anterior — convenção
+  // do template pra agrupar via rowspan (ex: Comercial Serviços herda
+  // "Setor Comercial" de Comercial Obras/Peças)
+  const normalizedEscalation = escalation.map((row, idx) => {
+    if (row.contact || idx === 0) return row;
+    let prev = idx - 1;
+    while (prev >= 0 && !escalation[prev].contact) prev--;
+    return prev >= 0 ? { ...row, contact: escalation[prev].contact } : row;
+  });
+
   return (
     <div
       style={{
@@ -122,12 +132,12 @@ export default function ReportContactTables({
           </tr>
         </thead>
         <tbody>
-          {escalation.map((row, idx) => {
-            const prevContact = idx > 0 ? escalation[idx - 1].contact : null;
+          {normalizedEscalation.map((row, idx) => {
+            const prevContact = idx > 0 ? normalizedEscalation[idx - 1].contact : null;
             let rSpan = 1;
             if (row.contact !== prevContact) {
-              for (let i = idx + 1; i < escalation.length; i++) {
-                if (escalation[i].contact === row.contact && row.contact) rSpan++;
+              for (let i = idx + 1; i < normalizedEscalation.length; i++) {
+                if (normalizedEscalation[i].contact === row.contact && row.contact) rSpan++;
                 else break;
               }
             }
@@ -149,7 +159,7 @@ export default function ReportContactTables({
                 )}
                 {idx === 0 && (
                   <td
-                    rowSpan={escalation.length}
+                    rowSpan={normalizedEscalation.length}
                     style={{
                       fontWeight: 800,
                       verticalAlign: 'middle',
