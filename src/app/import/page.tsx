@@ -6,58 +6,6 @@ import { createPortal } from 'react-dom';
 import { GlassCard } from '@/components/ui/glass-card';
 import { useToast } from '@/components/ui/toast';
 
-const TEMPLATE_COLUMNS = [
-  'Cliente',
-  'Telefone',
-  'Sistemas',
-  'Visitas/Mês',
-  'Frequência',
-  'Dias Preferidos',
-  'Técnico',
-  'Telefone Técnico',
-  'Email Técnico',
-  'Escopo',
-];
-
-const TEMPLATE_EXAMPLE = [
-  {
-    Cliente: 'Paulista Office Park',
-    Telefone: '(11) 99999-0000',
-    Sistemas: 'SDAI,CFTV',
-    'Visitas/Mês': 2,
-    Frequência: 'Mensal',
-    'Dias Preferidos': 'Seg,Qua,Sex',
-    Técnico: 'João Silva',
-    'Telefone Técnico': '(11) 97777-0000',
-    'Email Técnico': 'joao.silva',
-    Escopo: 'Victor Lopes',
-  },
-  {
-    Cliente: 'Shopping Center Norte',
-    Telefone: '(11) 98888-0000',
-    Sistemas: 'SDAI',
-    'Visitas/Mês': 1,
-    Frequência: 'Mensal',
-    'Dias Preferidos': '',
-    Técnico: 'João Silva',
-    'Telefone Técnico': '',
-    'Email Técnico': '',
-    Escopo: '',
-  },
-  {
-    Cliente: 'Condomínio Alphaville',
-    Telefone: '',
-    Sistemas: 'SCA,SAP',
-    'Visitas/Mês': 1,
-    Frequência: 'Trimestral',
-    'Dias Preferidos': 'Ter,Qui',
-    Técnico: 'Maria Santos',
-    'Telefone Técnico': '(11) 96666-0000',
-    'Email Técnico': 'maria.santos@compasss.com.br',
-    Escopo: 'Gabriel Domingos',
-  },
-];
-
 export default function ImportPage() {
   const { showToast } = useToast();
   const [dragging, setDragging] = useState(false);

@@ -61,18 +61,17 @@ export default function CalendarGrid({
     [holidays],
   );
 
+  // Quando há filtro, prioriza o apt do contrato filtrado mas mantém os outros visíveis (dimmed)
+  // pra usuário enxergar ocupação real do dia ao mover visitas
   const getAppointment = (dateStr: string) => {
     const list = appointmentsByDate.get(dateStr);
     if (!list) return undefined;
-    if (filterContractId) return list.find((a) => a.contractId === filterContractId);
+    if (filterContractId) return list.find((a) => a.contractId === filterContractId) ?? list[0];
     return list[0];
   };
 
   const getAppointmentCount = (dateStr: string) => {
-    const list = appointmentsByDate.get(dateStr);
-    if (!list) return 0;
-    if (filterContractId) return list.filter((a) => a.contractId === filterContractId).length;
-    return list.length;
+    return appointmentsByDate.get(dateStr)?.length ?? 0;
   };
 
   const isHoliday = (dateStr: string) => holidaySet.has(dateStr);
@@ -183,6 +182,7 @@ export default function CalendarGrid({
                 const apt = getAppointment(dateStr);
                 const aptCount = getAppointmentCount(dateStr);
                 const color = getColor(apt, dateStr);
+                const isDimmed = !!filterContractId && !!apt && apt.contractId !== filterContractId;
 
                 const isDragTarget = !apt && dragOverDate === dateStr;
 
@@ -215,7 +215,10 @@ export default function CalendarGrid({
                           : '1px solid rgba(255,255,255,0.03)',
                       transition: 'var(--transition-fast)',
                       boxShadow:
-                        apt && apt.type === 'TESTE_SDAI' ? '0 0 15px var(--primary-glow)' : 'none',
+                        apt && !isDimmed && apt.type === 'TESTE_SDAI'
+                          ? '0 0 15px var(--primary-glow)'
+                          : 'none',
+                      opacity: isDimmed ? 0.3 : 1,
                       height: '42px',
                       display: 'flex',
                       flexDirection: 'column',

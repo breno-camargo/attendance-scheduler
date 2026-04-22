@@ -48,7 +48,10 @@ export default [
       'prettier/prettier': 'error',
 
       // TypeScript
-      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-unused-vars': [
+        'warn',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      ],
       '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/explicit-function-return-type': 'off',
       '@typescript-eslint/consistent-type-imports': 'error',
@@ -64,8 +67,17 @@ export default [
       ],
       'import/no-duplicates': 'error',
 
-      // Node/backend (válido para arquivos de API do Next.js também)
-      'no-console': 'warn',
+      // Console: error/warn permitidos (logging legítimo de erros server-side)
+      'no-console': ['warn', { allow: ['error', 'warn'] }],
+    },
+  },
+
+  // Testes: relaxa any (mocks) e permite console.log de debug
+  {
+    files: ['tests/**/*.{ts,tsx}'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
+      'no-console': 'off',
     },
   },
 

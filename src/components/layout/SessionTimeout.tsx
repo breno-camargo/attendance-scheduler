@@ -3,8 +3,7 @@
 import { useSession, signOut } from 'next-auth/react';
 import { useEffect, useState } from 'react';
 
-const SESSION_MAX_AGE = 8 * 60 * 60; // mesma config do auth.ts
-const WARNING_BEFORE = 5 * 60; // avisa 5 min antes
+const WARNING_BEFORE = 5 * 60; // avisa 5 min antes (sessão dura 8h em auth.ts)
 
 export default function SessionTimeout() {
   const { data: session, status } = useSession();

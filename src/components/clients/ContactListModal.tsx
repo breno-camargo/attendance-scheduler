@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 
 import ContactRow from '@/components/clients/ContactRow';
@@ -59,14 +59,12 @@ export default function ContactListModal({
   const [saving, setSaving] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
 
-  // Carregar dados salvos ao abrir o modal
-  useEffect(() => {
-    if (isOpen && contractId) {
-      loadContacts();
-    }
-  }, [isOpen, contractId]);
+  // Ref pra ler staff atual sem re-disparar load quando staff mudar com modal aberto
+  // (load deve rodar só ao abrir/trocar contrato, não a cada update de staff)
+  const internalStaffRef = useRef(internalStaff);
+  internalStaffRef.current = internalStaff;
 
-  const loadContacts = async () => {
+  const loadContacts = useCallback(async () => {
     try {
       const { data, ok } = await contactsApi.get(contractId!);
       if (ok && data) {
@@ -101,7 +99,7 @@ export default function ContactListModal({
         const usedIds = new Set<string>();
         const syncRow = (row: Contact) => {
           if (row.role) {
-            const match = internalStaff.find((s) => {
+            const match = internalStaffRef.current.find((s) => {
               if (usedIds.has(s.id)) return false;
               return s.role?.toLowerCase() === row.role.toLowerCase();
             });
@@ -123,7 +121,14 @@ export default function ContactListModal({
         });
       }
     } catch {}
-  };
+  }, [contractId]);
+
+  // Carregar dados salvos ao abrir o modal
+  useEffect(() => {
+    if (isOpen && contractId) {
+      loadContacts();
+    }
+  }, [isOpen, contractId, loadContacts]);
 
   const syncWithStaff = () => {
     const maintStaff = internalStaff.filter((s) => MAINT_ROLES.includes(s.role));
