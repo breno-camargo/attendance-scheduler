@@ -29,10 +29,11 @@ export async function GET(request: Request) {
     const professionals = await prisma.professional.findMany({
       where: auth.scope === 'filtered' ? { supervisorId: auth.internalContactId } : undefined,
       include: { supervisor: { select: { id: true, name: true, role: true } } },
-      orderBy: { createdAt: 'desc' },
+      // orderBy via localeCompare abaixo — Postgres default é case-sensitive e não trata acentos
       skip,
       take,
     });
+    professionals.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' }));
 
     return ApiUtils.success(ApiUtils.maskPII(professionals));
   } catch (error: unknown) {

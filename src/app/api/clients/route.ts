@@ -38,10 +38,11 @@ export async function GET(request: Request) {
           },
         },
       },
-      orderBy: { createdAt: 'desc' },
+      // orderBy via localeCompare abaixo — Postgres default é case-sensitive e não trata acentos
       skip,
       take,
     });
+    clients.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' }));
 
     return ApiUtils.success(ApiUtils.maskPII(clients));
   } catch (error: unknown) {
