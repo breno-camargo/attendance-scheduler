@@ -8,6 +8,14 @@ Base sólida: TS strict sem `any`, 323 testes passando, security headers complet
 
 ## ✅ Concluído
 
+**23-abr-2026 (quarta parte)**
+
+- **CI enforce_admins habilitado** — branch protection do main agora bloqueia push direto (mesmo de admin) sem `lint + typecheck + test` verde. Workflow PR-first. Habilitado via `gh api -X POST repos/.../branches/main/protection/enforce_admins`.
+- **CI alinhado com Node 24** — antes rodava Node 20, dessincado de local + Vercel.
+- **`RUNBOOK.md` criado** — playbook pra cenarios de emergencia (admin trancado, reset rate limit, restore Supabase, rotacao NEXTAUTH_SECRET, debug build Vercel, fix schema). Linkado no README.
+- **2º admin no banco** + DB password rotacionada — single point of failure removido.
+- **`vercel.json` ignoreCommand** atualizado pra usar `VERCEL_GIT_PREVIOUS_SHA` (antes comparava só HEAD^ HEAD, perdendo mudanças em pushes multi-commit).
+
 **23-abr-2026 (terceira parte)**
 
 - **TypeScript 5.9 → 6.0** (item 5) — sem breaking change no projeto. Lint/typecheck/build/323 testes passando direto. As mudancas do TS 6 (`--isolatedDeclarations`, deprecations) nao tocam o codigo atual.
@@ -84,6 +92,43 @@ Após o upgrade Next 16 + nodemailer 8, restam **3 vulns moderate** todas encade
 
 ---
 
+### 9. Monitoring + alerting (Sentry + UptimeRobot)
+
+**Por quê:**
+
+- Cron diário (`/api/ping`) existe pra manter Supabase free tier acordado. Se falhar e ninguém perceber, em ~7 dias o Supabase pausa o projeto e o sistema vai pra ar.
+- Erros em rotas pouco usadas (reset de senha, import de planilha) só aparecem quando alguém tenta usar — sem Sentry, descoberta tardia.
+- Performance degradando (algoritmo ficando lento) sem monitoring só vira problema quando estoura timeout do Vercel.
+
+**Esforço:** ~10min uptime, ~20min Sentry básico (`npx @sentry/wizard@latest -i nextjs` resolve a maior parte), ~1h pra polir (filtros, source maps, perf monitoring).
+
+**Ordem prática:** UptimeRobot primeiro (cobre 70% do valor com 10min). Sentry depois.
+
+---
+
+### 10. Testes unitários por regra do algoritmo de schedule
+
+**Por quê:**
+
+- 1057 linhas de testes integrados validam o resultado final, mas regras individuais (gap mínimo, fallback SDAI sábado→útil, rotação 3 grupos, dias preferenciais com peso) não tem teste isolado.
+- Se alguém mudar `findBestSlot` e quebrar o fallback, testes integrados podem passar mas distribuição fica errada — bug invisível por meses.
+- Funções já são puras, fácil de testar isoladamente.
+
+**Esforço:** ~1h. Adicionar `tests/unit/schedule-algorithm.test.ts` com casos por regra.
+
+---
+
+### 11. Fixtures isoladas pros testes E2E
+
+**Por quê:**
+
+- E2E hoje quebra se ordem de execução mudar ou seed mudar (per CLAUDE.md). Resultado: equipe ignora E2E.
+- Teste que ignoramos = teste que não existe + ainda gasta tempo. Pior que nenhum teste.
+
+**Esforço:** ~meio dia. Cada `describe` cria seus próprios dados em `beforeEach`, deleta em `afterEach`. Mais lento mas determinístico.
+
+---
+
 ## 🟢 Baixa prioridade (update quando tiver tempo)
 
 ### 8. `exceljs` 4 → 5 (quando sair)
@@ -94,9 +139,12 @@ Quando sair, remove o `@ts-expect-error` em `src/app/api/import/route.ts:97`. Ve
 
 ## 🧭 Sequência recomendada
 
-Sobrou só **1 item ativo**:
+**Próximas sessões dedicadas (em ordem de payoff):**
 
-1. **NextAuth → Auth.js v5** (item 2) — esperar GA (ainda em beta.31 em 23-abr-26). Quando sair, resolve as 3 moderates restantes e permite remover o `legacy-peer-deps=true` do `.npmrc`.
+1. **UptimeRobot + Sentry** (item 9) — ~30min total. Maior leverage, evita downtime invisível. Faz primeiro.
+2. **Testes unitários por regra do algoritmo** (item 10) — ~1h. Protege a parte mais crítica do produto contra regressão silenciosa.
+3. **Fixtures isoladas pros E2E** (item 11) — ~meio dia. Devolve confiança na suite E2E.
+4. **NextAuth → Auth.js v5** (item 2) — esperar GA (beta.31 em 23-abr-26). Quando sair, resolve as 3 moderates restantes e permite remover `legacy-peer-deps=true`.
 
 Item 8 (`exceljs` 5) depende de upstream — sem prazo.
 
