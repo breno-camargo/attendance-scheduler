@@ -1,14 +1,40 @@
-# CompaSSS — Agendador de Manutenção
+<p align="center">
+  <img src="public/logo-compasss.png" alt="CompaSSS" width="200" />
+</p>
 
-![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)
-![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
-![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Supabase-4169E1?logo=postgresql&logoColor=white)
-![Prisma](https://img.shields.io/badge/Prisma-ORM-2D3748?logo=prisma)
-![Tests](https://img.shields.io/badge/tests-323%20passing-success)
-![License](https://img.shields.io/badge/license-private-lightgrey)
+<h1 align="center">CompaSSS — Agendador de Manutenção</h1>
 
-Sistema interno da CompaSSS para agendar visitas técnicas e testes de sistemas (SDAI, CFTV, SCA, SAP, SAI) em prédios e shoppings.
+<p align="center">
+  Sistema interno da CompaSSS para agendar visitas técnicas e testes de sistemas (SDAI, CFTV, SCA, SAP, SAI) em prédios e shoppings.
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Next.js-16-black?logo=next.js" alt="Next.js" />
+  <img src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black" alt="React" />
+  <img src="https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/PostgreSQL-Supabase-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL" />
+  <img src="https://img.shields.io/badge/Prisma-6-2D3748?logo=prisma" alt="Prisma" />
+  <img src="https://img.shields.io/badge/tests-323%20passing-success" alt="Tests" />
+  <img src="https://img.shields.io/badge/license-private-lightgrey" alt="License" />
+</p>
+
+---
+
+## Sumário
+
+- [Por que existe](#por-que-existe)
+- [Screenshots](#screenshots)
+- [Highlights técnicos](#highlights-técnicos)
+- [Arquitetura](#arquitetura)
+- [O que faz](#o-que-faz)
+- [Stack](#stack)
+- [Rodando local](#rodando-local)
+- [Testes](#testes)
+- [Estrutura](#estrutura)
+- [Decisões técnicas](#decisões-técnicas)
+- [O que eu faria diferente](#o-que-eu-faria-diferente)
+- [Roadmap](#roadmap)
+- [Licença](#licença)
 
 ## Por que existe
 
@@ -28,9 +54,35 @@ Antes a agenda era feita em planilha. O problema: técnicos esqueciam visitas, t
 
 - **Algoritmo de geração de agenda** — distribui visitas uniformemente no mês respeitando gap mínimo dinâmico, dias preferenciais por contrato, feriados móveis (Páscoa, Carnaval, Corpus Christi) e fins de semana. Geração transacional: ~400 appointments em < 1s.
 - **Testes SDAI obrigatoriamente aos sábados** — exigência da norma, enforced no algoritmo com fallback pra dia útil se o sábado cair em feriado. Rotação em 3 grupos pra evitar clustering.
-- **Segurança em camadas** — CSRF via origin check no middleware, rate limiting (Redis Upstash em prod, in-memory em dev), audit log de eventos sensíveis, PII masking (telefone/email) em listagens, security headers completos (CSP, HSTS, X-Frame-Options).
+- **Segurança em camadas** — CSRF via origin check no proxy, rate limiting (Redis Upstash em prod, in-memory em dev), audit log de eventos sensíveis, PII masking (telefone/email) em listagens, security headers completos (CSP, HSTS, X-Frame-Options).
 - **TypeScript strict sem escape hatches** — zero `any`, Zod v4 validando todo input de API, schemas centralizados em `src/lib/schemas.ts`.
 - **323 testes** — unit (Vitest), API com Prisma mockado (vitest-mock-extended) e E2E (Playwright). Cobertura do algoritmo de schedule + security + rate limiting.
+
+## Arquitetura
+
+```mermaid
+graph TB
+    Client["Browser<br/>React 19 + CSS puro"]
+
+    subgraph next ["Next.js 16 (Vercel)"]
+        Proxy["proxy.ts<br/>Auth + CSRF + must-change-password"]
+        Pages["Pages (App Router)<br/>+ API Routes"]
+        Algo["lib/schedule-algorithm.ts<br/>distribuição de visitas"]
+        Pages --> Algo
+    end
+
+    Client -- HTTPS --> Proxy
+    Proxy --> Pages
+
+    Pages -- Prisma --> DB[("PostgreSQL<br/>Supabase")]
+    Pages -- credentials JWT 8h --> Auth["NextAuth.js"]
+    Pages -- rate limit login --> Redis[("Upstash Redis<br/>fallback in-memory")]
+    Pages -- reset password --> SMTP["SMTP / Gmail"]
+    Pages -- import/export --> Excel["ExcelJS"]
+    Client -- window.print --> PDF["PDF client-side"]
+
+    Cron["Vercel Cron<br/>diário 10:00"] -- ping --> Pages
+```
 
 ## O que faz
 
@@ -42,13 +94,14 @@ Antes a agenda era feita em planilha. O problema: técnicos esqueciam visitas, t
 ## Stack
 
 - **Framework** — Next.js 16 (App Router) + React 19 + TypeScript strict
-- **Banco** — PostgreSQL (Supabase) + Prisma ORM
+- **Banco** — PostgreSQL (Supabase) + Prisma 6
 - **Auth** — NextAuth.js (credentials, sessão de 8h)
 - **Validação** — Zod v4
 - **Email** — Nodemailer (SMTP)
 - **Export/Import** — ExcelJS (planilhas), PDF gerado client-side
 - **Rate limiting** — Upstash Redis (prod) / in-memory (dev)
 - **Testes** — Vitest + Playwright
+- **Lint/Format** — ESLint 9 (flat config) + Prettier
 - **Deploy** — Vercel
 
 ## Rodando local
@@ -113,13 +166,13 @@ tests/             # unit, api, e2e
 
 ## O que eu faria diferente
 
-- O algoritmo de geração de agenda funciona mas é um bloco de ~350 linhas. Deveria ter quebrado em funções menores desde o início — está no topo do roadmap de refactor.
-- Comecei com commit messages em inglês tentando seguir padrão e depois mudei pra português. Ficou inconsistente no histórico.
+- O algoritmo de geração de agenda tem ~350 linhas e mistura concerns. Achei que precisava refactor — depois de reler, está decomposto em 5 funções puras e a complexidade real é linear nos inputs. Documentei a análise honesta no [ROADMAP](./ROADMAP.md). Aprendizado: revisar antes de assumir que código antigo precisa ser reescrito.
 - Testes E2E são frágeis — dependem de dados seed e quebram se a ordem muda. Precisam de fixtures isoladas.
+- Usar `legacy-peer-deps=true` no `.npmrc` é um band-aid pro conflito `next-auth@4` ↔ `nodemailer@8`. Some quando migrar pra Auth.js v5 (em beta no momento).
 
 ## Roadmap
 
-Plano de evolução e tech debt documentada em [ROADMAP.md](./ROADMAP.md) — refactor do algoritmo, migração NextAuth → Auth.js v5, Next 15 + React 19, audit cleanup.
+Plano de evolução e tech debt em [ROADMAP.md](./ROADMAP.md). Sobrou pouco — só itens bloqueados em externos (Auth.js v5 GA, exceljs 5).
 
 ## Licença
 
@@ -127,4 +180,4 @@ Uso privado — CompaSSS.
 
 ---
 
-_Breno Camargo — 2026_
+<p align="center"><sub>Breno Camargo — 2026</sub></p>
