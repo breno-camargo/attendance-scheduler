@@ -8,6 +8,11 @@ Base sólida: TS strict sem `any`, 323 testes passando, security headers complet
 
 ## ✅ Concluído
 
+**23-abr-2026 (terceira parte)**
+
+- **ESLint 8.57 → 9.39 + eslint-config-next 15.5 → 16.2** (item 7) — bem mais simples que o ROADMAP previa: o projeto já usava flat config (`eslint.config.mjs`), só precisou trocar `FlatCompat` (quebrava com `eslint-config-next` 16 nativo) por import direto de `eslint-config-next/core-web-vitals`. Removido `@typescript-eslint/parser` e `@typescript-eslint/eslint-plugin` do `package.json` — vem como transitive de eslint-config-next agora (`typescript-eslint` package).
+- **`.npmrc` com `legacy-peer-deps=true`** — destrava deploy na Vercel. `next-auth@4` declara `nodemailer@^7` como peerOptional, conflitando com nosso `nodemailer@8`. Solução temporária até item 2 (Auth.js v5) ou override via `package.json` overrides.
+
 **23-abr-2026 (segunda parte)**
 
 - **Next 14 → 16 + React 18 → 19 + Prisma 5 → 6** (item 3 ampliado) — bump de uma sentada. Codemod oficial (`@next/codemod next-async-request-api`) converteu 7 route handlers pro novo padrão `params: Promise<{ id }>`; 1 (`holidays/[id]`) precisou fix manual. Tests ajustados em 3 arquivos (`Promise.resolve({ id })` em vez de objeto sync). `tsconfig.json` auto-modificado pelo build do Next 16 (jsx → react-jsx, target → ES2017, include `.next/dev/types`). Resolveu **4 CVEs high** do Next (DoS via Image Optimizer, RSC deserialization, rewrites smuggling, next/image cache, Server Components DoS).
@@ -83,10 +88,6 @@ Após o upgrade Next 16 + nodemailer 8, restam **3 vulns moderate** todas encade
 
 TS 6 saiu com algumas breaking changes (flag `--isolatedDeclarations` obrigatória em alguns casos, deprecations removidas). Vale só quando subir tudo mais. Não quebra nada crítico.
 
-### 7. ESLint 8 → 9 (flat config)
-
-Migração chata: `.eslintrc.*` → `eslint.config.js`. Vale um dia dedicado, não fatiar. Todos os plugins precisam suportar flat config (eslint-config-next pode precisar de update).
-
 ### 8. `exceljs` 4 → 5 (quando sair)
 
 Quando sair, remove o `@ts-expect-error` em `src/app/api/import/route.ts:97`. Versão 5 deve alinhar Buffer types com `@types/node` recentes.
@@ -97,10 +98,9 @@ Quando sair, remove o `@ts-expect-error` em `src/app/api/import/route.ts:97`. Ve
 
 Pra minimizar retrabalho, aplicar nessa ordem:
 
-1. **NextAuth → Auth.js v5** — release dedicado. Resolve as 3 moderates restantes do `npm audit` e desbloqueia escolha de eslint-config-next 16.
-2. **ESLint 9 flat config** — depois do Auth.js v5 (vai junto com bump pra eslint-config-next 16)
-3. **TS 6** — revisão de manutenção trimestral
-4. **middleware.ts → proxy.ts** — silencia warning de deprecação do Next 16. Trivial.
+1. **NextAuth → Auth.js v5** — esperar GA (ainda em beta.31 em 23-abr-26). Quando sair, resolve as 3 moderates restantes e permite remover o `legacy-peer-deps=true` do `.npmrc`.
+2. **TS 6** — revisão de manutenção trimestral.
+3. **middleware.ts → proxy.ts** — silencia warning de deprecação do Next 16. Trivial.
 
 ## 📝 Política daqui em diante
 
