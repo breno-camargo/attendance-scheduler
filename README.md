@@ -34,6 +34,7 @@
 - [Decisões técnicas](#decisões-técnicas)
 - [O que eu faria diferente](#o-que-eu-faria-diferente)
 - [Roadmap](#roadmap)
+- [Runbook](#runbook)
 - [Licença](#licença)
 
 ## Por que existe
@@ -173,6 +174,10 @@ tests/             # unit, api, e2e
 ## Roadmap
 
 Plano de evolução e tech debt em [ROADMAP.md](./ROADMAP.md). Sobrou pouco — só itens bloqueados em externos (Auth.js v5 GA, exceljs 5).
+
+## Runbook
+
+Procedimentos de emergência (admin trancado, restore de backup, rotação de secret, build travado) em [RUNBOOK.md](./RUNBOOK.md).
 
 ## Licença
 
