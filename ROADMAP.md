@@ -10,6 +10,7 @@ Base sólida: TS strict sem `any`, 323 testes passando, security headers complet
 
 **23-abr-2026 (terceira parte)**
 
+- **TypeScript 5.9 → 6.0** (item 5) — sem breaking change no projeto. Lint/typecheck/build/323 testes passando direto. As mudancas do TS 6 (`--isolatedDeclarations`, deprecations) nao tocam o codigo atual.
 - **`middleware.ts` → `proxy.ts`** — silencia warning de deprecação do Next 16. Renomeia arquivo + função (`middleware` → `proxy`), config (matcher) inalterada.
 - **ESLint 8.57 → 9.39 + eslint-config-next 15.5 → 16.2** (item 7) — bem mais simples que o ROADMAP previa: o projeto já usava flat config (`eslint.config.mjs`), só precisou trocar `FlatCompat` (quebrava com `eslint-config-next` 16 nativo) por import direto de `eslint-config-next/core-web-vitals`. Removido `@typescript-eslint/parser` e `@typescript-eslint/eslint-plugin` do `package.json` — vem como transitive de eslint-config-next agora (`typescript-eslint` package).
 - **`.npmrc` com `legacy-peer-deps=true`** — destrava deploy na Vercel. `next-auth@4` declara `nodemailer@^7` como peerOptional, conflitando com nosso `nodemailer@8`. Solução temporária até item 2 (Auth.js v5) ou override via `package.json` overrides.
@@ -85,10 +86,6 @@ Após o upgrade Next 16 + nodemailer 8, restam **3 vulns moderate** todas encade
 
 ## 🟢 Baixa prioridade (update quando tiver tempo)
 
-### 5. TypeScript 5.9 → 6.0
-
-TS 6 saiu com algumas breaking changes (flag `--isolatedDeclarations` obrigatória em alguns casos, deprecations removidas). Vale só quando subir tudo mais. Não quebra nada crítico.
-
 ### 8. `exceljs` 4 → 5 (quando sair)
 
 Quando sair, remove o `@ts-expect-error` em `src/app/api/import/route.ts:97`. Versão 5 deve alinhar Buffer types com `@types/node` recentes.
@@ -97,10 +94,11 @@ Quando sair, remove o `@ts-expect-error` em `src/app/api/import/route.ts:97`. Ve
 
 ## 🧭 Sequência recomendada
 
-Pra minimizar retrabalho, aplicar nessa ordem:
+Sobrou só **1 item ativo**:
 
-1. **NextAuth → Auth.js v5** — esperar GA (ainda em beta.31 em 23-abr-26). Quando sair, resolve as 3 moderates restantes e permite remover o `legacy-peer-deps=true` do `.npmrc`.
-2. **TS 6** — revisão de manutenção trimestral.
+1. **NextAuth → Auth.js v5** (item 2) — esperar GA (ainda em beta.31 em 23-abr-26). Quando sair, resolve as 3 moderates restantes e permite remover o `legacy-peer-deps=true` do `.npmrc`.
+
+Item 8 (`exceljs` 5) depende de upstream — sem prazo.
 
 ## 📝 Política daqui em diante
 
