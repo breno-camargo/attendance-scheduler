@@ -2,7 +2,7 @@
   <img src="public/logo-compasss.png" alt="CompaSSS" width="200" />
 </p>
 
-<h1 align="center">CompaSSS — Agendador de Manutenção</h1>
+<h1 align="center">CompaSSS — Gerador de agendas de Manutenção</h1>
 
 <p align="center">
   Sistema interno da CompaSSS para agendar visitas técnicas e testes de sistemas (SDAI, CFTV, SCA, SAP, SAI) em prédios e shoppings.
