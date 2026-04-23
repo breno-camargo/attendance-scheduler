@@ -66,120 +66,66 @@ export default function Header() {
     { name: 'Importar', href: '/import' },
   ];
 
+  const themeTitle = theme === 'dark' ? 'Mudar para tema claro' : 'Mudar para tema escuro';
+  const themeIcon = theme === 'dark' ? '☀️' : '🌙';
+
   return (
     <>
       <header className="topbar">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <h1 style={{ margin: 0 }}>
-            <Link href="/" style={{ textDecoration: 'none' }}>
+        <div className="topbar-logo">
+          <h1>
+            <Link href="/">
               <Logo size="md" />
             </Link>
           </h1>
         </div>
 
         {/* Desktop nav */}
-        <nav className="desktop-nav" style={{ display: 'flex', gap: '2rem' }}>
-          {navLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="nav-link"
-              style={{
-                textDecoration: 'none',
-                color: pathname === link.href ? 'var(--primary)' : 'var(--text-muted)',
-                fontSize: '0.95rem',
-                fontWeight: pathname === link.href ? '700' : '500',
-                transition: 'var(--transition-smooth)',
-                position: 'relative',
-              }}
-            >
-              {link.name}
-              <span
-                style={{
-                  position: 'absolute',
-                  bottom: '-4px',
-                  left: '0',
-                  width: pathname === link.href ? '100%' : '0',
-                  height: '2px',
-                  background: 'var(--primary)',
-                  borderRadius: '2px',
-                  transition: 'var(--transition-smooth)',
-                  opacity: pathname === link.href ? 1 : 0,
-                }}
-              />
-            </Link>
-          ))}
+        <nav className="desktop-nav">
+          {navLinks.map((link) => {
+            const active = pathname === link.href;
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="nav-link"
+                aria-current={active ? 'page' : undefined}
+              >
+                {link.name}
+                <span className="nav-link__underline" aria-hidden="true" />
+              </Link>
+            );
+          })}
         </nav>
 
         {/* Desktop user area */}
-        <div
-          className="desktop-user"
-          style={{ display: 'flex', gap: '0.8rem', alignItems: 'center' }}
-        >
+        <div className="desktop-user">
           <button
+            type="button"
             onClick={toggleTheme}
             className="theme-toggle"
-            title={theme === 'dark' ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
+            title={themeTitle}
             aria-label="Alternar tema"
           >
-            {theme === 'dark' ? '☀️' : '🌙'}
+            {themeIcon}
           </button>
-          <div style={{ textAlign: 'right', minWidth: '90px' }}>
+          <div className="user-info">
             {status === 'loading' ? (
               <>
-                <span
-                  style={{
-                    display: 'block',
-                    width: '80px',
-                    height: '0.8rem',
-                    borderRadius: '4px',
-                    background: 'var(--primary-border-subtle)',
-                    marginLeft: 'auto',
-                    marginBottom: '4px',
-                    animation: 'statPulse 1.4s ease-in-out infinite',
-                  }}
-                />
-                <span
-                  style={{
-                    display: 'block',
-                    width: '60px',
-                    height: '0.7rem',
-                    borderRadius: '4px',
-                    background: 'var(--primary-border-subtle)',
-                    marginLeft: 'auto',
-                    animation: 'statPulse 1.4s ease-in-out infinite',
-                  }}
-                />
+                <span className="skeleton skeleton-bar skeleton-bar--lg" aria-hidden="true" />
+                <span className="skeleton skeleton-bar skeleton-bar--sm" aria-hidden="true" />
+                <span className="sr-only">Carregando informações do usuário</span>
               </>
             ) : (
               <>
-                <p style={{ fontSize: '0.8rem', fontWeight: '600', color: 'var(--foreground)' }}>
-                  {session?.user?.name ?? ''}
-                </p>
-                <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                <p className="user-info__name">{session?.user?.name ?? ''}</p>
+                <p className="user-info__role">
                   {(session?.user as { role?: string } | undefined)?.role ?? ''}
                 </p>
               </>
             )}
           </div>
-          <Link
-            href="/change-password"
-            title="Alterar senha"
-            style={{
-              width: '36px',
-              height: '36px',
-              borderRadius: '50%',
-              background: 'var(--input-bg)',
-              border: '1px solid var(--border)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              color: 'var(--text-muted)',
-              transition: 'var(--transition-smooth)',
-              textDecoration: 'none',
-            }}
-          >
+          <Link href="/change-password" title="Alterar senha" className="icon-circle-btn">
             <svg
               width="15"
               height="15"
@@ -189,29 +135,18 @@ export default function Header() {
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
+              aria-hidden="true"
             >
               <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
               <path d="M7 11V7a5 5 0 0 1 10 0v4" />
             </svg>
           </Link>
           <button
+            type="button"
             onClick={() => signOut({ callbackUrl: '/login' })}
             title="Sair"
             aria-label="Sair"
-            style={{
-              width: '36px',
-              height: '36px',
-              borderRadius: '50%',
-              background: 'var(--input-bg)',
-              border: '1px solid var(--border)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '0.85rem',
-              cursor: 'pointer',
-              color: 'var(--text-muted)',
-              transition: 'var(--transition-smooth)',
-            }}
+            className="icon-circle-btn"
           >
             <svg
               width="16"
@@ -222,6 +157,7 @@ export default function Header() {
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
+              aria-hidden="true"
             >
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
               <polyline points="16 17 21 12 16 7" />
@@ -231,23 +167,22 @@ export default function Header() {
         </div>
 
         {/* Mobile: theme toggle + hamburger */}
-        <div
-          style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}
-          className="mobile-controls"
-        >
+        <div className="mobile-controls">
           <button
+            type="button"
             onClick={toggleTheme}
             className="theme-toggle hamburger-btn"
-            title={theme === 'dark' ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
+            title={themeTitle}
             aria-label="Alternar tema"
-            style={{ width: '36px', height: '36px', fontSize: '0.9rem' }}
           >
-            {theme === 'dark' ? '☀️' : '🌙'}
+            {themeIcon}
           </button>
           <button
+            type="button"
             className="hamburger-btn"
             onClick={() => setMenuOpen(!menuOpen)}
             aria-label={menuOpen ? 'Fechar menu' : 'Abrir menu'}
+            aria-expanded={menuOpen}
           >
             {menuOpen ? (
               <svg
@@ -259,6 +194,7 @@ export default function Header() {
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
+                aria-hidden="true"
               >
                 <line x1="18" y1="6" x2="6" y2="18" />
                 <line x1="6" y1="6" x2="18" y2="18" />
@@ -273,6 +209,7 @@ export default function Header() {
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
+                aria-hidden="true"
               >
                 <line x1="3" y1="6" x2="21" y2="6" />
                 <line x1="3" y1="12" x2="21" y2="12" />
@@ -291,29 +228,16 @@ export default function Header() {
               key={link.href}
               href={link.href}
               className={pathname === link.href ? 'active' : ''}
+              aria-current={pathname === link.href ? 'page' : undefined}
               onClick={() => setMenuOpen(false)}
             >
               {link.name}
             </Link>
           ))}
           <button
+            type="button"
             onClick={() => signOut({ callbackUrl: '/login' })}
-            style={{
-              marginTop: 'auto',
-              width: '100%',
-              padding: '0.9rem',
-              background: 'rgba(239, 68, 68, 0.08)',
-              border: '1px solid rgba(239, 68, 68, 0.2)',
-              borderRadius: '12px',
-              color: '#ef4444',
-              fontSize: '0.95rem',
-              fontWeight: 600,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px',
-            }}
+            className="mobile-signout"
           >
             <svg
               width="18"
@@ -324,6 +248,7 @@ export default function Header() {
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
+              aria-hidden="true"
             >
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
               <polyline points="16 17 21 12 16 7" />

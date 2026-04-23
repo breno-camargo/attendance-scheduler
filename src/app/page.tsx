@@ -32,46 +32,11 @@ function StatBadge({
   loading?: boolean;
 }) {
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        padding: '0.8rem 1.2rem',
-        background: 'var(--primary-subtle)',
-        borderRadius: '10px',
-        border: '1px solid var(--primary-border-subtle)',
-        minWidth: '80px',
-        animation: loading ? 'statPulse 1.4s ease-in-out infinite' : undefined,
-      }}
-    >
-      <span style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--primary)', lineHeight: 1 }}>
-        {loading ? (
-          <span
-            style={{
-              display: 'inline-block',
-              width: '2ch',
-              height: '1em',
-              borderRadius: '4px',
-              background: 'var(--primary-border-subtle)',
-              verticalAlign: 'middle',
-            }}
-          />
-        ) : (
-          value
-        )}
+    <div className={`stat-badge${loading ? ' stat-badge--loading' : ''}`}>
+      <span className="stat-badge__value">
+        {loading ? <span className="skeleton skeleton-num" aria-hidden="true" /> : value}
       </span>
-      <span
-        style={{
-          fontSize: '0.7rem',
-          color: 'var(--text-muted)',
-          marginTop: '4px',
-          textTransform: 'uppercase',
-          letterSpacing: '0.5px',
-        }}
-      >
-        {label}
-      </span>
+      <span className="stat-badge__label">{label}</span>
     </div>
   );
 }
@@ -86,177 +51,90 @@ export default function Home() {
     });
   }, []);
 
+  const loading = stats === null;
+  const pendingTechs = stats?.contractsDetail
+    ? Array.from(
+        new Set(
+          stats.contractsDetail
+            .filter((c) => !c.hasSchedule)
+            .map((c) => c.professionalName ?? 'Sem técnico'),
+        ),
+      ).sort()
+    : [];
+
   return (
-    <div
-      style={{ padding: '6rem 4rem', maxWidth: '1400px', margin: '0 auto' }}
-      className="home-main"
-    >
-      <header className="animate-fade-in" style={{ marginBottom: '4rem' }}>
+    <div className="home-main">
+      <header className="animate-fade-in home-header">
         <h1 className="title">Sistema Gestor de Manutenção</h1>
-        <p className="subtitle" style={{ maxWidth: '600px', marginBottom: '2rem' }}>
+        <p className="subtitle home-subtitle">
           Gerencie técnicos, visualize contratos e otimize o cronograma de visitas de forma
           automatizada.
         </p>
-        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-          <StatBadge value={stats?.clients ?? null} label="Clientes" loading={stats === null} />
-          <StatBadge
-            value={stats?.professionals ?? null}
-            label="Técnicos"
-            loading={stats === null}
-          />
-          <div
-            onClick={() => stats && setShowContracts(true)}
-            style={{ cursor: stats ? 'pointer' : 'default' }}
-          >
-            <StatBadge
-              value={stats?.contractsWithSchedule ?? null}
-              label={`Agendas geradas${stats ? ` de ${stats.totalContracts}` : ''}`}
-              loading={stats === null}
-            />
-          </div>
+        <div className="stat-row">
+          <StatBadge value={stats?.clients ?? null} label="Clientes" loading={loading} />
+          <StatBadge value={stats?.professionals ?? null} label="Técnicos" loading={loading} />
+          {stats ? (
+            <button
+              type="button"
+              onClick={() => setShowContracts(true)}
+              className="stat-badge--clickable"
+              aria-label="Abrir lista de técnicos sem agenda"
+            >
+              <StatBadge
+                value={stats.contractsWithSchedule}
+                label={`Agendas geradas de ${stats.totalContracts}`}
+              />
+            </button>
+          ) : (
+            <StatBadge value={null} label="Agendas geradas" loading />
+          )}
         </div>
       </header>
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(min(350px, 100%), 1fr))',
-          gap: '2.5rem',
-        }}
-      >
-        <section
-          className="glass-panel animate-fade-in"
-          style={{ animationDelay: '0.1s', position: 'relative', overflow: 'hidden' }}
-        >
-          <div
-            style={{
-              position: 'absolute',
-              top: '-20px',
-              right: '-20px',
-              fontSize: '12rem',
-              opacity: 0.03,
-              fontWeight: 900,
-              color: 'var(--primary)',
-              userSelect: 'none',
-              pointerEvents: 'none',
-            }}
-          >
+      <div className="home-grid">
+        <section className="glass-panel animate-fade-in home-card home-card--delay-1">
+          <div className="home-card__number" aria-hidden="true">
             01
           </div>
-          <h2
-            style={{
-              fontSize: '1.6rem',
-              marginBottom: '1.2rem',
-              fontWeight: 700,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.8rem',
-            }}
-          >
-            <span style={{ fontSize: '2rem' }}>📋</span> Gestão de Ativos
+          <h2 className="home-card__title">
+            <span className="home-card__emoji" aria-hidden="true">
+              📋
+            </span>{' '}
+            Gestão de Ativos
           </h2>
-          <p
-            style={{
-              color: 'var(--text-muted)',
-              marginBottom: '2rem',
-              lineHeight: '1.7',
-              fontSize: '1rem',
-            }}
-          >
+          <p className="home-card__body">
             Controle centralizado de <strong>Técnicos</strong> e <strong>Clientes</strong>.
             Configure frequências de visita, sistemas (SDAI, CFTV) e preferências de agenda.
           </p>
-          <div style={{ display: 'flex', gap: '1.2rem' }}>
-            <Link
-              href="/clients"
-              className="btn-primary"
-              style={{
-                textDecoration: 'none',
-                textAlign: 'center',
-                flex: 1,
-                fontSize: '0.85rem',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
+          <div className="home-card__actions">
+            <Link href="/clients" className="btn-primary">
               Contratos
             </Link>
-            <Link
-              href="/professionals"
-              className="btn-secondary"
-              style={{
-                textDecoration: 'none',
-                textAlign: 'center',
-                flex: 1,
-                fontSize: '0.85rem',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
+            <Link href="/professionals" className="btn-secondary">
               Técnicos
             </Link>
           </div>
         </section>
 
-        <section
-          className="glass-panel animate-fade-in"
-          style={{ animationDelay: '0.2s', position: 'relative', overflow: 'hidden' }}
-        >
-          <div
-            style={{
-              position: 'absolute',
-              top: '-20px',
-              right: '-20px',
-              fontSize: '12rem',
-              opacity: 0.03,
-              fontWeight: 900,
-              color: 'var(--primary)',
-              userSelect: 'none',
-              pointerEvents: 'none',
-            }}
-          >
+        <section className="glass-panel animate-fade-in home-card home-card--delay-2">
+          <div className="home-card__number" aria-hidden="true">
             02
           </div>
-          <h2
-            style={{
-              fontSize: '1.6rem',
-              marginBottom: '1.2rem',
-              fontWeight: 700,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.8rem',
-            }}
-          >
-            <span style={{ fontSize: '2rem' }}>📅</span> Cronograma Anual
+          <h2 className="home-card__title">
+            <span className="home-card__emoji" aria-hidden="true">
+              📅
+            </span>{' '}
+            Cronograma Anual
           </h2>
-          <p
-            style={{
-              color: 'var(--text-muted)',
-              marginBottom: '2rem',
-              lineHeight: '1.7',
-              fontSize: '1rem',
-            }}
-          >
+          <p className="home-card__body">
             Visualização estratégica da agenda. Gere visitas automáticas, valide conflitos e agende
             testes trimestrais obrigatórios com precisão cirúrgica.
           </p>
-          <Link
-            href="/calendar"
-            className="btn-primary"
-            style={{
-              textDecoration: 'none',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              textAlign: 'center',
-              width: '100%',
-              border: 'none',
-            }}
-          >
-            Visualizar Calendário Completo
-          </Link>
+          <div className="home-card__actions home-card__actions--single">
+            <Link href="/calendar" className="btn-primary">
+              Visualizar Calendário Completo
+            </Link>
+          </div>
         </section>
       </div>
 
@@ -266,65 +144,23 @@ export default function Home() {
         title="Técnicos sem agenda"
         maxWidth="400px"
       >
-        {stats?.contractsDetail &&
-          (() => {
-            const pending = stats.contractsDetail.filter((c) => !c.hasSchedule);
-            const techNames = Array.from(
-              new Set(pending.map((c) => c.professionalName ?? 'Sem técnico')),
-            ).sort();
-            if (techNames.length === 0) {
-              return (
-                <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '2rem 0' }}>
-                  Todos os técnicos possuem agenda gerada.
-                </p>
-              );
-            }
-            return (
-              <ul
-                style={{
-                  listStyle: 'none',
-                  padding: 0,
-                  margin: 0,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '8px',
-                }}
-              >
-                {techNames.map((name) => (
-                  <li
-                    key={name}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '10px',
-                      padding: '0.7rem 1rem',
-                      borderRadius: '10px',
-                      background: 'rgba(251, 146, 60, 0.08)',
-                      border: '1px solid rgba(251, 146, 60, 0.2)',
-                    }}
-                  >
-                    <span style={{ fontSize: '1.1rem', flexShrink: 0 }}>⚠️</span>
-                    <strong style={{ fontSize: '0.9rem', color: 'var(--foreground)' }}>
-                      {name}
-                    </strong>
-                  </li>
-                ))}
-              </ul>
-            );
-          })()}
+        {pendingTechs.length === 0 ? (
+          <p className="pending-tech-empty">Todos os técnicos possuem agenda gerada.</p>
+        ) : (
+          <ul className="pending-tech-list">
+            {pendingTechs.map((name) => (
+              <li key={name} className="pending-tech-item">
+                <span className="pending-tech-item__icon" aria-hidden="true">
+                  ⚠️
+                </span>
+                <strong className="pending-tech-item__name">{name}</strong>
+              </li>
+            ))}
+          </ul>
+        )}
       </Modal>
 
-      <footer
-        style={{
-          marginTop: '6rem',
-          paddingTop: '2rem',
-          borderTop: '1px solid rgba(255,255,255,0.05)',
-          color: 'var(--text-muted)',
-          fontSize: '0.85rem',
-          display: 'flex',
-          justifyContent: 'space-between',
-        }}
-      >
+      <footer className="home-footer">
         <p>
           © {new Date().getFullYear()} CompaSSS — Companhia de Parceria em Soluções e Serviços em
           Sistemas

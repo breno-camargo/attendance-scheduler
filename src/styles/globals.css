@@ -360,6 +360,354 @@ body:has(.loading-indicator)::before {
   }
 }
 
+/* ── A11y utility: visually hidden but readable by screen readers ── */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── Skeleton loaders ──────────────────────────────────────── */
+.skeleton {
+  background: var(--primary-border-subtle);
+  border-radius: 4px;
+  animation: statPulse 1.4s ease-in-out infinite;
+}
+
+.skeleton-bar {
+  display: block;
+  margin-left: auto;
+}
+
+.skeleton-bar--lg {
+  width: 80px;
+  height: 0.8rem;
+  margin-bottom: 4px;
+}
+
+.skeleton-bar--sm {
+  width: 60px;
+  height: 0.7rem;
+}
+
+.skeleton-num {
+  display: inline-block;
+  width: 2ch;
+  height: 1em;
+  vertical-align: middle;
+}
+
+/* ── Header user info ──────────────────────────────────────── */
+.user-info {
+  text-align: right;
+  min-width: 90px;
+}
+
+.user-info__name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.user-info__role {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+/* ── Circular icon buttons (header password/logout) ────────── */
+.icon-circle-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: var(--transition-smooth);
+  text-decoration: none;
+  font-size: 0.85rem;
+}
+
+.icon-circle-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+/* ── Header logo wrapper ───────────────────────────────────── */
+.topbar-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.topbar-logo h1 {
+  margin: 0;
+}
+
+.topbar-logo a {
+  text-decoration: none;
+}
+
+/* ── Header desktop layout ─────────────────────────────────── */
+.desktop-nav {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+.desktop-user {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.mobile-controls {
+  /* base layout (hidden on desktop via rule below; revealed at <=768px) */
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* ── Mobile-only sign-out (inside mobile-nav) ──────────────── */
+.mobile-signout {
+  margin-top: auto;
+  width: 100%;
+  padding: 0.9rem;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 12px;
+  color: #ef4444;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* ── Nav link underline indicator ──────────────────────────── */
+.nav-link {
+  position: relative;
+  text-decoration: none;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: var(--transition-smooth);
+}
+
+.nav-link[aria-current='page'] {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.nav-link__underline {
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  height: 2px;
+  background: var(--primary);
+  border-radius: 2px;
+  transition: var(--transition-smooth);
+  width: 0;
+  opacity: 0;
+}
+
+.nav-link[aria-current='page'] .nav-link__underline {
+  width: 100%;
+  opacity: 1;
+}
+
+/* ── Home page (dashboard) ─────────────────────────────────── */
+.home-main {
+  padding: 6rem 4rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.home-header {
+  margin-bottom: 4rem;
+}
+
+.home-subtitle {
+  max-width: 600px;
+  margin-bottom: 2rem;
+}
+
+.stat-row {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.stat-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.8rem 1.2rem;
+  background: var(--primary-subtle);
+  border-radius: 10px;
+  border: 1px solid var(--primary-border-subtle);
+  min-width: 80px;
+}
+
+.stat-badge--clickable {
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+}
+
+.stat-badge--loading {
+  animation: statPulse 1.4s ease-in-out infinite;
+}
+
+.stat-badge__value {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--primary);
+  line-height: 1;
+}
+
+.stat-badge__label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.home-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(350px, 100%), 1fr));
+  gap: 2.5rem;
+}
+
+.home-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.home-card--delay-1 {
+  animation-delay: 0.1s;
+}
+
+.home-card--delay-2 {
+  animation-delay: 0.2s;
+}
+
+.home-card__number {
+  position: absolute;
+  top: -20px;
+  right: -20px;
+  font-size: 12rem;
+  opacity: 0.03;
+  font-weight: 900;
+  color: var(--primary);
+  user-select: none;
+  pointer-events: none;
+}
+
+.home-card__title {
+  font-size: 1.6rem;
+  margin-bottom: 1.2rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.home-card__emoji {
+  font-size: 2rem;
+}
+
+.home-card__body {
+  color: var(--text-muted);
+  margin-bottom: 2rem;
+  line-height: 1.7;
+  font-size: 1rem;
+}
+
+.home-card__actions {
+  display: flex;
+  gap: 1.2rem;
+}
+
+.home-card__actions .btn-primary,
+.home-card__actions .btn-secondary {
+  flex: 1;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  text-decoration: none;
+}
+
+.home-card__actions--single .btn-primary {
+  width: 100%;
+}
+
+.home-footer {
+  margin-top: 6rem;
+  padding-top: 2rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  display: flex;
+  justify-content: space-between;
+}
+
+[data-theme='light'] .home-footer {
+  border-top-color: rgba(0, 0, 0, 0.06);
+}
+
+/* ── Pending tech list (inside modal) ──────────────────────── */
+.pending-tech-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pending-tech-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0.7rem 1rem;
+  border-radius: 10px;
+  background: rgba(251, 146, 60, 0.08);
+  border: 1px solid rgba(251, 146, 60, 0.2);
+}
+
+.pending-tech-item__icon {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.pending-tech-item__name {
+  font-size: 0.9rem;
+  color: var(--foreground);
+}
+
+.pending-tech-empty {
+  color: var(--text-muted);
+  text-align: center;
+  padding: 2rem 0;
+}
+
 li.client-card {
   transition: var(--transition-smooth);
 }
@@ -877,8 +1225,20 @@ select.form-input {
   }
 
   /* ── Grid: stack on mobile ─────────────────────────────── */
-  main > div[style*='grid'] {
+  main > div[style*='grid'],
+  .home-grid {
     grid-template-columns: 1fr !important;
+  }
+
+  /* ── Home stats: keep horizontal but flex-fit ──────────── */
+  .home-main {
+    padding: 2rem 1rem;
+  }
+
+  .home-footer {
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 3rem;
   }
 
   /* ── Card list items (Técnicos, Equipe) ────────────────── */
