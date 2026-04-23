@@ -46,6 +46,11 @@ export default function CalendarPage() {
     if (professionalId) sessionStorage.setItem('calendar-professional', professionalId);
   }, [professionalId]);
 
+  // Ao trocar de tecnico, volta pra visao geral (sem filtro de contrato).
+  useEffect(() => {
+    setFilterContractId(null);
+  }, [professionalId]);
+
   // Only show clients that appear in the current professional's appointments
   const linkedClients = useMemo(() => {
     const contractIds = new Set(appointments.map((a) => a.contractId));
