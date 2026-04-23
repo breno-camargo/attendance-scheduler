@@ -10,6 +10,7 @@ Base sólida: TS strict sem `any`, 323 testes passando, security headers complet
 
 **23-abr-2026 (terceira parte)**
 
+- **`middleware.ts` → `proxy.ts`** — silencia warning de deprecação do Next 16. Renomeia arquivo + função (`middleware` → `proxy`), config (matcher) inalterada.
 - **ESLint 8.57 → 9.39 + eslint-config-next 15.5 → 16.2** (item 7) — bem mais simples que o ROADMAP previa: o projeto já usava flat config (`eslint.config.mjs`), só precisou trocar `FlatCompat` (quebrava com `eslint-config-next` 16 nativo) por import direto de `eslint-config-next/core-web-vitals`. Removido `@typescript-eslint/parser` e `@typescript-eslint/eslint-plugin` do `package.json` — vem como transitive de eslint-config-next agora (`typescript-eslint` package).
 - **`.npmrc` com `legacy-peer-deps=true`** — destrava deploy na Vercel. `next-auth@4` declara `nodemailer@^7` como peerOptional, conflitando com nosso `nodemailer@8`. Solução temporária até item 2 (Auth.js v5) ou override via `package.json` overrides.
 
@@ -50,7 +51,7 @@ Converter pra `ScheduleAllocator` class seria astronautismo arquitetural — pio
 
 ### 2. Migração NextAuth 4 → Auth.js v5
 
-**Arquivos afetados:** `src/lib/auth.ts`, `src/middleware.ts`, `src/app/api/*/route.ts` (3 locais com `getServerSession`)
+**Arquivos afetados:** `src/lib/auth.ts`, `src/proxy.ts`, `src/app/api/*/route.ts` (3 locais com `getServerSession`)
 
 **Por quê:**
 
@@ -100,7 +101,6 @@ Pra minimizar retrabalho, aplicar nessa ordem:
 
 1. **NextAuth → Auth.js v5** — esperar GA (ainda em beta.31 em 23-abr-26). Quando sair, resolve as 3 moderates restantes e permite remover o `legacy-peer-deps=true` do `.npmrc`.
 2. **TS 6** — revisão de manutenção trimestral.
-3. **middleware.ts → proxy.ts** — silencia warning de deprecação do Next 16. Trivial.
 
 ## 📝 Política daqui em diante
 

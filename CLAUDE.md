@@ -50,7 +50,7 @@ src/
 ├── types/                # TypeScript interfaces (domain models)
 ├── hooks/                # Custom React hooks
 ├── styles/               # CSS global
-└── middleware.ts         # Auth + CSRF middleware
+└── proxy.ts              # Auth + CSRF (Next 16 proxy)
 
 prisma/
 ├── schema.prisma         # Database schema

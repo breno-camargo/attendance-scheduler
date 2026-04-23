@@ -96,7 +96,7 @@ src/
 ├── lib/           # prisma, auth, schemas, api-utils, mail, rate-limit
 ├── hooks/         # custom React hooks
 ├── types/         # interfaces do domínio
-└── middleware.ts  # auth + CSRF
+└── proxy.ts       # auth + CSRF (Next 16 proxy)
 
 prisma/            # schema + seeds
 tests/             # unit, api, e2e
