@@ -10,5 +10,5 @@
       "main": true
     }
   },
-  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- src/ public/ prisma/ package.json next.config.mjs"
+  "ignoreCommand": "bash -c 'PREV=${VERCEL_GIT_PREVIOUS_SHA:-HEAD^}; git diff --quiet $PREV HEAD -- src/ public/ prisma/ package.json package-lock.json next.config.mjs vercel.json .npmrc'"
 }
