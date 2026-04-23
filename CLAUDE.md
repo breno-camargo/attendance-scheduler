@@ -4,8 +4,8 @@ Sistema de agendamento de manutenção preventiva para a CompaSSS. Gera calendá
 
 ## Tech Stack
 
-- **Framework:** Next.js 14 (App Router) + TypeScript (strict mode)
-- **Frontend:** React 18, CSS puro (glassmorphism), sem Tailwind
+- **Framework:** Next.js 16 (App Router) + TypeScript (strict mode)
+- **Frontend:** React 19, CSS puro (glassmorphism), sem Tailwind
 - **Auth:** NextAuth.js (credentials provider), sessão de 8h
 - **Database:** PostgreSQL (Supabase) + Prisma ORM
 - **Validation:** Zod v4
@@ -94,17 +94,20 @@ tests/
 ## Business Rules
 
 ### Frequências e meses ativos
+
 - Frequências: MONTHLY, BIMONTHLY, QUARTERLY, SEMIANNUAL, ANNUAL
 - `visitsPerMonth` (1-30) só se aplica quando frequency === MONTHLY
 - Contratos não-mensais usam `targetMonths` ou offset determinístico (charCodeAt do ID) para distribuir nos meses certos
 - Ao mudar frequência na UI, `targetMonths` é resetado
 
 ### Espaçamento de visitas
+
 - Gap mínimo calculado: `Math.floor(workDays.length / (totalVisits + 1)) - 1` (mínimo 1 dia)
 - Visitas posicionadas uniformemente no mês via `targetIdx` + `findBestSlot()`
 - Se SDAI cai no mesmo mês, conta como 1 visita (reduz `remaining`)
 
 ### Testes SDAI
+
 - Obrigatoriamente aos sábados — exigência regulatória
 - Trimestrais, mesmo em contratos mensais (frequency MONTHLY + systemTypes inclui SDAI)
 - Preferência por sábados próximos ao dia 25 (fechamento de relatório mensal no dia 30)
@@ -113,27 +116,32 @@ tests/
 - Contratos não-mensais: SDAI deve ser inserido manualmente (aviso na UI)
 
 ### Dias preferenciais
+
 - `preferredDays`: somente dias úteis (seg-sex, 1-5)
 - Peso 0 para dia preferido vs 1000 para outros — degrada gracefully se não houver slot
 
 ### Blackout dates
+
 - Fins de semana excluídos (exceto sábados para SDAI)
 - Feriados fixos nacionais + Aniversário de SP + feriados customizados do banco
 - Feriados móveis calculados via Páscoa: Carnaval, Sexta Santa, Corpus Christi
 - Agendamento manual também bloqueado em feriados (erro: "Não é possível agendar em um feriado")
 
 ### Sistemas
+
 - Padrão: SDAI, CFTV, SAP, SCA, SAI
 - Default em novo contrato: SDAI + CFTV
 - Sistemas customizados podem ser adicionados; padrão não pode ser deletado
 - Apenas SDAI dispara lógica especial de agendamento aos sábados
 
 ### Geração de schedule
+
 - Transacional: deleta TODOS os appointments do profissional e recria em batch (tudo ou nada)
 - `createMany` em vez de loop — performance crítica (~400 appointments < 1s)
 - Geração é por profissional + ano
 
 ### Tipos de appointment
+
 - `VISITA_TECNICA` (default, 120min) e `TESTE_SDAI`
 - Pode alternar tipo manualmente na UI
 
@@ -164,6 +172,7 @@ tests/
 ## Environment
 
 Variáveis em `.env` (ver `.env.example`):
+
 - `DATABASE_URL` / `DIRECT_URL` — Supabase PostgreSQL
 - `NEXTAUTH_SECRET` / `NEXTAUTH_URL` — Auth
 - `SMTP_*` — Email

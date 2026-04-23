@@ -7,7 +7,8 @@ import { appointmentPatchSchema } from '@/lib/schemas';
  * DELETE /api/schedule/[id]
  * Remove um agendamento específico.
  */
-export async function DELETE(_request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(_request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const authError = await requireAuth();
   if (authError) return authError;
 
@@ -31,7 +32,8 @@ export async function DELETE(_request: Request, { params }: { params: { id: stri
  * PATCH /api/schedule/[id]
  * Atualiza parcialmente um agendamento (tipo, observação ou data).
  */
-export async function PATCH(request: Request, { params }: { params: { id: string } }) {
+export async function PATCH(request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const authError = await requireAuth();
   if (authError) return authError;
 

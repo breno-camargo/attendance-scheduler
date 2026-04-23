@@ -187,7 +187,7 @@ describe('DELETE /api/holidays/[id]', () => {
       method: 'DELETE',
     });
 
-    const response = await DELETE(req, { params: { id: validId } } as any);
+    const response = await DELETE(req, { params: Promise.resolve({ id: validId }) } as any);
 
     expect(response.status).toBe(401);
   });
@@ -200,7 +200,7 @@ describe('DELETE /api/holidays/[id]', () => {
       method: 'DELETE',
     });
 
-    const response = await DELETE(req, { params: { id: validId } } as any);
+    const response = await DELETE(req, { params: Promise.resolve({ id: validId }) } as any);
 
     expect(response.status).toBe(200);
     const body = await response.json();
@@ -215,7 +215,7 @@ describe('DELETE /api/holidays/[id]', () => {
       method: 'DELETE',
     });
 
-    await DELETE(req, { params: { id: validId } } as any);
+    await DELETE(req, { params: Promise.resolve({ id: validId }) } as any);
 
     expect(prismaMock.holiday.delete).toHaveBeenCalledWith({
       where: { id: validId },
@@ -229,7 +229,7 @@ describe('DELETE /api/holidays/[id]', () => {
       method: 'DELETE',
     });
 
-    const response = await DELETE(req, { params: { id: validId } } as any);
+    const response = await DELETE(req, { params: Promise.resolve({ id: validId }) } as any);
 
     expect(response.status).toBe(404);
     const body = await response.json();
@@ -243,7 +243,7 @@ describe('DELETE /api/holidays/[id]', () => {
       method: 'DELETE',
     });
 
-    const response = await DELETE(req, { params: { id: validId } } as any);
+    const response = await DELETE(req, { params: Promise.resolve({ id: validId }) } as any);
 
     expect(response.status).toBe(403);
     const body = await response.json();
@@ -258,7 +258,7 @@ describe('DELETE /api/holidays/[id]', () => {
       method: 'DELETE',
     });
 
-    const response = await DELETE(req, { params: { id: validId } } as any);
+    const response = await DELETE(req, { params: Promise.resolve({ id: validId }) } as any);
 
     expect(response.status).toBe(500);
     const body = await response.json();

@@ -297,7 +297,7 @@ describe('PUT /api/internal-contacts/[id]', () => {
       headers: { 'Content-Type': 'application/json' },
     });
 
-    const response = await PUT(req, { params: { id: validId } });
+    const response = await PUT(req, { params: Promise.resolve({ id: validId }) });
 
     expect(response.status).toBe(401);
   });
@@ -312,7 +312,7 @@ describe('PUT /api/internal-contacts/[id]', () => {
       headers: { 'Content-Type': 'application/json' },
     });
 
-    const response = await PUT(req, { params: { id: validId } });
+    const response = await PUT(req, { params: Promise.resolve({ id: validId }) });
 
     expect(response.status).toBe(200);
     const body = await response.json();
@@ -333,7 +333,7 @@ describe('PUT /api/internal-contacts/[id]', () => {
       headers: { 'Content-Type': 'application/json' },
     });
 
-    const response = await PUT(req, { params: { id: validId } });
+    const response = await PUT(req, { params: Promise.resolve({ id: validId }) });
 
     expect(response.status).toBe(200);
     const body = await response.json();
@@ -353,7 +353,7 @@ describe('PUT /api/internal-contacts/[id]', () => {
       headers: { 'Content-Type': 'application/json' },
     });
 
-    const response = await PUT(req, { params: { id: validId } });
+    const response = await PUT(req, { params: Promise.resolve({ id: validId }) });
 
     expect(response.status).toBe(400);
     const body = await response.json();
@@ -372,7 +372,7 @@ describe('PUT /api/internal-contacts/[id]', () => {
       headers: { 'Content-Type': 'application/json' },
     });
 
-    const response = await PUT(req, { params: { id: validId } });
+    const response = await PUT(req, { params: Promise.resolve({ id: validId }) });
 
     expect(response.status).toBe(200);
     expect(prismaMock.internalContact.findFirst).toHaveBeenCalledWith(
@@ -389,7 +389,7 @@ describe('PUT /api/internal-contacts/[id]', () => {
       headers: { 'Content-Type': 'application/json' },
     });
 
-    const response = await PUT(req, { params: { id: 'bad-id' } });
+    const response = await PUT(req, { params: Promise.resolve({ id: 'bad-id' }) });
 
     expect(response.status).toBe(400);
     const body = await response.json();
@@ -405,7 +405,7 @@ describe('PUT /api/internal-contacts/[id]', () => {
       headers: { 'Content-Type': 'application/json' },
     });
 
-    const response = await PUT(req, { params: { id: validId } });
+    const response = await PUT(req, { params: Promise.resolve({ id: validId }) });
 
     expect(response.status).toBe(400);
   });
@@ -420,7 +420,7 @@ describe('PUT /api/internal-contacts/[id]', () => {
       headers: { 'Content-Type': 'application/json' },
     });
 
-    const response = await PUT(req, { params: { id: validId } });
+    const response = await PUT(req, { params: Promise.resolve({ id: validId }) });
 
     expect(response.status).toBe(500);
     const body = await response.json();
@@ -439,7 +439,7 @@ describe('DELETE /api/internal-contacts/[id]', () => {
       method: 'DELETE',
     });
 
-    const response = await DELETE(req, { params: { id: validId } });
+    const response = await DELETE(req, { params: Promise.resolve({ id: validId }) });
 
     expect(response.status).toBe(401);
   });
@@ -451,7 +451,7 @@ describe('DELETE /api/internal-contacts/[id]', () => {
       method: 'DELETE',
     });
 
-    const response = await DELETE(req, { params: { id: validId } });
+    const response = await DELETE(req, { params: Promise.resolve({ id: validId }) });
 
     expect(response.status).toBe(200);
     const body = await response.json();
@@ -465,7 +465,7 @@ describe('DELETE /api/internal-contacts/[id]', () => {
       method: 'DELETE',
     });
 
-    await DELETE(req, { params: { id: validId } });
+    await DELETE(req, { params: Promise.resolve({ id: validId }) });
 
     expect(prismaMock.internalContact.delete).toHaveBeenCalledWith({
       where: { id: validId },
@@ -477,7 +477,7 @@ describe('DELETE /api/internal-contacts/[id]', () => {
       method: 'DELETE',
     });
 
-    const response = await DELETE(req, { params: { id: 'not-a-cuid' } });
+    const response = await DELETE(req, { params: Promise.resolve({ id: 'not-a-cuid' }) });
 
     expect(response.status).toBe(400);
     const body = await response.json();
@@ -489,7 +489,7 @@ describe('DELETE /api/internal-contacts/[id]', () => {
       method: 'DELETE',
     });
 
-    const response = await DELETE(req, { params: { id: '' } });
+    const response = await DELETE(req, { params: Promise.resolve({ id: '' }) });
 
     expect(response.status).toBe(400);
   });
@@ -501,7 +501,7 @@ describe('DELETE /api/internal-contacts/[id]', () => {
       method: 'DELETE',
     });
 
-    const response = await DELETE(req, { params: { id: validId } });
+    const response = await DELETE(req, { params: Promise.resolve({ id: validId }) });
 
     expect(response.status).toBe(500);
     const body = await response.json();

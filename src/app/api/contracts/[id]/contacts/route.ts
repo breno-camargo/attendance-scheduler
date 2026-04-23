@@ -11,7 +11,8 @@ export const dynamic = 'force-dynamic';
  * Retorna a lista de contatos (Manutenção e Escalonamento) do contrato.
  * PII é mantido aqui conforme a necessidade da visão de detalhe.
  */
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const authError = await requireAuth();
   if (authError) return authError;
 
@@ -45,7 +46,8 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
  * PATCH /api/contracts/[id]/contacts
  * Salva a lista de contatos editada com validação.
  */
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const authError = await requireAuth();
   if (authError) return authError;
 

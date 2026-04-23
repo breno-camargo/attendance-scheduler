@@ -1,6 +1,7 @@
 # CompaSSS — Agendador de Manutenção
 
-![Next.js](https://img.shields.io/badge/Next.js-14-black?logo=next.js)
+![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)
+![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Supabase-4169E1?logo=postgresql&logoColor=white)
 ![Prisma](https://img.shields.io/badge/Prisma-ORM-2D3748?logo=prisma)
@@ -19,8 +20,8 @@ Antes a agenda era feita em planilha. O problema: técnicos esqueciam visitas, t
 | :-------------------------------------: | :---------------------------------------: |
 | ![Dashboard](screenshots/dashboard.png) | ![Calendário](screenshots/calendario.png) |
 
-|                Contratos                |                  Relatório PDF                  |
-| :-------------------------------------: | :---------------------------------------------: |
+|                Contratos                |                Relatório PDF                |
+| :-------------------------------------: | :-----------------------------------------: |
 | ![Contratos](screenshots/contratos.png) | ![Relatório PDF](screenshots/relatorio.png) |
 
 ## Highlights técnicos
@@ -40,7 +41,7 @@ Antes a agenda era feita em planilha. O problema: técnicos esqueciam visitas, t
 
 ## Stack
 
-- **Framework** — Next.js 14 (App Router) + TypeScript strict
+- **Framework** — Next.js 16 (App Router) + React 19 + TypeScript strict
 - **Banco** — PostgreSQL (Supabase) + Prisma ORM
 - **Auth** — NextAuth.js (credentials, sessão de 8h)
 - **Validação** — Zod v4

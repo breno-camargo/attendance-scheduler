@@ -1,7 +1,7 @@
 import { ApiUtils, requireAuth } from '@/lib/api-utils';
 import prisma from '@/lib/prisma';
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const authError = await requireAuth();
   if (authError) return authError;
 

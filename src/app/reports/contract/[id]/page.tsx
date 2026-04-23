@@ -33,13 +33,12 @@ interface TableRow {
   item2?: RowData;
 }
 
-export default async function ContractReportPage({
-  params,
-  searchParams,
-}: {
-  params: { id: string };
-  searchParams: { year?: string };
+export default async function ContractReportPage(props: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ year?: string }>;
 }) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const yearParam = searchParams.year ? parseInt(searchParams.year) : null;
 
   // Busca o contrato com ORM padrão
@@ -248,20 +247,38 @@ export default async function ContractReportPage({
     INTERFONIA: 'Sistema de\nInterfonia',
   };
 
-  // Ícones SVG profissionais — fiéis às imagens de referência do usuário
   const SystemIcon = ({ skey }: { skey: string }) => {
-    // Definindo os caminhos das imagens JPEG oficiais
-    // Mapeamento definitivo e escala de 1.25 para preenchimento total (cover)
     const iconMap: Record<string, string> = {
       SDAI: '/icons/sdai.jpg',
       SCA: '/icons/sca.jpg',
       SAP: '/icons/sap.jpg',
       CFTV: '/icons/cftv.jpg',
       SAI: '/icons/sai.jpg',
-      INTERFONIA: '/icons/interfonia.jpg',
     };
+    const iconSrc = iconMap[skey];
 
-    const iconSrc = iconMap[skey] || '/icons/default.jpg';
+    if (!iconSrc) {
+      return (
+        <div
+          style={{
+            width: '100%',
+            height: '100%',
+            borderRadius: '50%',
+            background: 'white',
+            color: '#1a1a2e',
+            border: '1px solid #e5e7eb',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontWeight: 700,
+            fontSize: '0.8rem',
+            letterSpacing: '0.5px',
+          }}
+        >
+          {skey.slice(0, 3)}
+        </div>
+      );
+    }
 
     return (
       <div

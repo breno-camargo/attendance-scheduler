@@ -258,7 +258,7 @@ describe('DELETE /api/schedule/[id]', () => {
       method: 'DELETE',
     });
 
-    const response = await DELETE(req, { params: { id: validId } });
+    const response = await DELETE(req, { params: Promise.resolve({ id: validId }) });
 
     expect(response.status).toBe(401);
   });
@@ -271,7 +271,7 @@ describe('DELETE /api/schedule/[id]', () => {
       method: 'DELETE',
     });
 
-    const response = await DELETE(req, { params: { id: validId } });
+    const response = await DELETE(req, { params: Promise.resolve({ id: validId }) });
 
     expect(response.status).toBe(200);
     const body = await response.json();
@@ -286,7 +286,7 @@ describe('DELETE /api/schedule/[id]', () => {
       method: 'DELETE',
     });
 
-    await DELETE(req, { params: { id: validId } });
+    await DELETE(req, { params: Promise.resolve({ id: validId }) });
 
     expect(prismaMock.appointment.delete).toHaveBeenCalledWith({
       where: { id: validId },
@@ -300,7 +300,7 @@ describe('DELETE /api/schedule/[id]', () => {
       method: 'DELETE',
     });
 
-    const response = await DELETE(req, { params: { id: validId } });
+    const response = await DELETE(req, { params: Promise.resolve({ id: validId }) });
 
     expect(response.status).toBe(404);
     const body = await response.json();
@@ -312,7 +312,7 @@ describe('DELETE /api/schedule/[id]', () => {
       method: 'DELETE',
     });
 
-    const response = await DELETE(req, { params: { id: 'invalid-id' } });
+    const response = await DELETE(req, { params: Promise.resolve({ id: 'invalid-id' }) });
 
     expect(response.status).toBe(400);
     const body = await response.json();
@@ -324,7 +324,7 @@ describe('DELETE /api/schedule/[id]', () => {
       method: 'DELETE',
     });
 
-    const response = await DELETE(req, { params: { id: '' } });
+    const response = await DELETE(req, { params: Promise.resolve({ id: '' }) });
 
     expect(response.status).toBe(400);
   });
@@ -337,7 +337,7 @@ describe('DELETE /api/schedule/[id]', () => {
       method: 'DELETE',
     });
 
-    const response = await DELETE(req, { params: { id: validId } });
+    const response = await DELETE(req, { params: Promise.resolve({ id: validId }) });
 
     expect(response.status).toBe(500);
     const body = await response.json();
@@ -358,7 +358,7 @@ describe('PATCH /api/schedule/[id]', () => {
       headers: { 'Content-Type': 'application/json' },
     });
 
-    const response = await PATCH(req, { params: { id: validId } });
+    const response = await PATCH(req, { params: Promise.resolve({ id: validId }) });
 
     expect(response.status).toBe(401);
   });
@@ -373,7 +373,7 @@ describe('PATCH /api/schedule/[id]', () => {
       headers: { 'Content-Type': 'application/json' },
     });
 
-    const response = await PATCH(req, { params: { id: validId } });
+    const response = await PATCH(req, { params: Promise.resolve({ id: validId }) });
 
     expect(response.status).toBe(200);
     const body = await response.json();
@@ -390,7 +390,7 @@ describe('PATCH /api/schedule/[id]', () => {
       headers: { 'Content-Type': 'application/json' },
     });
 
-    const response = await PATCH(req, { params: { id: validId } });
+    const response = await PATCH(req, { params: Promise.resolve({ id: validId }) });
 
     expect(response.status).toBe(200);
     const body = await response.json();
@@ -408,7 +408,7 @@ describe('PATCH /api/schedule/[id]', () => {
       headers: { 'Content-Type': 'application/json' },
     });
 
-    await PATCH(req, { params: { id: validId } });
+    await PATCH(req, { params: Promise.resolve({ id: validId }) });
 
     const updateCall = prismaMock.appointment.update.mock.calls[0][0] as any;
     expect(updateCall.data.date).toBeInstanceOf(Date);
@@ -423,7 +423,7 @@ describe('PATCH /api/schedule/[id]', () => {
       headers: { 'Content-Type': 'application/json' },
     });
 
-    await PATCH(req, { params: { id: validId } });
+    await PATCH(req, { params: Promise.resolve({ id: validId }) });
 
     const updateCall = prismaMock.appointment.update.mock.calls[0][0] as any;
     expect(updateCall.data).toHaveProperty('observation', 'Only this');
@@ -438,7 +438,7 @@ describe('PATCH /api/schedule/[id]', () => {
       headers: { 'Content-Type': 'application/json' },
     });
 
-    const response = await PATCH(req, { params: { id: 'bad-id' } });
+    const response = await PATCH(req, { params: Promise.resolve({ id: 'bad-id' }) });
 
     expect(response.status).toBe(400);
   });
@@ -450,7 +450,7 @@ describe('PATCH /api/schedule/[id]', () => {
       headers: { 'Content-Type': 'application/json' },
     });
 
-    const response = await PATCH(req, { params: { id: validId } });
+    const response = await PATCH(req, { params: Promise.resolve({ id: validId }) });
 
     expect(response.status).toBe(400);
     const body = await response.json();
@@ -466,7 +466,7 @@ describe('PATCH /api/schedule/[id]', () => {
       headers: { 'Content-Type': 'application/json' },
     });
 
-    const response = await PATCH(req, { params: { id: validId } });
+    const response = await PATCH(req, { params: Promise.resolve({ id: validId }) });
 
     expect(response.status).toBe(400);
   });
@@ -480,7 +480,7 @@ describe('PATCH /api/schedule/[id]', () => {
       headers: { 'Content-Type': 'application/json' },
     });
 
-    const response = await PATCH(req, { params: { id: validId } });
+    const response = await PATCH(req, { params: Promise.resolve({ id: validId }) });
 
     expect(response.status).toBe(500);
     const body = await response.json();

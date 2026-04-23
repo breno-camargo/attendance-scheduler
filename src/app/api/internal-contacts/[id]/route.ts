@@ -7,7 +7,8 @@ import { internalContactSchema } from '@/lib/schemas';
  * GET /api/internal-contacts/[id]
  * Retorna dados completos (sem máscara) — usado nos formulários de edição.
  */
-export async function GET(_request: Request, { params }: { params: { id: string } }) {
+export async function GET(_request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const result = await requireAuthWithScope();
   if ('error' in result) return result.error;
 
@@ -24,7 +25,8 @@ export async function GET(_request: Request, { params }: { params: { id: string 
   return ApiUtils.success(contact);
 }
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const result = await requireAuthWithScope();
   if ('error' in result) return result.error;
   // Escopo filtrado: só pode editar o próprio contato
@@ -81,7 +83,8 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(_request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(_request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const result = await requireAuthWithScope();
   if ('error' in result) return result.error;
   if (result.auth.scope === 'filtered') {

@@ -6,7 +6,8 @@ import { professionalSchema } from '@/lib/schemas';
  * GET /api/professionals/[id]
  * Retorna dados completos (sem máscara) de um técnico — usado nos formulários de edição.
  */
-export async function GET(_request: Request, { params }: { params: { id: string } }) {
+export async function GET(_request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const result = await requireAuthWithScope();
   if ('error' in result) return result.error;
   const { auth } = result;
@@ -34,7 +35,8 @@ export async function GET(_request: Request, { params }: { params: { id: string 
  * PUT /api/professionals/[id]
  * Atualiza os dados de um técnico existente.
  */
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const result = await requireAuthWithScope();
   if ('error' in result) return result.error;
   const { auth } = result;
@@ -82,7 +84,8 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 /**
  * DELETE /api/professionals/[id]
  */
-export async function DELETE(_request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(_request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const result = await requireAuthWithScope();
   if ('error' in result) return result.error;
   const { auth } = result;

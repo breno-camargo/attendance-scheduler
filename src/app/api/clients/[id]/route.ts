@@ -7,7 +7,8 @@ import { clientSchema } from '@/lib/schemas';
  * Atualiza o nome do cliente e os dados do seu contrato principal.
  * Se o contrato não existir, cria um novo automaticamente.
  */
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const authError = await requireAuth();
   if (authError) return authError;
 
@@ -84,7 +85,8 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 /**
  * DELETE /api/clients/[id]
  */
-export async function DELETE(_request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(_request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const authError = await requireAuth();
   if (authError) return authError;
 
