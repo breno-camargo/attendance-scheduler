@@ -6,7 +6,17 @@ Base sólida: TS strict sem `any`, 323 testes passando, security headers complet
 
 ---
 
-## ✅ Concluído (22-abr-2026)
+## ✅ Concluído
+
+**23-abr-2026**
+
+- **Next 14.2.3 → 14.2.35** — resolve CVE critical de cache poisoning (GHSA-gp8f-8m3g-qvj9). Patch-level, sem breaking change. `eslint-config-next` alinhado junto.
+- **Nodemailer 7 → 8** — resolve SMTP command injection (CRLF via EHLO/HELO — GHSA-vvjj-xcjg-gr5g) e injection via `envelope.size` (GHSA-c7w3-x93f-qmm8). API usada (createTransport/sendMail) estável entre major versions, sem mudança no `src/lib/mail.ts`.
+- **Vite (transitivo do vitest)** — fix automático pelos 3 advisories de path traversal / fs.deny bypass / arbitrary file read via WebSocket. Dev-only, mas vale limpar.
+
+De 12 vulns foi pra 7. Restantes acoplados a outros itens deste roadmap (Next 16 = item 3 amplifado; Auth.js v5 = item 2; eslint 9 flat config = item 7; exceljs upstream = item 8).
+
+**22-abr-2026**
 
 - **Remoção do `xlsx` (SheetJS)** — CVEs conhecidas de prototype pollution e ReDoS. Migrado `src/app/api/import/route.ts` pra ExcelJS (unifica com o uso client-side em `src/app/import/page.tsx`).
 - **`@types/node` 20 → 24** — alinha com Node 24 LTS usado local e na Vercel.
@@ -70,12 +80,13 @@ Base sólida: TS strict sem `any`, 323 testes passando, security headers complet
 
 ---
 
-### 4. Remoção das vulnerabilities restantes do `npm audit`
-`npm audit` ainda reporta 10 vulnerabilidades (1 low, 1 moderate, 7 high, 1 critical) vindas de deps transitivas (provavelmente de ferramentas antigas em chain).
+### 4. Vulnerabilities remanescentes do `npm audit`
+Quick wins aplicados em 23-abr-2026 (ver Concluído). Restam **7 vulns** todas encadeadas a outros itens:
 
-**Investigar:** rodar `npm audit --production` pra ver se só atingem dev-deps (baixo risco real) ou produção.
+- **4 high** do Next.js (DoS via Image Optimizer remotePatterns, RSC deserialization, rewrites smuggling, next/image disk cache, Server Components DoS) — fix requer Next 16. **Resolve junto com item 3** (quando evoluir pra Next 15 → 16).
+- **3 moderate** encadeadas: `next-auth` → `nodemailer`/`uuid`, `exceljs` → `uuid`. Fix do next-auth requer Auth.js v5 (item 2). Fix do exceljs depende da lib adotar uuid 14 upstream (item 8).
 
-**Esforço:** 30min de investigação + fix.
+**Ação:** nenhuma independente — acompanha itens 2, 3 e 8. Rodar `npm audit` a cada release pra confirmar que a lista não cresceu.
 
 ---
 
