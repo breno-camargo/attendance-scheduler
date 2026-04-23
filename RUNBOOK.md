@@ -160,7 +160,7 @@ psql "$DIRECT_URL"
 
 ## 📞 Contatos críticos
 
-- **Dev principal:** Breno Camargo — _adicionar telefone/email aqui_
+- **Dev principal:** Breno Camargo — email: breno.hsc75@gmail.com / tel: (11)99012-7316
 - **Admin secundário:** _criar segunda conta admin no banco e guardar credenciais em cofre_
 - **Supabase support:** [supabase.com/dashboard](https://supabase.com/dashboard) → Help (resposta em até 48h no plano free)
 - **Vercel support:** [vercel.com/help](https://vercel.com/help)
