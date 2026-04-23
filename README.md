@@ -38,7 +38,7 @@
 
 ## Por que existe
 
-Antes a agenda era feita em planilha. O problema: técnicos esqueciam visitas, testes SDAI atrasavam, e ninguém sabia quem era o contato de escalonamento de cada prédio. Esse sistema resolve isso automatizando a geração de cronogramas anuais e centralizando os contatos.
+Antes a agenda era feita em planilha. O problema: fazer 45 agendas na mão por vezes ocasionava erros de datas. Esse sistema resolve isso automatizando a geração de cronogramas anuais e centralizando os contatos.
 
 ## Screenshots
 
