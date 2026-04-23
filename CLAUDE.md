@@ -165,9 +165,11 @@ tests/
 
 ## Known Technical Debt
 
-- Algoritmo de geração de schedule (~400 linhas monolíticas) precisa de refactor — cuidado ao modificar
 - E2E tests frágeis — dependem de ordem e seed data
-- Histórico de commits inconsistente (mix pt-BR/en) — usar inglês daqui em diante
+- `.npmrc` força `legacy-peer-deps=true` por causa do conflito `next-auth@4` ↔ `nodemailer@8`. Resolve quando migrar pra Auth.js v5 (ainda em beta — ver ROADMAP item 2)
+- 3 vulns moderate restantes do `npm audit` são todas encadeadas em `next-auth`/`uuid`/`exceljs`. Baixo risco prático, ver ROADMAP item 4
+
+Ver `ROADMAP.md` pro plano completo de evolução.
 
 ## Environment
 
