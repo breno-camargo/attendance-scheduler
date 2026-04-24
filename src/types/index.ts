@@ -42,6 +42,24 @@ export interface Appointment {
   professional?: { id: string; name: string };
 }
 
+export type AppointmentType = 'VISITA_TECNICA' | 'TESTE_SDAI';
+
+export interface SchedulePreviewAppointment {
+  clientId: string;
+  contractId: string;
+  date: string;
+  type: AppointmentType;
+  observation?: string;
+}
+
+export interface SchedulePreviewData {
+  count: number;
+  contractCount: number;
+  byType: Record<AppointmentType, number>;
+  byMonth: Record<number, Record<AppointmentType, number>>;
+  appointments: SchedulePreviewAppointment[];
+}
+
 export interface Holiday {
   id: string;
   date: string;

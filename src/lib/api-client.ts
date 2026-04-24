@@ -1,7 +1,15 @@
 // Wrapper de fetch pro frontend — evita repetir try/catch e JSON.parse em todo lugar.
 // Cada recurso da API tem suas funções tipadas embaixo.
 
-import type { Appointment, Client, Contact, Holiday, InternalContact, Professional } from '@/types';
+import type {
+  Appointment,
+  Client,
+  Contact,
+  Holiday,
+  InternalContact,
+  Professional,
+  SchedulePreviewData,
+} from '@/types';
 
 interface ApiFetchOptions extends RequestInit {
   raw?: boolean;
@@ -111,6 +119,11 @@ export const staffApi = {
 
 // schedule é o mais complexo — generate, listagem por ano, CRUD manual e limpeza
 export const scheduleApi = {
+  preview: (professionalId: string, year: number) =>
+    post<SchedulePreviewData>('/api/schedule/generate/preview', {
+      professionalId,
+      year,
+    }),
   generate: (professionalId: string, year: number) =>
     post<{ message: string; count: number; contractCount: number }>('/api/schedule/generate', {
       professionalId,
