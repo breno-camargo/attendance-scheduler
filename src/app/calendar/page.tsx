@@ -290,10 +290,19 @@ export default function CalendarPage() {
     });
     if (!ok) return;
     setLoading(true);
-    await scheduleApi.clearYear(professionalId, year);
-    await Promise.all([fetchAppointments(), refreshExistingYears(professionalId)]);
-    setLoading(false);
-    showToast('Agenda excluída com sucesso');
+    try {
+      const res = await scheduleApi.clearYear(professionalId, year);
+      await Promise.all([fetchAppointments(), refreshExistingYears(professionalId)]);
+      if (res.ok) {
+        showToast(res.data?.message ?? 'Agenda excluída com sucesso');
+      } else {
+        showToast(res.error || 'Erro ao excluir agenda. Tente novamente.', 'error');
+      }
+    } catch {
+      showToast('Falha de conexão ao excluir agenda. Tente novamente.', 'error');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleMoveAppointment = async (appointmentId: string, newDate: string) => {
