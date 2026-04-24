@@ -103,7 +103,7 @@
 /* Desabilita transições durante a troca de tema para evitar repaint em cascata
    (glass-panel + topbar blur + sombras + bordas simultaneamente). Classe é
    aplicada em <html> pelo toggleTheme antes de trocar data-theme e removida
-   quando a View Transition termina (ou no próximo frame no fallback). */
+   quando o overlay de transição termina o fade-out. */
 html.theme-switching,
 html.theme-switching *,
 html.theme-switching *::before,
@@ -111,20 +111,26 @@ html.theme-switching *::after {
   transition: none !important;
 }
 
-/* View Transitions API: cross-fade do snapshot (Chromium/Safari/FF recente).
-   O browser captura o estado antigo como bitmap, troca data-theme de uma vez,
-   e cross-fade no compositor — sem re-rasterizar blur/sombras de cada painel. */
-::view-transition-old(root),
-::view-transition-new(root) {
-  animation-duration: 320ms;
-  animation-timing-function: var(--ease-out-expo);
+/* Overlay leve de transição de tema. Inserido com a cor do fundo ANTIGO
+   cobrindo a tela; a troca de data-theme acontece por baixo (instantânea
+   graças a .theme-switching); o overlay faz fade-out revelando o tema novo.
+   Evita o snapshot da viewport inteira que startViewTransition faria — caro
+   em páginas com muito backdrop-filter (calendário, clientes, feriados). */
+.theme-transition-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity 320ms var(--ease-out-expo);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  ::view-transition-old(root),
-  ::view-transition-new(root) {
-    animation: none;
-  }
+/* Reabilita a transição do próprio overlay — a regra universal acima
+   (.theme-switching *) desativaria também o fade dele, fazendo cair no
+   timeout de cleanup em vez de animar. Especificidade maior + !important
+   garantem precedência sobre a regra genérica. */
+html.theme-switching .theme-transition-overlay {
+  transition: opacity 320ms var(--ease-out-expo) !important;
 }
 
 body {
