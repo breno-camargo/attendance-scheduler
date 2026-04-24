@@ -1,6 +1,7 @@
 import { ApiUtils, requireAuth } from '@/lib/api-utils';
 import type { AppointmentType, GeneratedAppointment } from '@/lib/schedule-algorithm';
 import { isGenerationError, runScheduleGeneration } from '@/lib/schedule-service';
+import { computeScheduleWarnings } from '@/lib/schedule-warnings';
 import { generateScheduleSchema } from '@/lib/schemas';
 
 export const dynamic = 'force-dynamic';
@@ -47,8 +48,9 @@ export async function POST(request: Request) {
       return ApiUtils.error(generation.message, null, 404);
     }
 
-    const { appointments, contractCount, existingCount } = generation;
+    const { appointments, contractCount, existingCount, contracts } = generation;
     const { byType, byMonth } = summarize(appointments);
+    const warnings = computeScheduleWarnings(contracts);
 
     return ApiUtils.success({
       count: appointments.length,
@@ -57,6 +59,7 @@ export async function POST(request: Request) {
       byType,
       byMonth,
       appointments,
+      warnings,
     });
   } catch (error: unknown) {
     return ApiUtils.error('Erro ao gerar prévia da agenda', error);

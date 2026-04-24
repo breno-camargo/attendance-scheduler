@@ -2,6 +2,7 @@ import { toDateKey } from './date-utils';
 import { getHolidaysForYear } from './holidays';
 import prisma from './prisma';
 import { generateYearSchedule, type GeneratedAppointment } from './schedule-algorithm';
+import type { WarningContract } from './schedule-warnings';
 
 export interface ScheduleGenerationError {
   code: 'PROFESSIONAL_NOT_FOUND';
@@ -18,6 +19,10 @@ export interface ScheduleGenerationResult {
   // do ano). Permite ao preview dizer "serão substituídos X" honestamente
   // e ao audit registrar "substituiu X, criou Y".
   existingCount: number;
+  // Contratos carregados, em shape mínimo pra quem quiser computar warnings
+  // (só o /preview usa). /generate ignora. Deixar a computação fora do serviço
+  // evita acoplar o generate a informação só útil antes da confirmação.
+  contracts: WarningContract[];
 }
 
 // Carrega profissional + feriados e roda o algoritmo. Não faz I/O de escrita —
@@ -79,6 +84,7 @@ export async function runScheduleGeneration(
     professionalId: professional.id,
     contractIds,
     existingCount,
+    contracts: professional.contracts,
   };
 }
 
