@@ -69,7 +69,7 @@ tests/
 ## Architecture Decisions
 
 - **CSS puro** em vez de Tailwind — controle total do glassmorphism design
-- **Sem React Query/SWR** — dados carregados de uma vez, filtro local (~50 clientes)
+- **Sem React Query/SWR** — dados carregados de uma vez, filtro local (~50 clientes). Cache leve em memória no `src/lib/api-client.ts` (TTL 45s, 15s para stats) com invalidação por tag nas mutations para melhorar back-nav e suportar prefetch de menu — não é cliente de dados reativo.
 - **contactsJson (JSON field)** em contratos em vez de tabelas normalizadas — dados mudam frequentemente
 - **Testes SDAI sempre aos sábados** — exigência regulatória, enforced no algoritmo de geração
 - **PII masking** em views de lista — telefone/email de técnicos mascarados
