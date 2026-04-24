@@ -2,15 +2,23 @@ import { parseSystemTypes } from './formatting';
 import { parseNumberList } from './schedule-algorithm';
 
 export type ScheduleWarningCode =
+  // Tier A — configuração dos contratos (antes do algoritmo rodar):
   | 'NON_MONTHLY_SDAI'
   | 'NO_MONTHLY_VISITS'
-  | 'INVALID_TARGET_MONTHS';
+  | 'INVALID_TARGET_MONTHS'
+  // Tier B — execução do algoritmo (o que de fato aconteceu):
+  | 'SDAI_FELL_ON_WEEKDAY'
+  | 'UNPLACED_VISITS';
 
 export interface ScheduleWarning {
   code: ScheduleWarningCode;
   contractId: string;
   clientName?: string;
   message: string;
+  // Campos opcionais usados só por alguns codes do Tier B:
+  date?: string; // SDAI_FELL_ON_WEEKDAY (ISO yyyy-mm-dd)
+  month?: number; // UNPLACED_VISITS (0-11)
+  missingCount?: number; // UNPLACED_VISITS
 }
 
 export interface WarningContract {

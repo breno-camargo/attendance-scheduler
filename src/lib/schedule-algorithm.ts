@@ -17,7 +17,39 @@ export interface ScheduleContract {
   preferredDays: string | null;
   systemTypes: string | null;
   visitsPerMonth: number;
+  // Opcional — só usado pra enriquecer warnings Tier B com nome do cliente.
+  // Quando vem do Prisma com include.client fica populado; em testes pode ser ausente.
+  client?: { name: string } | null;
 }
+
+// Subset de ScheduleWarning emitido pelo algoritmo (Tier B). Tipado aqui
+// localmente pra não criar dependência inversa em schedule-warnings.
+// A shape bate com ScheduleWarning de types/index, então o /preview pode
+// concatenar Tier A + Tier B no mesmo array.
+export interface ScheduleAlgorithmWarning {
+  code: 'SDAI_FELL_ON_WEEKDAY' | 'UNPLACED_VISITS';
+  contractId: string;
+  clientName?: string;
+  message: string;
+  date?: string;
+  month?: number;
+  missingCount?: number;
+}
+
+const MONTH_PT = [
+  'janeiro',
+  'fevereiro',
+  'março',
+  'abril',
+  'maio',
+  'junho',
+  'julho',
+  'agosto',
+  'setembro',
+  'outubro',
+  'novembro',
+  'dezembro',
+];
 
 export type AppointmentType = 'VISITA_TECNICA' | 'TESTE_SDAI';
 
@@ -125,6 +157,7 @@ function allocateSdaiDates<C extends ScheduleContract>(
   saturdaysByMonth: Date[][],
   isHoliday: (date: Date) => boolean,
   getWorkDays: (year: number, month: number) => Date[],
+  warnings: ScheduleAlgorithmWarning[],
 ): Record<number, { contract: C; date: Date }[]> {
   const sdaiContracts = contracts.filter(
     (c) => c.frequency === 'MONTHLY' && hasSdaiSystem(c.systemTypes),
@@ -174,6 +207,16 @@ function allocateSdaiDates<C extends ScheduleContract>(
       if (!chosenDate) {
         const workDays = getWorkDays(year, month);
         chosenDate = workDays.find((d) => !used.has(toDateKey(d)));
+        if (chosenDate) {
+          warnings.push({
+            code: 'SDAI_FELL_ON_WEEKDAY',
+            contractId: contract.id,
+            clientName: contract.client?.name,
+            message: `Teste SDAI de ${MONTH_PT[month]} caiu em dia útil — nenhum sábado disponível no mês.`,
+            date: toDateKey(chosenDate),
+            month,
+          });
+        }
       }
 
       if (chosenDate) {
@@ -197,6 +240,7 @@ function distributeMonthVisits<C extends ScheduleContract>(
   workDays: Date[],
   monthlySdai: { contract: C; date: Date }[],
   visitCounter: Record<string, number>,
+  warnings: ScheduleAlgorithmWarning[],
 ): GeneratedAppointment[] {
   const daySlots: (SlotEntry<C> | null)[] = new Array(workDays.length).fill(null);
   const workDayIndex = new Map(workDays.map((d, i) => [toDateKey(d), i]));
@@ -254,6 +298,7 @@ function distributeMonthVisits<C extends ScheduleContract>(
     const totalVisitsInMonth = remaining + usedIndices.length;
     const minGap = Math.max(1, Math.floor(workDays.length / (totalVisitsInMonth + 1)) - 1);
 
+    let placed = 0;
     for (let v = 0; v < remaining; v++) {
       const slotNum = usedIndices.length + v;
       const targetIdx = Math.floor(((slotNum + 0.5) / totalVisitsInMonth) * workDays.length);
@@ -276,7 +321,20 @@ function distributeMonthVisits<C extends ScheduleContract>(
         };
         usedIndices.push(bestIdx);
         visitCounter[contract.id]++;
+        placed++;
       }
+    }
+
+    if (placed < remaining) {
+      const missing = remaining - placed;
+      warnings.push({
+        code: 'UNPLACED_VISITS',
+        contractId: contract.id,
+        clientName: contract.client?.name,
+        message: `${missing} ${missing === 1 ? 'visita não coube' : 'visitas não couberam'} em ${MONTH_PT[month]} (sem dias úteis livres suficientes).`,
+        month,
+        missingCount: missing,
+      });
     }
   }
 
@@ -316,14 +374,17 @@ function renumberVisitsChronologically(appointments: GeneratedAppointment[]): vo
 
 /**
  * Gera a agenda anual completa para um conjunto de contratos.
- * Função pura: recebe contratos + feriados, devolve apontamentos.
+ * Função pura: recebe contratos + feriados, devolve apontamentos + warnings.
+ * Warnings refletem o que o algoritmo fez durante a execução (Tier B):
+ * SDAI que caiu em dia útil por falta de sábado, e visitas que não
+ * couberam no mês. Callers que só querem os appointments ignoram o campo.
  * Não faz I/O, não depende de Prisma.
  */
 export function generateYearSchedule<C extends ScheduleContract>(
   contracts: C[],
   year: number,
   holidayKeys: Set<string>,
-): GeneratedAppointment[] {
+): { appointments: GeneratedAppointment[]; warnings: ScheduleAlgorithmWarning[] } {
   const isHoliday = (date: Date) => holidayKeys.has(toDateKey(date));
 
   const getWorkDays = (y: number, month: number): Date[] => {
@@ -336,8 +397,16 @@ export function generateYearSchedule<C extends ScheduleContract>(
     return days;
   };
 
+  const warnings: ScheduleAlgorithmWarning[] = [];
   const saturdaysByMonth = Array.from({ length: 12 }, (_, m) => getSaturdays(year, m));
-  const sdaiSchedule = allocateSdaiDates(contracts, year, saturdaysByMonth, isHoliday, getWorkDays);
+  const sdaiSchedule = allocateSdaiDates(
+    contracts,
+    year,
+    saturdaysByMonth,
+    isHoliday,
+    getWorkDays,
+    warnings,
+  );
 
   const appointments: GeneratedAppointment[] = [];
   const visitCounter: Record<string, number> = {};
@@ -357,10 +426,17 @@ export function generateYearSchedule<C extends ScheduleContract>(
       });
     });
 
-    const visits = distributeMonthVisits(contracts, month, workDays, monthlySdai, visitCounter);
+    const visits = distributeMonthVisits(
+      contracts,
+      month,
+      workDays,
+      monthlySdai,
+      visitCounter,
+      warnings,
+    );
     appointments.push(...visits);
   }
 
   renumberVisitsChronologically(appointments);
-  return appointments;
+  return { appointments, warnings };
 }

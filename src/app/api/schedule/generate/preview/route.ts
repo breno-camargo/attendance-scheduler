@@ -59,9 +59,11 @@ export async function POST(request: Request) {
       return ApiUtils.error(generation.message, null, 404);
     }
 
-    const { appointments, contractCount, existingCount, contracts } = generation;
+    const { appointments, contractCount, existingCount, contracts, algorithmWarnings } = generation;
     const { byType, byMonth } = summarize(appointments);
-    const warnings = computeScheduleWarnings(contracts);
+    // Tier A (configuração) + Tier B (execução do algoritmo) — mesmo shape,
+    // UI renderiza uniforme.
+    const warnings = [...computeScheduleWarnings(contracts), ...algorithmWarnings];
 
     return ApiUtils.success({
       count: appointments.length,

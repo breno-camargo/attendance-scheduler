@@ -1,7 +1,11 @@
 import { toDateKey } from './date-utils';
 import { getHolidaysForYear } from './holidays';
 import prisma from './prisma';
-import { generateYearSchedule, type GeneratedAppointment } from './schedule-algorithm';
+import {
+  generateYearSchedule,
+  type GeneratedAppointment,
+  type ScheduleAlgorithmWarning,
+} from './schedule-algorithm';
 import type { WarningContract } from './schedule-warnings';
 
 export interface ScheduleGenerationError {
@@ -23,6 +27,9 @@ export interface ScheduleGenerationResult {
   // (só o /preview usa). /generate ignora. Deixar a computação fora do serviço
   // evita acoplar o generate a informação só útil antes da confirmação.
   contracts: WarningContract[];
+  // Warnings emitidos pelo algoritmo durante a execução (Tier B). /generate
+  // também ignora; /preview concatena com warnings Tier A pra UI.
+  algorithmWarnings: ScheduleAlgorithmWarning[];
 }
 
 // Carrega profissional + feriados e roda o algoritmo. Não faz I/O de escrita —
@@ -63,7 +70,11 @@ export async function runScheduleGeneration(
     ...customHolidays.map((h) => toDateKey(new Date(h.date))),
   ]);
 
-  const appointments = generateYearSchedule(professional.contracts, year, holidayKeys);
+  const { appointments, warnings: algorithmWarnings } = generateYearSchedule(
+    professional.contracts,
+    year,
+    holidayKeys,
+  );
   const contractIds = professional.contracts.map((c) => c.id);
   const contractCount = new Set(appointments.map((a) => a.contractId)).size;
 
@@ -85,6 +96,7 @@ export async function runScheduleGeneration(
     contractIds,
     existingCount,
     contracts: professional.contracts,
+    algorithmWarnings,
   };
 }
 
