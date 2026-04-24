@@ -87,7 +87,7 @@ graph TB
 
 ## O que faz
 
-- **Calendário operacional** — gera a agenda do ano inteiro respeitando feriados, fins de semana e a frequência de cada contrato. Testes SDAI trimestrais caem no sábado automaticamente.
+- **Calendário operacional** — gera a agenda do ano inteiro respeitando feriados, fins de semana e a frequência de cada contrato. Prévia com resumo e alertas antes de gravar; geração substitui só o ano alvo. Testes SDAI trimestrais caem no sábado automaticamente.
 - **Gestão de contratos** — cada prédio tem seu contrato com frequência (mensal, bimestral, etc.), sistemas mantidos e técnico responsável.
 - **Lista de contatos** — manutenção e escalonamento por contrato, com sincronização automática da equipe interna.
 - **Relatório PDF** — cronograma imprimível com calendário, tabela de visitas e contatos. O pessoal do prédio precisa disso em papel.
