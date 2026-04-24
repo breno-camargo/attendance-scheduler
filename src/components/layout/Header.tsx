@@ -37,11 +37,13 @@ export default function Header() {
 
   const toggleTheme = () => {
     const next = theme === 'dark' ? 'light' : 'dark';
-    setTheme(next);
-    document.documentElement.setAttribute('data-theme', next);
-    localStorage.setItem('compasss_theme', next);
-    // pequeno delay pra sincronizar com o início da transição CSS
-    setTimeout(() => {
+    const root = document.documentElement;
+
+    const apply = () => {
+      setTheme(next);
+      root.setAttribute('data-theme', next);
+      localStorage.setItem('compasss_theme', next);
+
       const color = next === 'light' ? '#ffffff' : '#111111';
       const tc = document.querySelector('meta[name="theme-color"]');
       if (tc) tc.setAttribute('content', color);
@@ -51,7 +53,29 @@ export default function Header() {
         m.content = color;
         document.head.appendChild(m);
       }
-    }, 150);
+    };
+
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // View Transitions API — tipo opcional até TS/lib.dom cobrirem 100%
+    const doc = document as Document & {
+      startViewTransition?: (cb: () => void) => { finished: Promise<unknown> };
+    };
+
+    // Mantém .theme-switching durante toda a transição pra evitar que
+    // transições internas de componentes compitam com o cross-fade.
+    root.classList.add('theme-switching');
+
+    if (doc.startViewTransition && !prefersReduced) {
+      const transition = doc.startViewTransition(apply);
+      transition.finished.finally(() => root.classList.remove('theme-switching'));
+      return;
+    }
+
+    // Fallback: sem View Transitions ou usuário prefere menos movimento.
+    apply();
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => root.classList.remove('theme-switching'));
+    });
   };
 
   if (pathname.startsWith('/reports') || pathname === '/login') return null;

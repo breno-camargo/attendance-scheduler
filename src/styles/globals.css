@@ -100,6 +100,33 @@
   margin: 0;
 }
 
+/* Desabilita transições durante a troca de tema para evitar repaint em cascata
+   (glass-panel + topbar blur + sombras + bordas simultaneamente). Classe é
+   aplicada em <html> pelo toggleTheme antes de trocar data-theme e removida
+   quando a View Transition termina (ou no próximo frame no fallback). */
+html.theme-switching,
+html.theme-switching *,
+html.theme-switching *::before,
+html.theme-switching *::after {
+  transition: none !important;
+}
+
+/* View Transitions API: cross-fade do snapshot (Chromium/Safari/FF recente).
+   O browser captura o estado antigo como bitmap, troca data-theme de uma vez,
+   e cross-fade no compositor — sem re-rasterizar blur/sombras de cada painel. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 320ms;
+  animation-timing-function: var(--ease-out-expo);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+  }
+}
+
 body {
   color: var(--foreground);
   background: var(--background);
