@@ -14,7 +14,7 @@
   <img src="https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white" alt="TypeScript" />
   <img src="https://img.shields.io/badge/PostgreSQL-Supabase-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL" />
   <img src="https://img.shields.io/badge/Prisma-6-2D3748?logo=prisma" alt="Prisma" />
-  <img src="https://img.shields.io/badge/tests-323%20passing-success" alt="Tests" />
+  <img src="https://img.shields.io/badge/tests-350%20passing-success" alt="Tests" />
   <img src="https://img.shields.io/badge/license-private-lightgrey" alt="License" />
 </p>
 
