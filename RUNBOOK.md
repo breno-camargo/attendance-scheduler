@@ -229,6 +229,41 @@ Em prod, limites são armazenados no Upstash Redis (sliding window). Sem Redis c
 
 ---
 
+## Fixture E2E (Playwright)
+
+**Sintoma:** E2E começa a pular 20+ testes com `test.skip()` silenciosos, ou afirma "count === 0" onde deveria ter dados.
+
+### Como funciona
+
+- `tests/e2e/global-setup.ts` roda antes de qualquer spec e chama `npx tsx prisma/seed-e2e.ts`.
+- O seed é **idempotente** — apaga tudo com prefixo `E2E -` e recria do zero. Pode rodar N vezes.
+- Popula no ano corrente (`new Date().getFullYear()`):
+  - `E2E - Técnico A` e `E2E - Técnico B` (Técnico B só pra garantir >=2 opções no select)
+  - `E2E - Cliente Calendário A` e `B`, cada um com 1 contrato vinculado ao Técnico A
+  - ~16 appointments do Técnico A: visitas mensais em ambos os clientes + 4 testes SDAI trimestrais aos sábados
+
+### Limpar a fixture manualmente
+
+```sql
+-- Cascata via Client→Contract→Appointment cobre o resto.
+DELETE FROM "Client" WHERE name LIKE 'E2E -%';
+DELETE FROM "Professional" WHERE name LIKE 'E2E -%';
+```
+
+Ou rodar o seed de novo — o wipe é a primeira coisa que ele faz.
+
+### Se o seed falhar e travar os E2E
+
+O `global-setup` usa `execSync` com `stdio: 'inherit'` — erro aparece no stdout do Playwright. Rodar manualmente pra depurar:
+
+```bash
+npx tsx prisma/seed-e2e.ts
+```
+
+Checa `DATABASE_URL` e se o schema do Prisma está sincronizado (`npx prisma db push`).
+
+---
+
 ## 📞 Contatos críticos
 
 - **Dev principal:** Breno Camargo — email: breno.hsc75@gmail.com / tel: (11)99012-7316
