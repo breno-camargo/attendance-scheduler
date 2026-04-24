@@ -27,6 +27,7 @@ export default function ContractFormModal({
   professionals,
 }: ContractFormModalProps) {
   const { showToast } = useToast();
+  const formId = 'contract-form';
   const monthNames = [
     'Jan',
     'Fev',
@@ -201,8 +202,34 @@ export default function ContractFormModal({
       onClose={onClose}
       title={editingId ? 'Editar Contrato' : 'Novo Contrato'}
       maxWidth="700px"
+      footer={
+        <>
+          <button
+            type="submit"
+            form={formId}
+            disabled={saving}
+            className="btn-primary"
+            style={{ flex: 1 }}
+          >
+            {saving ? 'Salvando...' : editingId ? 'Salvar Alterações' : 'Criar Contrato'}
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="btn-secondary"
+            style={{ flex: 1 }}
+            disabled={saving}
+          >
+            Cancelar
+          </button>
+        </>
+      }
     >
-      <form onSubmit={handleSave} style={{ display: 'flex', gap: '1rem', flexDirection: 'column' }}>
+      <form
+        id={formId}
+        onSubmit={handleSave}
+        style={{ display: 'flex', gap: '1rem', flexDirection: 'column' }}
+      >
         <div style={{ display: 'flex', gap: '0.8rem' }}>
           <div className="form-field" style={{ flex: 2 }}>
             <label htmlFor="contract-name" className="form-label">
@@ -477,15 +504,6 @@ export default function ContractFormModal({
               </div>
             </div>
           </div>
-        </div>
-
-        <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
-          <button type="submit" disabled={saving} className="btn-primary" style={{ flex: 1 }}>
-            {saving ? 'Salvando...' : editingId ? 'Salvar Alterações' : 'Criar Contrato'}
-          </button>
-          <button type="button" onClick={onClose} className="btn-secondary" style={{ flex: 1 }}>
-            Cancelar
-          </button>
         </div>
       </form>
     </Modal>

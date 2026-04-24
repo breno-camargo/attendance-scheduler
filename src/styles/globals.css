@@ -775,17 +775,25 @@ li.client-card:hover {
 .modal-panel {
   width: 100%;
   max-height: 90vh;
-  overflow-y: auto;
+  overflow: hidden;
   border: 1px solid var(--primary);
   box-shadow: 0 0 40px var(--primary-glow);
-  padding: 2rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-panel--fixed-footer {
+  height: min(90vh, 760px);
 }
 
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
+  padding: 2rem 2rem 1.2rem;
+  border-bottom: 1px solid var(--primary-border-subtle);
+  flex-shrink: 0;
 }
 
 .modal-close {
@@ -802,6 +810,22 @@ li.client-card:hover {
 
 .modal-close:hover {
   opacity: 1;
+}
+
+.modal-body {
+  padding: 1.5rem 2rem 2rem;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.modal-footer {
+  padding: 1rem 2rem;
+  border-top: 1px solid var(--primary-border-subtle);
+  background: var(--card-bg);
+  display: flex;
+  gap: 1rem;
+  flex-shrink: 0;
 }
 
 /* Form */
@@ -1329,8 +1353,24 @@ select.form-input {
   .modal-panel {
     max-width: 100% !important;
     width: 100% !important;
-    padding: 1.5rem;
+    padding: 0;
     border-radius: 12px;
+  }
+
+  .modal-panel--fixed-footer {
+    height: calc(100vh - 1rem);
+  }
+
+  .modal-header {
+    padding: 1.25rem 1.5rem 1rem;
+  }
+
+  .modal-body {
+    padding: 1rem 1.5rem 1.25rem;
+  }
+
+  .modal-footer {
+    padding: 0.9rem 1.5rem;
   }
 
   .modal-backdrop {
