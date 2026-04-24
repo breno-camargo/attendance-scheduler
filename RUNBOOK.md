@@ -229,6 +229,57 @@ Em prod, limites são armazenados no Upstash Redis (sliding window). Sem Redis c
 
 ---
 
+## Consultar histórico de gerações de agenda
+
+**Quando usar:** investigar "quem re-gerou a agenda do técnico X no ano Y", conferir se uma geração recente substituiu muitos appointments ou se teve warnings, auditar atividade por usuário.
+
+Cada chamada bem-sucedida a `POST /api/schedule/generate` grava uma linha em `ScheduleGenerationLog` (o log roda DEPOIS do commit — falha aqui não reverte a agenda; fica só no `console.error` do servidor).
+
+### Schema
+
+| Campo            | Descrição                                                      |
+| ---------------- | -------------------------------------------------------------- |
+| `id`             | cuid                                                           |
+| `userId`         | ID do usuário que gerou (nullable — SetNull se user deletado)  |
+| `professionalId` | ID do técnico alvo (nullable — SetNull se prof deletado)       |
+| `year`           | Ano da agenda gerada                                           |
+| `existingCount`  | Appointments que existiam no escopo ANTES da geração           |
+| `createdCount`   | Appointments criados pela geração                              |
+| `contractCount`  | Contratos que participaram                                     |
+| `warningsJson`   | JSON dos warnings Tier A + B (null se nenhum)                  |
+| `createdAt`      | Timestamp da geração                                           |
+
+### Últimas 20 gerações (Supabase SQL Editor)
+
+```sql
+SELECT
+  l."createdAt",
+  u.username                    AS user,
+  p.name                        AS professional,
+  l.year,
+  l."existingCount"             AS before,
+  l."createdCount"              AS created,
+  l."contractCount"             AS contracts,
+  (l."warningsJson" IS NOT NULL) AS had_warnings
+FROM "ScheduleGenerationLog" l
+LEFT JOIN "User" u          ON u.id = l."userId"
+LEFT JOIN "Professional" p  ON p.id = l."professionalId"
+ORDER BY l."createdAt" DESC
+LIMIT 20;
+```
+
+### Ver warnings de uma geração específica
+
+```sql
+SELECT id, "createdAt", "warningsJson"
+FROM "ScheduleGenerationLog"
+WHERE id = 'c...';  -- cole o id
+```
+
+O `warningsJson` é um array: cada item tem `code`, `contractId` e campos opcionais (`date`, `month`, `missingCount`, `message`).
+
+---
+
 ## Fixture E2E (Playwright)
 
 **Sintoma:** E2E começa a pular 20+ testes com `test.skip()` silenciosos, ou afirma "count === 0" onde deveria ter dados.
