@@ -379,6 +379,10 @@ describe('PATCH /api/schedule/[id]', () => {
 
   it('updates observation and returns 200', async () => {
     const updated = { ...mockAppointment, observation: 'Updated observation' };
+    prismaMock.appointment.findUnique.mockResolvedValue({
+      ...mockAppointment,
+      client: { name: 'Cliente Teste' },
+    } as any);
     prismaMock.appointment.update.mockResolvedValue(updated as any);
 
     const req = new Request(`http://localhost/api/schedule/${validId}`, {
@@ -396,6 +400,10 @@ describe('PATCH /api/schedule/[id]', () => {
 
   it('updates type to TESTE_SDAI', async () => {
     const updated = { ...mockAppointment, type: 'TESTE_SDAI' };
+    prismaMock.appointment.findUnique.mockResolvedValue({
+      ...mockAppointment,
+      client: { name: 'Cliente Teste' },
+    } as any);
     prismaMock.appointment.update.mockResolvedValue(updated as any);
 
     const req = new Request(`http://localhost/api/schedule/${validId}`, {
@@ -414,6 +422,10 @@ describe('PATCH /api/schedule/[id]', () => {
   it('updates date and converts it to a Date object', async () => {
     const newDate = '2024-08-20T09:00:00.000Z';
     const updated = { ...mockAppointment, date: new Date(newDate) };
+    prismaMock.appointment.findUnique.mockResolvedValue({
+      ...mockAppointment,
+      client: { name: 'Cliente Teste' },
+    } as any);
     prismaMock.appointment.update.mockResolvedValue(updated as any);
 
     const req = new Request(`http://localhost/api/schedule/${validId}`, {
@@ -429,6 +441,10 @@ describe('PATCH /api/schedule/[id]', () => {
   });
 
   it('only includes defined fields in the update payload', async () => {
+    prismaMock.appointment.findUnique.mockResolvedValue({
+      ...mockAppointment,
+      client: { name: 'Cliente Teste' },
+    } as any);
     prismaMock.appointment.update.mockResolvedValue(mockAppointment as any);
 
     const req = new Request(`http://localhost/api/schedule/${validId}`, {
@@ -443,6 +459,119 @@ describe('PATCH /api/schedule/[id]', () => {
     expect(updateCall.data).toHaveProperty('observation', 'Only this');
     expect(updateCall.data).not.toHaveProperty('type');
     expect(updateCall.data).not.toHaveProperty('date');
+  });
+
+  it('returns 404 when appointment does not exist', async () => {
+    prismaMock.appointment.findUnique.mockResolvedValue(null);
+
+    const req = new Request(`http://localhost/api/schedule/${validId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ observation: 'x' }),
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    const response = await PATCH(req, { params: Promise.resolve({ id: validId }) });
+
+    expect(response.status).toBe(404);
+  });
+
+  it('grava APPOINTMENT_UPDATED no audit quando altera data/tipo/observação', async () => {
+    const before = {
+      ...mockAppointment,
+      date: new Date('2026-04-24T00:00:00.000Z'),
+      type: 'VISITA_TECNICA',
+      observation: 'Visita 01',
+      client: { name: 'Edifício Alfa' },
+    };
+    const after = {
+      ...mockAppointment,
+      date: new Date('2026-04-25T00:00:00.000Z'),
+      type: 'TESTE_SDAI',
+      observation: 'Remarcado',
+    };
+    prismaMock.appointment.findUnique.mockResolvedValue(before as any);
+    prismaMock.appointment.update.mockResolvedValue(after as any);
+
+    const req = new Request(`http://localhost/api/schedule/${validId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        date: '2026-04-25T00:00:00.000Z',
+        type: 'TESTE_SDAI',
+        observation: 'Remarcado',
+      }),
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    await PATCH(req, { params: Promise.resolve({ id: validId }) });
+
+    expect(prismaMock.auditLog.create).toHaveBeenCalledTimes(1);
+    const logCall = prismaMock.auditLog.create.mock.calls[0][0] as any;
+    expect(logCall.data).toMatchObject({
+      userId: 'user-1',
+      actorLabel: 'Admin',
+      action: 'APPOINTMENT_UPDATED',
+      entityType: 'APPOINTMENT',
+      entityId: validId,
+      entityLabel: 'Edifício Alfa',
+    });
+    const metadata = JSON.parse(logCall.data.metadataJson);
+    expect(metadata.before).toEqual({
+      date: '2026-04-24T00:00:00.000Z',
+      type: 'VISITA_TECNICA',
+      observation: 'Visita 01',
+    });
+    expect(metadata.after).toEqual({
+      date: '2026-04-25T00:00:00.000Z',
+      type: 'TESTE_SDAI',
+      observation: 'Remarcado',
+    });
+  });
+
+  it('não grava audit quando nenhum campo relevante mudou', async () => {
+    const same = {
+      ...mockAppointment,
+      date: new Date('2026-04-24T00:00:00.000Z'),
+      type: 'VISITA_TECNICA',
+      observation: 'Visita 01',
+      client: { name: 'Edifício Alfa' },
+    };
+    prismaMock.appointment.findUnique.mockResolvedValue(same as any);
+    prismaMock.appointment.update.mockResolvedValue(same as any);
+
+    const req = new Request(`http://localhost/api/schedule/${validId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ observation: 'Visita 01' }),
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    await PATCH(req, { params: Promise.resolve({ id: validId }) });
+
+    expect(prismaMock.auditLog.create).not.toHaveBeenCalled();
+  });
+
+  it('falha no audit não derruba o PATCH', async () => {
+    const before = {
+      ...mockAppointment,
+      observation: 'Antes',
+      client: { name: 'Edifício Alfa' },
+    };
+    const after = { ...mockAppointment, observation: 'Depois' };
+    prismaMock.appointment.findUnique.mockResolvedValue(before as any);
+    prismaMock.appointment.update.mockResolvedValue(after as any);
+    prismaMock.auditLog.create.mockRejectedValueOnce(new Error('DB offline'));
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const req = new Request(`http://localhost/api/schedule/${validId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ observation: 'Depois' }),
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    const response = await PATCH(req, { params: Promise.resolve({ id: validId }) });
+
+    expect(response.status).toBe(200);
+    expect(errSpy).toHaveBeenCalledWith(expect.stringContaining('[AuditLog]'), expect.any(Error));
+    errSpy.mockRestore();
   });
 
   it('returns 400 when id does not match CUID pattern', async () => {
@@ -486,6 +615,10 @@ describe('PATCH /api/schedule/[id]', () => {
   });
 
   it('returns 500 when Prisma update throws', async () => {
+    prismaMock.appointment.findUnique.mockResolvedValue({
+      ...mockAppointment,
+      client: { name: 'Cliente Teste' },
+    } as any);
     prismaMock.appointment.update.mockRejectedValue(new Error('Record not found'));
 
     const req = new Request(`http://localhost/api/schedule/${validId}`, {

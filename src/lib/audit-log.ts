@@ -6,6 +6,7 @@ export type AuditAction =
   | 'CLIENT_DELETED'
   | 'PROFESSIONAL_DELETED'
   | 'APPOINTMENT_DELETED'
+  | 'APPOINTMENT_UPDATED'
   | 'SCHEDULE_CLEARED';
 
 export type AuditEntityType = 'CLIENT' | 'PROFESSIONAL' | 'APPOINTMENT' | 'SCHEDULE';

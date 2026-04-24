@@ -1,4 +1,4 @@
-import { ApiUtils, requireAuth, requireAuthSession } from '@/lib/api-utils';
+import { ApiUtils, requireAuthSession } from '@/lib/api-utils';
 import { writeAuditLog } from '@/lib/audit-log';
 import { getHolidaysForYear } from '@/lib/holidays';
 import prisma from '@/lib/prisma';
@@ -52,8 +52,8 @@ export async function DELETE(_request: Request, props: { params: Promise<{ id: s
  */
 export async function PATCH(request: Request, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
-  const authError = await requireAuth();
-  if (authError) return authError;
+  const auth = await requireAuthSession();
+  if (auth.error) return auth.error;
 
   try {
     const { id } = params;
@@ -80,6 +80,15 @@ export async function PATCH(request: Request, props: { params: Promise<{ id: str
       }
     }
 
+    // Snapshot pre-update pra detectar mudanças e montar o audit log.
+    const existing = await prisma.appointment.findUnique({
+      where: { id },
+      include: { client: { select: { name: true } } },
+    });
+    if (!existing) {
+      return ApiUtils.error('Agendamento não encontrado', null, 404);
+    }
+
     const updated = await prisma.appointment.update({
       where: { id },
       data: {
@@ -88,6 +97,37 @@ export async function PATCH(request: Request, props: { params: Promise<{ id: str
         ...(date !== undefined && { date: new Date(date) }),
       },
     });
+
+    // Comparação usa o updated pré-renumeração (abaixo) — reflete a intenção
+    // direta do usuário. Renumeração de visitas é efeito colateral que não
+    // deve poluir o audit da visita alvo.
+    const dateChanged = existing.date.getTime() !== updated.date.getTime();
+    const typeChanged = existing.type !== updated.type;
+    const observationChanged = existing.observation !== updated.observation;
+    if (dateChanged || typeChanged || observationChanged) {
+      await writeAuditLog({
+        session: auth.session,
+        action: 'APPOINTMENT_UPDATED',
+        entityType: 'APPOINTMENT',
+        entityId: existing.id,
+        entityLabel: existing.client?.name ?? existing.date.toISOString(),
+        metadata: {
+          before: {
+            date: existing.date.toISOString(),
+            type: existing.type,
+            observation: existing.observation,
+          },
+          after: {
+            date: updated.date.toISOString(),
+            type: updated.type,
+            observation: updated.observation,
+          },
+          clientId: existing.clientId,
+          professionalId: existing.professionalId,
+          contractId: existing.contractId,
+        },
+      });
+    }
 
     // Após mover data, renumerar todas as visitas do mesmo contrato em ordem cronológica
     if (date && updated.contractId) {
