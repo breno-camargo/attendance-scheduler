@@ -35,7 +35,7 @@ interface SlotEntry<C extends ScheduleContract> {
   observation?: string;
 }
 
-function parseNumberList(raw: string | null): number[] {
+export function parseNumberList(raw: string | null): number[] {
   if (!raw) return [];
   return raw
     .split(',')

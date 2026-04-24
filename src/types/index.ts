@@ -52,6 +52,18 @@ export interface SchedulePreviewAppointment {
   observation?: string;
 }
 
+export type ScheduleWarningCode =
+  | 'NON_MONTHLY_SDAI'
+  | 'NO_MONTHLY_VISITS'
+  | 'INVALID_TARGET_MONTHS';
+
+export interface ScheduleWarning {
+  code: ScheduleWarningCode;
+  contractId: string;
+  clientName?: string;
+  message: string;
+}
+
 export interface SchedulePreviewData {
   count: number;
   contractCount: number;
@@ -61,6 +73,7 @@ export interface SchedulePreviewData {
   byType: Record<AppointmentType, number>;
   byMonth: Record<number, Record<AppointmentType, number>>;
   appointments: SchedulePreviewAppointment[];
+  warnings: ScheduleWarning[];
 }
 
 export interface Holiday {

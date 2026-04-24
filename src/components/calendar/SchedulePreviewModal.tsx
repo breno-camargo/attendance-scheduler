@@ -136,6 +136,70 @@ export default function SchedulePreviewModal({
           </div>
         </div>
 
+        {preview.warnings.length > 0 && (
+          <div style={{ marginBottom: '1.5rem' }}>
+            <div
+              style={{
+                fontSize: '0.75rem',
+                color: 'var(--text-muted)',
+                textTransform: 'uppercase',
+                letterSpacing: '1px',
+                marginBottom: '0.5rem',
+              }}
+            >
+              Alertas
+            </div>
+            <ul
+              style={{
+                margin: 0,
+                padding: 0,
+                listStyle: 'none',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.4rem',
+              }}
+            >
+              {preview.warnings.slice(0, 5).map((w, i) => (
+                <li
+                  key={`${w.contractId}-${w.code}-${i}`}
+                  style={{
+                    padding: '0.6rem 0.8rem',
+                    borderRadius: '6px',
+                    background: 'rgba(234, 179, 8, 0.08)',
+                    border: '1px solid rgba(234, 179, 8, 0.3)',
+                    fontSize: '0.85rem',
+                    lineHeight: 1.4,
+                    display: 'flex',
+                    gap: '0.5rem',
+                  }}
+                >
+                  <span aria-hidden style={{ opacity: 0.9 }}>
+                    ⚠️
+                  </span>
+                  <span>
+                    {w.clientName && (
+                      <strong style={{ marginRight: '0.35rem' }}>{w.clientName}:</strong>
+                    )}
+                    {w.message}
+                  </span>
+                </li>
+              ))}
+              {preview.warnings.length > 5 && (
+                <li
+                  style={{
+                    fontSize: '0.8rem',
+                    color: 'var(--text-muted)',
+                    paddingLeft: '0.2rem',
+                  }}
+                >
+                  +{preview.warnings.length - 5} alerta
+                  {preview.warnings.length - 5 === 1 ? '' : 's'}
+                </li>
+              )}
+            </ul>
+          </div>
+        )}
+
         <div style={{ marginBottom: '1.5rem' }}>
           <div
             style={{

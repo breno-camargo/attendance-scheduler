@@ -229,6 +229,40 @@ describe('POST /api/schedule/generate/preview — resumo', () => {
   });
 });
 
+describe('POST /api/schedule/generate/preview — warnings', () => {
+  it('response inclui warnings vazios quando config está OK', async () => {
+    prismaMock.professional.findUnique.mockResolvedValue(
+      makeProfessional([{ frequency: 'MONTHLY', systemTypes: 'CFTV', visitsPerMonth: 1 }]) as any,
+    );
+    const { responseBody } = await runPreview();
+    expect(responseBody.warnings).toEqual([]);
+  });
+
+  it('forward warnings computadas pelo service (SDAI em não-mensal)', async () => {
+    prismaMock.professional.findUnique.mockResolvedValue(
+      makeProfessional([
+        { frequency: 'BIMONTHLY', systemTypes: 'SDAI,CFTV', visitsPerMonth: 1 },
+      ]) as any,
+    );
+    const { responseBody } = await runPreview();
+    expect(responseBody.warnings).toHaveLength(1);
+    expect(responseBody.warnings[0].code).toBe('NON_MONTHLY_SDAI');
+  });
+
+  it('inclui múltiplas warnings de contratos diferentes', async () => {
+    prismaMock.professional.findUnique.mockResolvedValue(
+      makeProfessional([
+        { frequency: 'MONTHLY', systemTypes: 'CFTV', visitsPerMonth: 0 },
+        { frequency: 'BIMONTHLY', systemTypes: 'SDAI' },
+        { frequency: 'QUARTERLY', systemTypes: 'CFTV', targetMonths: 'invalid' },
+      ]) as any,
+    );
+    const { responseBody } = await runPreview();
+    const codes = responseBody.warnings.map((w: any) => w.code).sort();
+    expect(codes).toEqual(['INVALID_TARGET_MONTHS', 'NON_MONTHLY_SDAI', 'NO_MONTHLY_VISITS']);
+  });
+});
+
 describe('POST /api/schedule/generate/preview — não persiste', () => {
   it('não chama $transaction, deleteMany nem createMany', async () => {
     prismaMock.professional.findUnique.mockResolvedValue(
