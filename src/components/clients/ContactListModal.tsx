@@ -389,16 +389,19 @@ export default function ContactListModal({
       }}
     >
       <section
-        className="glass-panel animate-fade-in hide-scrollbar"
+        className="glass-panel modal-panel animate-fade-in hide-scrollbar"
         style={{
           width: '100%',
           maxWidth: '1350px',
-          maxHeight: '96vh',
-          overflowY: 'auto',
+          height: 'calc(100vh - 2rem)',
+          maxHeight: 'calc(100vh - 2rem)',
+          overflow: 'hidden',
           scrollbarWidth: 'none',
-          padding: '1.5rem',
+          padding: 0,
           border: '1px solid var(--primary-border-subtle)',
           borderRadius: '16px',
+          display: 'flex',
+          flexDirection: 'column',
         }}
       >
         {/* Header */}
@@ -407,7 +410,9 @@ export default function ContactListModal({
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            marginBottom: '1.5rem',
+            padding: '1.25rem 1.5rem',
+            borderBottom: '1px solid var(--primary-border-subtle)',
+            flexShrink: 0,
           }}
         >
           <div>
@@ -464,279 +469,288 @@ export default function ContactListModal({
           </div>
         </div>
 
-        {/* Seções lado a lado */}
         <div
           style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
-            gap: '1.2rem',
-            alignItems: 'start',
+            padding: '1rem 1.5rem',
+            overflowY: 'auto',
+            flex: 1,
+            minHeight: 0,
           }}
         >
-          {/* SEÇÃO 1: Manutenção de Sistemas */}
-          <div>
-            <div
-              style={{
-                background: 'var(--primary-subtle)',
-                color: 'var(--primary)',
-                padding: '10px 14px',
-                borderRadius: '8px 8px 0 0',
-                fontWeight: 800,
-                fontSize: '0.8rem',
-                letterSpacing: '1px',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                borderBottom: '1px solid var(--primary-border-subtle)',
-              }}
-            >
-              <span>🔧 MANUTENÇÃO DE SISTEMAS</span>
-            </div>
-            <div
-              style={{
-                border: '1px solid var(--primary-border-subtle)',
-                borderTop: 'none',
-                borderRadius: '0 0 8px 8px',
-                overflow: 'hidden',
-              }}
-            >
-              {/* Cabeçalho */}
+          {/* Seções lado a lado */}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: '1.2rem',
+              alignItems: 'start',
+            }}
+          >
+            {/* SEÇÃO 1: Manutenção de Sistemas */}
+            <div>
               <div
                 style={{
-                  display: 'grid',
-                  gridTemplateColumns: '80px 1fr 1fr 95px 1fr 28px',
-                  background: 'var(--surface, rgba(0,0,0,0.2))',
-                  padding: '7px 10px',
-                  fontSize: '0.68rem',
-                  color: 'var(--text-muted)',
-                  fontWeight: 700,
-                  gap: '6px',
+                  background: 'var(--primary-subtle)',
+                  color: 'var(--primary)',
+                  padding: '10px 14px',
+                  borderRadius: '8px 8px 0 0',
+                  fontWeight: 800,
+                  fontSize: '0.8rem',
+                  letterSpacing: '1px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  borderBottom: '1px solid var(--primary-border-subtle)',
                 }}
               >
-                <span>Ação</span>
-                <span>Função</span>
-                <span>Nome</span>
-                <span>Telefone</span>
-                <span>E-mail</span>
-                <span></span>
+                <span>🔧 MANUTENÇÃO DE SISTEMAS</span>
               </div>
-
-              {/* 1° Contato (Read-Only) */}
               <div
                 style={{
-                  display: 'grid',
-                  gridTemplateColumns: '80px 1fr 1fr 95px 1fr 28px',
-                  padding: '8px 10px',
-                  fontSize: '0.75rem',
-                  borderBottom: '1px solid rgba(255,255,255,0.06)',
-                  gap: '6px',
-                  alignItems: 'center',
-                  background: 'rgba(16,185,129,0.07)',
+                  border: '1px solid var(--primary-border-subtle)',
+                  borderTop: 'none',
+                  borderRadius: '0 0 8px 8px',
+                  overflow: 'hidden',
+                }}
+              >
+                {/* Cabeçalho */}
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '80px 1fr 1fr 95px 1fr 28px',
+                    background: 'var(--surface, rgba(0,0,0,0.2))',
+                    padding: '7px 10px',
+                    fontSize: '0.68rem',
+                    color: 'var(--text-muted)',
+                    fontWeight: 700,
+                    gap: '6px',
+                  }}
+                >
+                  <span>Ação</span>
+                  <span>Função</span>
+                  <span>Nome</span>
+                  <span>Telefone</span>
+                  <span>E-mail</span>
+                  <span></span>
+                </div>
+
+                {/* 1° Contato (Read-Only) */}
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '80px 1fr 1fr 95px 1fr 28px',
+                    padding: '8px 10px',
+                    fontSize: '0.75rem',
+                    borderBottom: '1px solid rgba(255,255,255,0.06)',
+                    gap: '6px',
+                    alignItems: 'center',
+                    background: 'rgba(16,185,129,0.07)',
+                  }}
+                >
+                  <div
+                    style={{
+                      padding: '5px 7px',
+                      fontSize: '0.7rem',
+                      background: 'var(--input-bg)',
+                      borderRadius: '5px',
+                      color: 'var(--foreground)',
+                      border: '1px solid var(--border)',
+                      fontWeight: 800,
+                      cursor: 'not-allowed',
+                    }}
+                  >
+                    1° Contato
+                  </div>
+                  <span
+                    style={{
+                      color: 'var(--text-muted)',
+                      fontSize: '0.72rem',
+                      fontStyle: 'italic',
+                      fontWeight: 600,
+                      opacity: 0.8,
+                    }}
+                  >
+                    Técnico (Fixo)
+                  </span>
+                  <span
+                    style={{ fontWeight: 800, color: 'var(--foreground)', fontSize: '0.75rem' }}
+                  >
+                    {initialTech.name || '—'}
+                  </span>
+                  <span
+                    style={{ color: 'var(--text-muted)', fontSize: '0.72rem', fontWeight: 700 }}
+                  >
+                    {initialTech.phone || '—'}
+                  </span>
+                  <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 500 }}>
+                    {initialTech.email || '—'}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: '0.75rem',
+                      color: 'rgba(255,255,255,0.2)',
+                      textAlign: 'center',
+                    }}
+                  >
+                    🔒
+                  </span>
+                </div>
+
+                {/* Linhas Editáveis */}
+                {contacts.maintenance.map((row, idx) => (
+                  <ContactRow
+                    key={idx}
+                    row={row}
+                    idx={idx}
+                    table="maintenance"
+                    availableRoles={availableMaintRoles}
+                    focusedField={focusedField}
+                    setFocusedField={setFocusedField}
+                    onRoleSelect={handleRoleSelect}
+                    onUpdate={updateMaintenance}
+                    onRemove={(i) =>
+                      setContacts((p) => ({
+                        ...p,
+                        maintenance: p.maintenance.filter((_, j) => j !== i),
+                      }))
+                    }
+                  />
+                ))}
+                <div style={{ padding: '8px 10px' }}>
+                  <button
+                    onClick={() =>
+                      setContacts((p) => ({
+                        ...p,
+                        maintenance: [
+                          ...p.maintenance,
+                          {
+                            action: `${p.maintenance.length + 2}° Contato`,
+                            role: '',
+                            name: '',
+                            phone: '',
+                            email: '',
+                          },
+                        ],
+                      }))
+                    }
+                    style={{
+                      width: '100%',
+                      padding: '6px',
+                      background: 'rgba(16,185,129,0.1)',
+                      border: '1px dashed #10b981',
+                      color: '#10b981',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    + Adicionar Contato
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* SEÇÃO 2: Escalonamento */}
+            <div>
+              <div
+                style={{
+                  background: 'var(--primary-subtle)',
+                  color: 'var(--primary)',
+                  padding: '10px 14px',
+                  borderRadius: '8px 8px 0 0',
+                  fontWeight: 800,
+                  fontSize: '0.8rem',
+                  letterSpacing: '1px',
+                  borderBottom: '1px solid var(--primary-border-subtle)',
+                }}
+              >
+                🚨 ESCALONAMENTO E CONTATOS-CHAVE
+              </div>
+              <div
+                style={{
+                  border: '1px solid var(--primary-border-subtle)',
+                  borderTop: 'none',
+                  borderRadius: '0 0 8px 8px',
+                  overflow: 'hidden',
                 }}
               >
                 <div
                   style={{
-                    padding: '5px 7px',
-                    fontSize: '0.7rem',
-                    background: 'var(--input-bg)',
-                    borderRadius: '5px',
-                    color: 'var(--foreground)',
-                    border: '1px solid var(--border)',
-                    fontWeight: 800,
-                    cursor: 'not-allowed',
-                  }}
-                >
-                  1° Contato
-                </div>
-                <span
-                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '110px 1fr 1fr 95px 1fr 28px',
+                    background: 'var(--surface, rgba(0,0,0,0.2))',
+                    padding: '7px 10px',
+                    fontSize: '0.68rem',
                     color: 'var(--text-muted)',
-                    fontSize: '0.72rem',
-                    fontStyle: 'italic',
-                    fontWeight: 600,
-                    opacity: 0.8,
+                    fontWeight: 700,
+                    gap: '6px',
                   }}
                 >
-                  Técnico (Fixo)
-                </span>
-                <span style={{ fontWeight: 800, color: 'var(--foreground)', fontSize: '0.75rem' }}>
-                  {initialTech.name || '—'}
-                </span>
-                <span style={{ color: 'var(--text-muted)', fontSize: '0.72rem', fontWeight: 700 }}>
-                  {initialTech.phone || '—'}
-                </span>
-                <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 500 }}>
-                  {initialTech.email || '—'}
-                </span>
-                <span
-                  style={{
-                    fontSize: '0.75rem',
-                    color: 'rgba(255,255,255,0.2)',
-                    textAlign: 'center',
-                  }}
-                >
-                  🔒
-                </span>
-              </div>
-
-              {/* Linhas Editáveis */}
-              {contacts.maintenance.map((row, idx) => (
-                <ContactRow
-                  key={idx}
-                  row={row}
-                  idx={idx}
-                  table="maintenance"
-                  availableRoles={availableMaintRoles}
-                  focusedField={focusedField}
-                  setFocusedField={setFocusedField}
-                  onRoleSelect={handleRoleSelect}
-                  onUpdate={updateMaintenance}
-                  onRemove={(i) =>
-                    setContacts((p) => ({
-                      ...p,
-                      maintenance: p.maintenance.filter((_, j) => j !== i),
-                    }))
-                  }
-                />
-              ))}
-              <div style={{ padding: '8px 10px' }}>
-                <button
-                  onClick={() =>
-                    setContacts((p) => ({
-                      ...p,
-                      maintenance: [
-                        ...p.maintenance,
-                        {
-                          action: `${p.maintenance.length + 2}° Contato`,
-                          role: '',
-                          name: '',
-                          phone: '',
-                          email: '',
-                        },
-                      ],
-                    }))
-                  }
-                  style={{
-                    width: '100%',
-                    padding: '6px',
-                    background: 'rgba(16,185,129,0.1)',
-                    border: '1px dashed #10b981',
-                    color: '#10b981',
-                    borderRadius: '6px',
-                    cursor: 'pointer',
-                  }}
-                >
-                  + Adicionar Contato
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* SEÇÃO 2: Escalonamento */}
-          <div>
-            <div
-              style={{
-                background: 'var(--primary-subtle)',
-                color: 'var(--primary)',
-                padding: '10px 14px',
-                borderRadius: '8px 8px 0 0',
-                fontWeight: 800,
-                fontSize: '0.8rem',
-                letterSpacing: '1px',
-                borderBottom: '1px solid var(--primary-border-subtle)',
-              }}
-            >
-              🚨 ESCALONAMENTO E CONTATOS-CHAVE
-            </div>
-            <div
-              style={{
-                border: '1px solid var(--primary-border-subtle)',
-                borderTop: 'none',
-                borderRadius: '0 0 8px 8px',
-                overflow: 'hidden',
-              }}
-            >
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: '110px 1fr 1fr 95px 1fr 28px',
-                  background: 'var(--surface, rgba(0,0,0,0.2))',
-                  padding: '7px 10px',
-                  fontSize: '0.68rem',
-                  color: 'var(--text-muted)',
-                  fontWeight: 700,
-                  gap: '6px',
-                }}
-              >
-                <span>Contato</span>
-                <span>Função</span>
-                <span>Nome</span>
-                <span>Telefone</span>
-                <span>E-mail</span>
-                <span></span>
-              </div>
-              {contacts.escalation.map((row, idx) => (
-                <ContactRow
-                  key={idx}
-                  row={row}
-                  idx={idx}
-                  table="escalation"
-                  availableRoles={availableEscRoles}
-                  focusedField={focusedField}
-                  setFocusedField={setFocusedField}
-                  onRoleSelect={handleRoleSelect}
-                  onUpdate={updateEscalation}
-                  onRemove={(i) =>
-                    setContacts((p) => ({
-                      ...p,
-                      escalation: p.escalation.filter((_, j) => j !== i),
-                    }))
-                  }
-                />
-              ))}
-              <div style={{ padding: '8px 10px' }}>
-                <button
-                  onClick={() =>
-                    setContacts((p) => ({
-                      ...p,
-                      escalation: [
-                        ...p.escalation,
-                        { contact: '', role: '', name: '', phone: '', email: '' },
-                      ],
-                    }))
-                  }
-                  style={{
-                    width: '100%',
-                    padding: '6px',
-                    background: 'rgba(6,78,59,0.1)',
-                    border: '1px dashed #065f46',
-                    color: '#34d399',
-                    borderRadius: '6px',
-                    cursor: 'pointer',
-                  }}
-                >
-                  + Adicionar Contato
-                </button>
+                  <span>Contato</span>
+                  <span>Função</span>
+                  <span>Nome</span>
+                  <span>Telefone</span>
+                  <span>E-mail</span>
+                  <span></span>
+                </div>
+                {contacts.escalation.map((row, idx) => (
+                  <ContactRow
+                    key={idx}
+                    row={row}
+                    idx={idx}
+                    table="escalation"
+                    availableRoles={availableEscRoles}
+                    focusedField={focusedField}
+                    setFocusedField={setFocusedField}
+                    onRoleSelect={handleRoleSelect}
+                    onUpdate={updateEscalation}
+                    onRemove={(i) =>
+                      setContacts((p) => ({
+                        ...p,
+                        escalation: p.escalation.filter((_, j) => j !== i),
+                      }))
+                    }
+                  />
+                ))}
+                <div style={{ padding: '8px 10px' }}>
+                  <button
+                    onClick={() =>
+                      setContacts((p) => ({
+                        ...p,
+                        escalation: [
+                          ...p.escalation,
+                          { contact: '', role: '', name: '', phone: '', email: '' },
+                        ],
+                      }))
+                    }
+                    style={{
+                      width: '100%',
+                      padding: '6px',
+                      background: 'rgba(6,78,59,0.1)',
+                      border: '1px dashed #065f46',
+                      color: '#34d399',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    + Adicionar Contato
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
         {/* Footer */}
-        <div style={{ marginTop: '2rem', display: 'flex', gap: '12px' }}>
+        <div className="modal-footer">
           <button
             onClick={handleSave}
             disabled={saving}
             className="btn-primary"
-            style={{ flex: 1, padding: '12px', borderRadius: '10px', fontWeight: 'bold' }}
+            style={{ flex: 1 }}
           >
-            {saving ? 'Salvando...' : '✅ Salvar Alterações'}
+            {saving ? 'Salvando...' : 'Salvar alterações'}
           </button>
-          <button
-            onClick={onClose}
-            className="btn-secondary"
-            style={{ flex: 1, padding: '12px', borderRadius: '10px', fontWeight: 'bold' }}
-          >
+          <button onClick={onClose} className="btn-secondary" style={{ flex: 1 }} disabled={saving}>
             Cancelar
           </button>
         </div>

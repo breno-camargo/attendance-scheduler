@@ -8,10 +8,18 @@ interface ModalProps {
   onClose: () => void;
   title: string;
   children: React.ReactNode;
+  footer?: React.ReactNode;
   maxWidth?: string;
 }
 
-export function Modal({ isOpen, onClose, title, children, maxWidth = '480px' }: ModalProps) {
+export function Modal({
+  isOpen,
+  onClose,
+  title,
+  children,
+  footer,
+  maxWidth = '480px',
+}: ModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -43,7 +51,7 @@ export function Modal({ isOpen, onClose, title, children, maxWidth = '480px' }: 
 
     modal.addEventListener('keydown', handleKeyDown);
     return () => modal.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -62,7 +70,7 @@ export function Modal({ isOpen, onClose, title, children, maxWidth = '480px' }: 
     <div className="modal-backdrop" onClick={onClose} role="presentation">
       <section
         ref={modalRef}
-        className="glass-panel modal-panel animate-fade-in"
+        className={`glass-panel modal-panel${footer ? ' modal-panel--fixed-footer' : ''} animate-fade-in`}
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
@@ -106,15 +114,9 @@ export function Modal({ isOpen, onClose, title, children, maxWidth = '480px' }: 
           </button>
         </div>
 
-        <div
-          style={{
-            height: '1px',
-            background: 'var(--primary-border-subtle)',
-            marginBottom: '1.5rem',
-          }}
-        />
+        <div className="modal-body">{children}</div>
 
-        {children}
+        {footer && <div className="modal-footer">{footer}</div>}
       </section>
     </div>,
     document.body,

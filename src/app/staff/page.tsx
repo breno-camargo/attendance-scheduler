@@ -207,6 +207,7 @@ export default function StaffPage() {
   const [phone, setPhone] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const staffFormId = 'staff-form';
 
   const carregarDados = useCallback(async () => {
     try {
@@ -337,8 +338,19 @@ export default function StaffPage() {
         isOpen={isModalOpen}
         onClose={resetForm}
         title={editingId ? 'Editar Integrante' : 'Novo Integrante'}
+        footer={
+          <>
+            <button type="submit" form={staffFormId} className="btn-primary" style={{ flex: 1 }}>
+              {editingId ? 'Salvar Alterações' : 'Cadastrar'}
+            </button>
+            <button type="button" onClick={resetForm} className="btn-secondary" style={{ flex: 1 }}>
+              Cancelar
+            </button>
+          </>
+        }
       >
         <form
+          id={staffFormId}
           onSubmit={handleSave}
           style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}
         >
@@ -410,14 +422,6 @@ export default function StaffPage() {
               onChange={(e) => setPhone(formatPhone(e.target.value))}
               maxLength={15}
             />
-          </div>
-          <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
-            <button type="submit" className="btn-primary" style={{ flex: 1 }}>
-              {editingId ? 'Salvar Alterações' : 'Cadastrar'}
-            </button>
-            <button type="button" onClick={resetForm} className="btn-secondary" style={{ flex: 1 }}>
-              Cancelar
-            </button>
           </div>
         </form>
       </Modal>

@@ -158,6 +158,10 @@ Itens surgidos no ciclo de PRs #4-14 (preview backend + UI + rate-limit + warnin
 - Confirmar limites de rate-limit em produção após alguns dias de uso real — ajustar se bloquearem uso legítimo.
 - Documentar procedimento pra liberar rate-limit de geração/preview manualmente (reset do Redis), seguindo padrão do `resetAccountRateLimit`.
 
+### UI / componentes compartilhados
+
+- **Unificar modais customizados no `Modal` shell.** `SchedulePreviewModal` e `ContactListModal` replicam o layout header / body / footer inline em vez de usar `<Modal>` com `footer`. Avaliar se o `Modal` precisa de variações (ex.: header rico, layout em grid, `maxWidth` maior) pra absorver esses casos sem perder customização. Não é bloqueio — só previne drift entre os dois caminhos de modal.
+
 ---
 
 ## 🟢 Baixa prioridade (update quando tiver tempo)

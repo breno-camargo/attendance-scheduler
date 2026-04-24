@@ -13,6 +13,7 @@ import type { Contract, InternalContact, Professional } from '@/types';
 
 export default function ProfessionalsPage() {
   const { showToast } = useToast();
+  const formId = 'professional-form';
   const [confirmModal, confirm] = useConfirm();
   const [professionals, setProfessionals] = useState<Professional[]>([]);
   const [name, setName] = useState('');
@@ -154,8 +155,19 @@ export default function ProfessionalsPage() {
         isOpen={isModalOpen}
         onClose={resetForm}
         title={editingId ? 'Editar Técnico' : 'Novo Técnico'}
+        footer={
+          <>
+            <button type="submit" form={formId} className="btn-primary" style={{ flex: 1 }}>
+              {editingId ? 'Salvar Alterações' : 'Criar Técnico'}
+            </button>
+            <button type="button" onClick={resetForm} className="btn-secondary" style={{ flex: 1 }}>
+              Cancelar
+            </button>
+          </>
+        }
       >
         <form
+          id={formId}
           onSubmit={handleSave}
           style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}
         >
@@ -271,14 +283,6 @@ export default function ProfessionalsPage() {
               </div>
             </div>
           )}
-          <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
-            <button type="submit" className="btn-primary" style={{ flex: 1 }}>
-              {editingId ? 'Salvar Alterações' : 'Criar Técnico'}
-            </button>
-            <button type="button" onClick={resetForm} className="btn-secondary" style={{ flex: 1 }}>
-              Cancelar
-            </button>
-          </div>
         </form>
       </Modal>
 
