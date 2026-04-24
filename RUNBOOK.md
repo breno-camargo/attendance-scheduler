@@ -315,6 +315,32 @@ Checa `DATABASE_URL` e se o schema do Prisma está sincronizado (`npx prisma db 
 
 ---
 
+## Checklist pós-merge que toca schema Prisma
+
+Quando o PR envolve mudança em `schema.prisma` (novo model, nova coluna, constraint), o merge **não aplica o push em prod automaticamente**. A app é resiliente a ausência de tabela/coluna (ex.: logging em `try/catch`), mas o recurso novo só funciona de verdade depois do push.
+
+Sequência padrão:
+
+1. **Acompanhar o deploy Vercel terminar.** Status em `vercel.com/breno-camargos-projects/gerador-de-agenda`.
+2. **Aplicar schema em prod** — com `DATABASE_URL`/`DIRECT_URL` de produção **confirmados** no shell:
+   ```bash
+   npx prisma db push
+   npx prisma generate
+   ```
+   Se o push pedir `--accept-data-loss`, **parar** e investigar drift com queries de duplicata antes (ver seção "Consultar histórico de gerações" pra padrão de investigação).
+3. **Validar com operação controlada** — rodar o fluxo que usa o recurso novo (ex.: gerar uma agenda real pra PR #21).
+4. **Conferir persistência** — query específica do recurso. Pra PR #21:
+   ```sql
+   SELECT * FROM "ScheduleGenerationLog" ORDER BY "createdAt" DESC LIMIT 5;
+   ```
+5. **Observar logs por 1-2 dias.** Procurar `console.error` do módulo novo (ex.: `[ScheduleGenerationLog]`). Zero ocorrências = saudável. Qualquer ocorrência = investigar antes de empurrar mais mudança em cima.
+
+### Próximo incremento recomendado
+
+Depois desse checklist fechar limpo, o próximo bloco bom é **monitoramento leve**: UptimeRobot primeiro (ping grátis, alerta por email/SMS em downtime), Sentry depois (erros de runtime com stack trace). Ver ROADMAP item 9.
+
+---
+
 ## 📞 Contatos críticos
 
 - **Dev principal:** Breno Camargo — email: breno.hsc75@gmail.com / tel: (11)99012-7316

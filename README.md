@@ -57,7 +57,7 @@ Antes a agenda era feita em planilha. O problema: fazer 45 agendas na mão por v
 - **Testes SDAI obrigatoriamente aos sábados** — exigência da norma, enforced no algoritmo com fallback pra dia útil se o sábado cair em feriado. Rotação em 3 grupos pra evitar clustering.
 - **Segurança em camadas** — CSRF via origin check no proxy, rate limiting (Redis Upstash em prod, in-memory em dev), audit log de eventos sensíveis, PII masking (telefone/email) em listagens, security headers completos (CSP, HSTS, X-Frame-Options).
 - **TypeScript strict sem escape hatches** — zero `any`, Zod v4 validando todo input de API, schemas centralizados em `src/lib/schemas.ts`.
-- **323 testes** — unit (Vitest), API com Prisma mockado (vitest-mock-extended) e E2E (Playwright). Cobertura do algoritmo de schedule + security + rate limiting.
+- **383 testes** — unit (Vitest), API com Prisma mockado (vitest-mock-extended) e E2E (Playwright). Cobertura do algoritmo de schedule + security + rate limiting.
 
 ## Arquitetura
 
@@ -139,7 +139,7 @@ npm run test:e2e            # E2E (Playwright, Chrome)
 npm run test:all            # tudo junto
 ```
 
-Testes de API mockam o Prisma — nunca hit no banco real. E2E roda contra build de dev com seed fixo.
+Testes de API mockam o Prisma — nunca hit no banco real. E2E roda contra o dev server com fixture determinística: o `globalSetup` do Playwright dispara `npm run seed:e2e` antes de qualquer spec, populando registros prefixados com `E2E -` (idempotente, não mexe em dados sem o prefixo). Ver seção "Fixture E2E" no `RUNBOOK.md` pra troubleshooting.
 
 ## Estrutura
 
@@ -159,7 +159,7 @@ tests/             # unit, api, e2e
 ## Decisões técnicas
 
 - **CSS puro em vez de Tailwind** — queria controle total do glassmorphism. Tailwind abstrairia demais os backdrop-filter e as transições que fazem o visual funcionar. Pra um projeto desse tamanho, 850 linhas de CSS é gerenciável.
-- **Sem React Query/SWR** — o frontend carrega tudo de uma vez (são ~50 clientes no máximo) e filtra local. Não justifica a dependência extra. Se crescer, migro.
+- **Sem React Query/SWR** — o frontend carrega tudo de uma vez (são ~50 clientes no máximo) e filtra local. Existe um cache leve em memória no `src/lib/api-client.ts` (TTL 45s, 15s pro stats) com invalidação por tag nas mutations + prefetch no hover do menu — resolve back-nav entre abas sem virar cliente reativo. Se crescer, migro.
 - **contactsJson como texto em vez de tabela** — cada contrato tem uma lista de contatos de manutenção e escalonamento que muda o tempo todo. Normalizar isso seria 3 tabelas a mais pra um dado que só aparece em 2 telas. JSON resolveu.
 - **Rate limiting com Redis + fallback** — Redis (Upstash) em produção, memória em dev. Parece overkill pra 1 admin, mas a tela de login é pública e brute force é trivial. O fallback in-memory garante que funciona sem Redis configurado.
 - **Sessão de 8h** — turno de trabalho. O operador loga de manhã e não precisa se preocupar até o fim do dia.
