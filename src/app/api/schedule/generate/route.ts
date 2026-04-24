@@ -1,6 +1,12 @@
-import { ApiUtils, requireAuth } from '@/lib/api-utils';
+import {
+  ApiUtils,
+  rateLimitKeyFromSession,
+  requireAuth,
+  requireAuthSession,
+} from '@/lib/api-utils';
 import { audit } from '@/lib/audit';
 import prisma from '@/lib/prisma';
+import { checkGenerateRateLimit } from '@/lib/rate-limit';
 import { isGenerationError, runScheduleGeneration } from '@/lib/schedule-service';
 import { generateScheduleSchema } from '@/lib/schemas';
 
@@ -17,8 +23,18 @@ export const dynamic = 'force-dynamic';
  * Gera a agenda anual completa para um técnico (Operação Atômica).
  */
 export async function POST(request: Request) {
-  const authError = await requireAuth();
-  if (authError) return authError;
+  const auth = await requireAuthSession();
+  if (auth.error) return auth.error;
+
+  const rateKey = rateLimitKeyFromSession(auth.session, request);
+  const allowed = await checkGenerateRateLimit(rateKey);
+  if (!allowed) {
+    return ApiUtils.error(
+      'Muitas gerações em pouco tempo. Aguarde antes de tentar de novo.',
+      null,
+      429,
+    );
+  }
 
   try {
     const body = await request.json();

@@ -26,6 +26,11 @@ vi.mock('@/lib/auth', () => ({ authOptions: {} }));
 const mockAudit = vi.fn();
 vi.mock('@/lib/audit', () => ({ audit: (...args: any[]) => mockAudit(...args) }));
 
+const mockCheckGenerateRateLimit = vi.fn().mockResolvedValue(true);
+vi.mock('@/lib/rate-limit', () => ({
+  checkGenerateRateLimit: (...args: any[]) => mockCheckGenerateRateLimit(...args),
+}));
+
 import { POST } from '@/app/api/schedule/generate/route';
 import prisma from '@/lib/prisma';
 
@@ -125,7 +130,9 @@ async function runGenerate(
 beforeEach(() => {
   mockReset(prismaMock);
   mockAudit.mockReset();
-  mockGetServerSession.mockResolvedValue({ user: { name: 'Admin' } });
+  mockCheckGenerateRateLimit.mockReset();
+  mockCheckGenerateRateLimit.mockResolvedValue(true);
+  mockGetServerSession.mockResolvedValue({ user: { id: 'admin-1', name: 'Admin' } });
   prismaMock.holiday.findMany.mockResolvedValue([]);
   prismaMock.appointment.deleteMany.mockResolvedValue({ count: 0 });
   prismaMock.appointment.createMany.mockResolvedValue({ count: 0 });
@@ -143,6 +150,23 @@ describe('POST /api/schedule/generate — auth & validation', () => {
     mockGetServerSession.mockResolvedValueOnce(null);
     const { status } = await runGenerate();
     expect(status).toBe(401);
+  });
+
+  it('retorna 429 quando rate limit estoura', async () => {
+    mockCheckGenerateRateLimit.mockResolvedValueOnce(false);
+    const { status } = await runGenerate();
+    expect(status).toBe(429);
+    // não chega a tocar no banco
+    expect(prismaMock.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('usa session.user.id como chave de rate limit', async () => {
+    mockGetServerSession.mockResolvedValueOnce({ user: { id: 'u-42', name: 'Admin' } });
+    prismaMock.professional.findUnique.mockResolvedValue(
+      makeProfessional([{ frequency: 'ANNUAL', systemTypes: 'CFTV' }]) as any,
+    );
+    await runGenerate();
+    expect(mockCheckGenerateRateLimit).toHaveBeenCalledWith('u-42');
   });
 
   it('retorna 400 quando professionalId está ausente', async () => {
