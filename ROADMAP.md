@@ -129,6 +129,37 @@ Após o upgrade Next 16 + nodemailer 8, restam **3 vulns moderate** todas encade
 
 ---
 
+## 🗂️ Backlog pós-preview
+
+Itens surgidos no ciclo de PRs #4-14 (preview backend + UI + rate-limit + warnings + docs). Capturados pra não evaporar; sem prazo.
+
+### E2E / QA
+
+- Instalar/validar browsers do Playwright no ambiente local/CI.
+- Criar/estabilizar seed específica para `calendar.spec.ts`.
+- Cobrir fluxo completo: abrir calendário → gerar preview → confirmar geração → agenda atualizada.
+- Cobrir caso de warnings no preview — validar que a seção "Alertas" aparece quando a fixture tem configuração problemática.
+
+### Auditoria de geração
+
+- Criar tabela `ScheduleGenerationLog`.
+- Registrar `userId`, `professionalId`, `year`, `existingCount`, `createdCount`, `warnings`, `createdAt`.
+- Persistir log após geração bem-sucedida (no final da transação do `/generate`).
+- Consulta administrativa simples (endpoint ou query Prisma documentada no RUNBOOK).
+
+### Preview / algoritmo
+
+- Avaliar se warnings Tier B precisam de mais detalhes por contrato/mês.
+- Verificar se `UNPLACED_VISITS` fica ruidoso em cenários reais — considerar agrupamento por contrato antes de exibir.
+- Avaliar detalhes expansíveis pros alertas no modal (só se a quantidade justificar).
+
+### Operação / segurança
+
+- Confirmar limites de rate-limit em produção após alguns dias de uso real — ajustar se bloquearem uso legítimo.
+- Documentar procedimento pra liberar rate-limit de geração/preview manualmente (reset do Redis), seguindo padrão do `resetAccountRateLimit`.
+
+---
+
 ## 🟢 Baixa prioridade (update quando tiver tempo)
 
 ### 8. `exceljs` 4 → 5 (quando sair)
