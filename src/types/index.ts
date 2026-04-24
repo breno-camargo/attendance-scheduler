@@ -55,6 +55,9 @@ export interface SchedulePreviewAppointment {
 export interface SchedulePreviewData {
   count: number;
   contractCount: number;
+  // Quantos appointments existentes serão substituídos pelo /generate no ano
+  // alvo. Escopo bate com o deleteMany (professionalId OR contractId in [...]).
+  existingCount: number;
   byType: Record<AppointmentType, number>;
   byMonth: Record<number, Record<AppointmentType, number>>;
   appointments: SchedulePreviewAppointment[];

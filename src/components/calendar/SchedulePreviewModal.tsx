@@ -11,9 +11,6 @@ interface SchedulePreviewModalProps {
   // Anos em que o técnico já tem agenda (asc). Usado pra informar que os outros
   // anos não são afetados quando /generate roda só no ano alvo.
   existingYears: number[];
-  // true se o ano alvo já tem agenda (ou existe manual add carregado agora).
-  // /generate vai apagar e recriar apenas esse ano.
-  willReplaceCurrentYear: boolean;
   loading: boolean;
   onConfirm: () => void;
   onClose: () => void;
@@ -63,7 +60,6 @@ export default function SchedulePreviewModal({
   preview,
   year,
   existingYears,
-  willReplaceCurrentYear,
   loading,
   onConfirm,
   onClose,
@@ -71,17 +67,16 @@ export default function SchedulePreviewModal({
   if (!isOpen || typeof document === 'undefined' || !preview) return null;
 
   const otherYears = existingYears.filter((y) => y !== year);
+  const isDestructive = preview.existingCount > 0;
 
-  const primaryMessage = willReplaceCurrentYear
-    ? `A agenda de ${year} será substituída.`
-    : 'Nenhuma agenda anterior será afetada.';
+  const primaryMessage = isDestructive
+    ? `Serão substituídos ${preview.existingCount} atendimentos de ${year}. A nova geração criará ${preview.count}.`
+    : 'Nenhum atendimento existente será substituído.';
 
   const otherYearsNote =
     otherYears.length > 0
       ? `Outros anos detectados: ${otherYears.join(', ')}. Eles não serão afetados.`
       : null;
-
-  const isDestructive = willReplaceCurrentYear;
 
   return createPortal(
     <div

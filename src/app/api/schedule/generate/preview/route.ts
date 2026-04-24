@@ -47,12 +47,13 @@ export async function POST(request: Request) {
       return ApiUtils.error(generation.message, null, 404);
     }
 
-    const { appointments, contractCount } = generation;
+    const { appointments, contractCount, existingCount } = generation;
     const { byType, byMonth } = summarize(appointments);
 
     return ApiUtils.success({
       count: appointments.length,
       contractCount,
+      existingCount,
       byType,
       byMonth,
       appointments,
