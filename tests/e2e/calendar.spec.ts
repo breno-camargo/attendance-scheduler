@@ -94,7 +94,9 @@ test.describe('Calendar page', () => {
 
     // Listen for the API call triggered by changing the professional
     const [response] = await Promise.all([
-      page.waitForResponse((r) => r.url().includes('/api/schedule/generate') && r.status() === 200),
+      page.waitForResponse(
+        (r) => new URL(r.url()).pathname === '/api/schedule/generate' && r.status() === 200,
+      ),
       select.selectOption(secondValue),
     ]);
 
