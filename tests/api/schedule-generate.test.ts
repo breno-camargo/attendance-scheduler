@@ -137,6 +137,7 @@ beforeEach(() => {
   prismaMock.appointment.deleteMany.mockResolvedValue({ count: 0 });
   prismaMock.appointment.createMany.mockResolvedValue({ count: 0 });
   prismaMock.appointment.count.mockResolvedValue(0);
+  prismaMock.scheduleGenerationLog.create.mockResolvedValue({} as any);
   // $transaction é chamado com callback — executa callback com prismaMock como tx
   prismaMock.$transaction.mockImplementation(async (cb: any) => cb(prismaMock));
 });
@@ -251,6 +252,51 @@ describe('POST /api/schedule/generate — persistência', () => {
     expect(responseBody).toHaveProperty('count');
     expect(responseBody).toHaveProperty('contractCount');
     expect(responseBody).toHaveProperty('message');
+  });
+
+  it('persiste ScheduleGenerationLog com userId, professionalId, year, contagens e warnings', async () => {
+    prismaMock.professional.findUnique.mockResolvedValue(
+      makeProfessional([{ frequency: 'MONTHLY', systemTypes: 'CFTV', visitsPerMonth: 1 }]) as any,
+    );
+    prismaMock.appointment.count.mockResolvedValue(7);
+    mockGetServerSession.mockResolvedValueOnce({
+      user: { id: 'user-42', name: 'Admin' },
+    });
+
+    await runGenerate({ professionalId: VALID_PROF_ID, year: 2027 });
+
+    expect(prismaMock.scheduleGenerationLog.create).toHaveBeenCalledTimes(1);
+    const call = prismaMock.scheduleGenerationLog.create.mock.calls[0][0] as any;
+    expect(call.data).toMatchObject({
+      userId: 'user-42',
+      professionalId: VALID_PROF_ID,
+      year: 2027,
+      existingCount: 7,
+      createdCount: 12, // MONTHLY visitsPerMonth=1 → 12 visitas/ano
+      contractCount: 1,
+    });
+    // warningsJson é null ou JSON válido; com esse contrato não há warnings.
+    if (call.data.warningsJson !== null) {
+      expect(() => JSON.parse(call.data.warningsJson)).not.toThrow();
+    }
+  });
+
+  it('falha do log NÃO derruba a geração — resposta continua 201', async () => {
+    prismaMock.professional.findUnique.mockResolvedValue(
+      makeProfessional([{ frequency: 'MONTHLY', systemTypes: 'CFTV', visitsPerMonth: 1 }]) as any,
+    );
+    prismaMock.scheduleGenerationLog.create.mockRejectedValueOnce(new Error('DB offline'));
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const { status, responseBody } = await runGenerate();
+
+    expect(status).toBe(201);
+    expect(responseBody).toHaveProperty('count');
+    expect(errSpy).toHaveBeenCalledWith(
+      expect.stringContaining('[ScheduleGenerationLog]'),
+      expect.any(Error),
+    );
+    errSpy.mockRestore();
   });
 
   it('audit log registra quantos foram substituídos e quantos criados', async () => {

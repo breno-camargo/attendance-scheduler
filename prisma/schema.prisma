@@ -23,6 +23,7 @@ model Professional {
   availabilities Availability[]
   appointments   Appointment[]
   contracts      Contract[]
+  generationLogs ScheduleGenerationLog[]
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
 }
@@ -132,6 +133,30 @@ model User {
   mustChangePassword Boolean          @default(true)
   resetToken         String?
   resetTokenExpiry   DateTime?
+  generationLogs     ScheduleGenerationLog[]
   createdAt          DateTime         @default(now())
   updatedAt          DateTime         @updatedAt
+}
+
+/// Log de cada geração de agenda confirmada. Rastreabilidade: quem gerou,
+/// pra qual técnico/ano, quantos appointments existiam antes, quantos foram
+/// criados, quantos contratos participaram e um snapshot dos warnings
+/// emitidos no momento. FKs opcionais com SetNull pra sobreviver à exclusão
+/// de usuário ou técnico sem bloquear e sem perder o histórico.
+model ScheduleGenerationLog {
+  id             String        @id @default(cuid())
+  userId         String?
+  user           User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  professionalId String?
+  professional   Professional? @relation(fields: [professionalId], references: [id], onDelete: SetNull)
+  year           Int
+  existingCount  Int           /// Appointments que existiam no escopo antes do generate
+  createdCount   Int           /// Appointments criados pelo generate
+  contractCount  Int           /// Contratos que participaram da geração
+  warningsJson   String?       /// JSON dos warnings (Tier A + B) no momento da geração
+  createdAt      DateTime      @default(now())
+
+  @@index([createdAt])
+  @@index([professionalId, year])
+  @@index([userId])
 }

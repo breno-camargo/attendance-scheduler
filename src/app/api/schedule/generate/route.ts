@@ -8,6 +8,7 @@ import { audit } from '@/lib/audit';
 import prisma from '@/lib/prisma';
 import { checkGenerateRateLimit } from '@/lib/rate-limit';
 import { isGenerationError, runScheduleGeneration } from '@/lib/schedule-service';
+import { computeScheduleWarnings } from '@/lib/schedule-warnings';
 import { generateScheduleSchema } from '@/lib/schemas';
 
 export const dynamic = 'force-dynamic';
@@ -83,6 +84,31 @@ export async function POST(request: Request) {
       event: 'SCHEDULE_GENERATED',
       details: `${contractCount} contratos, substituiu ${existingCount}, criou ${result.length}`,
     });
+
+    // Log persistente de geração. Rodado DEPOIS do commit — bug aqui não
+    // pode reverter a agenda. Falha do insert gera só console.error pra
+    // não escalar pra resposta de erro ao cliente.
+    try {
+      // Mesma combinação de Tier A + Tier B que o /preview mostrou ao usuário.
+      const warnings = [
+        ...computeScheduleWarnings(generation.contracts),
+        ...generation.algorithmWarnings,
+      ];
+      const userId = (auth.session.user as { id?: string } | undefined)?.id ?? null;
+      await prisma.scheduleGenerationLog.create({
+        data: {
+          userId,
+          professionalId: generation.professionalId,
+          year,
+          existingCount,
+          createdCount: result.length,
+          contractCount,
+          warningsJson: warnings.length > 0 ? JSON.stringify(warnings) : null,
+        },
+      });
+    } catch (logError) {
+      console.error('[ScheduleGenerationLog] falha ao persistir log:', logError);
+    }
 
     return ApiUtils.success(
       {
