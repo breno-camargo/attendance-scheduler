@@ -15,6 +15,9 @@ export default function ClientsPage() {
   // Estados de Dados da API
   const [clients, setClients] = useState<Client[]>([]);
   const [professionals, setProfessionals] = useState<Professional[]>([]);
+  // Loading só da primeira carga — refreshes após mutation mostram dados
+  // anteriores sem flash de skeleton (o cache costuma já resolver).
+  const [initialLoading, setInitialLoading] = useState(true);
 
   // Estados dos Modais
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -30,11 +33,13 @@ export default function ClientsPage() {
       if (resP.data) setProfessionals(resP.data);
     } catch {
       showToast('Erro ao carregar dados', 'error');
+    } finally {
+      setInitialLoading(false);
     }
   }, [showToast]);
 
   useEffect(() => {
-    carregarDados(); // eslint-disable-line react-hooks/set-state-in-effect -- fetch inicial
+    carregarDados();
   }, [carregarDados]);
 
   // Bloqueio de Scroll
@@ -101,7 +106,25 @@ export default function ClientsPage() {
       </div>
 
       {/* Tabela de Clientes */}
-      <ClientTable clients={clients} onEdit={handleEdit} onDelete={handleDelete} />
+      {initialLoading ? (
+        <div
+          className="glass-panel"
+          style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '24px' }}
+          aria-busy="true"
+          aria-live="polite"
+        >
+          <span className="sr-only">Carregando contratos</span>
+          {[0, 1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="skeleton"
+              style={{ height: '72px', width: '100%', borderRadius: '10px' }}
+            />
+          ))}
+        </div>
+      ) : (
+        <ClientTable clients={clients} onEdit={handleEdit} onDelete={handleDelete} />
+      )}
 
       {/* Modal de Formulário (Novo/Editar) */}
       <ContractFormModal

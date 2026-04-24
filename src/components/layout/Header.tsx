@@ -5,6 +5,34 @@ import { signOut, useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
 
 import { Logo } from '@/components/ui/logo';
+import { clientsApi, holidaysApi, professionalsApi, staffApi, statsApi } from '@/lib/api-client';
+
+// Prefetch das APIs principais quando o usuário passa mouse/foco no item do
+// menu. O api-client faz cache leve (TTL 45s) e coalesce de requests em voo,
+// então dupla-chamada é barata. Calendário aquece só profs/clients — agenda
+// depende de professionalId+year e seria palpite errado.
+const routeWarmers: Record<string, () => void> = {
+  '/': () => {
+    void statsApi.get();
+  },
+  '/clients': () => {
+    void clientsApi.list();
+    void professionalsApi.list();
+  },
+  '/professionals': () => {
+    void professionalsApi.list();
+  },
+  '/staff': () => {
+    void staffApi.list();
+  },
+  '/calendar': () => {
+    void professionalsApi.list();
+    void clientsApi.list();
+  },
+  '/holidays': () => {
+    void holidaysApi.list(new Date().getFullYear());
+  },
+};
 
 export default function Header() {
   const pathname = usePathname();
@@ -130,12 +158,15 @@ export default function Header() {
         <nav className="desktop-nav">
           {navLinks.map((link) => {
             const active = pathname === link.href;
+            const warm = routeWarmers[link.href];
             return (
               <Link
                 key={link.href}
                 href={link.href}
                 className="nav-link"
                 aria-current={active ? 'page' : undefined}
+                onMouseEnter={warm}
+                onFocus={warm}
               >
                 {link.name}
                 <span className="nav-link__underline" aria-hidden="true" />
@@ -276,6 +307,8 @@ export default function Header() {
               className={pathname === link.href ? 'active' : ''}
               aria-current={pathname === link.href ? 'page' : undefined}
               onClick={() => setMenuOpen(false)}
+              onTouchStart={routeWarmers[link.href]}
+              onFocus={routeWarmers[link.href]}
             >
               {link.name}
             </Link>
