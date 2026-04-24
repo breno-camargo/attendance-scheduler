@@ -116,32 +116,38 @@ test.describe('Calendar page', () => {
   });
 
   // -------------------------------------------------------------------------
-  // 6. "Gerar Agenda" shows confirmation modal and generates appointments
+  // 6. "Gerar Agenda" abre modal de prévia, só confirma após revisão
   // -------------------------------------------------------------------------
-  test('"Gerar Agenda" / "Re-gerar Agenda" shows confirmation or generates directly', async ({
+  test('"Gerar Agenda" / "Re-gerar Agenda" abre prévia antes e só confirma depois', async ({
     page,
   }) => {
     const generateBtn = page.getByRole('button', { name: /Gerar Agenda|Re-gerar Agenda/ });
 
-    // Intercept to speed things up but still let them through
-    await generateBtn.click();
+    // Preview é chamado primeiro, modal aparece com resumo
+    const [previewResponse] = await Promise.all([
+      page.waitForResponse((r) => {
+        const path = new URL(r.url()).pathname;
+        return path === '/api/schedule/generate/preview' && r.status() === 200;
+      }),
+      generateBtn.click(),
+    ]);
+    expect(previewResponse.ok()).toBe(true);
 
-    // Two scenarios:
-    // a) A confirm modal appears (if appointments already exist or a different year)
-    // b) The schedule is generated directly (no existing data)
-    const confirmModal = page.locator('button', { hasText: 'Confirmar' });
-    const isVisible = await confirmModal.isVisible().catch(() => false);
+    const previewModal = page.getByRole('dialog', { name: /Prévia da agenda/ });
+    await expect(previewModal).toBeVisible();
 
-    if (isVisible) {
-      // Confirm the regeneration
-      await confirmModal.click();
-    }
+    // Só depois da confirmação é que /generate deve ser disparado
+    const confirmBtn = previewModal.getByRole('button', { name: /Confirmar geração/ });
+    const [generateResponse] = await Promise.all([
+      page.waitForResponse(
+        (r) => new URL(r.url()).pathname === '/api/schedule/generate' && r.status() === 201,
+      ),
+      confirmBtn.click(),
+    ]);
+    expect(generateResponse.ok()).toBe(true);
 
-    // Either way, loading state or spinner text should appear briefly
-    // and then the page should show updated calendar cells
+    await expect(previewModal).not.toBeVisible();
     await page.waitForLoadState('networkidle');
-
-    // The month panels should still be visible after generation
     await expect(page.getByRole('heading', { name: 'Janeiro', exact: true })).toBeVisible();
   });
 

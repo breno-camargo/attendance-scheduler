@@ -7,16 +7,20 @@ import CalendarGrid from '@/components/calendar/CalendarGrid';
 import ItineraryPanel from '@/components/calendar/ItineraryPanel';
 import ManualScheduleModal from '@/components/calendar/ManualScheduleModal';
 import ScheduleControls from '@/components/calendar/ScheduleControls';
+import SchedulePreviewModal from '@/components/calendar/SchedulePreviewModal';
 import { useConfirm } from '@/components/ui/confirm-modal';
 import { useToast } from '@/components/ui/toast';
 import { professionalsApi, holidaysApi, clientsApi, scheduleApi } from '@/lib/api-client';
-import type { Appointment, Professional, Client } from '@/types';
+import type { Appointment, Professional, Client, SchedulePreviewData } from '@/types';
 
 export default function CalendarPage() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [professionalId, setProfessionalId] = useState('');
   const [professionals, setProfessionals] = useState<Professional[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingPreview, setLoadingPreview] = useState(false);
+  const [loadingGenerate, setLoadingGenerate] = useState(false);
+  const [preview, setPreview] = useState<SchedulePreviewData | null>(null);
   const [selectedApt, setSelectedApt] = useState<Appointment | null>(null);
   const [newDate, setNewDate] = useState('');
   const [filterContractId, setFilterContractId] = useState<string | null>(null);
@@ -95,19 +99,26 @@ export default function CalendarPage() {
     }
   }, [professionalId, year, yearInitialized, fetchHolidays, showToast]);
 
-  // Detecta o ano que tem agenda — só na primeira carga ou ao trocar de técnico
+  // Consulta o backend pra saber se o técnico tem qualquer agenda e em qual ano.
+  // Usado na primeira carga, ao trocar de técnico e sempre que uma operação
+  // destrutiva (clear, generate) pode ter mudado esse estado.
+  const refreshExistingYear = useCallback(
+    async (id: string, opts: { syncYearFromExisting?: boolean } = {}) => {
+      const res = await scheduleApi.getExistingYear(id);
+      if (!res.ok) return;
+      const ey = res.data?.existingYear ?? null;
+      setExistingYear(ey);
+      if (opts.syncYearFromExisting && ey !== null && !sessionStorage.getItem('calendar-year')) {
+        setYear(ey);
+      }
+    },
+    [],
+  );
+
   useEffect(() => {
     if (!professionalId) return;
-    scheduleApi.getExistingYear(professionalId).then((res) => {
-      if (res.ok) {
-        const ey = res.data?.existingYear ?? null;
-        setExistingYear(ey);
-        if (ey !== null && !sessionStorage.getItem('calendar-year')) {
-          setYear(ey);
-        }
-      }
-    });
-  }, [professionalId]);
+    refreshExistingYear(professionalId, { syncYearFromExisting: true });
+  }, [professionalId, refreshExistingYear]);
 
   // fetchHolidays já é chamado dentro de fetchAppointments via Promise.all
   // clients são carregados no init junto com professionals
@@ -117,44 +128,49 @@ export default function CalendarPage() {
 
   // Lock body scroll when any modal is open
   useEffect(() => {
-    const anyOpen = isManualModalOpen || !!selectedApt;
+    const anyOpen = isManualModalOpen || !!selectedApt || !!preview;
     document.body.style.overflow = anyOpen ? 'hidden' : '';
     return () => {
       document.body.style.overflow = '';
     };
-  }, [isManualModalOpen, selectedApt]);
+  }, [isManualModalOpen, selectedApt, preview]);
 
-  const generateAppointments = async () => {
-    if (existingYear !== null && existingYear !== year) {
-      const ok = await confirmAction({
-        title: 'Substituir agenda existente?',
-        message: `Este técnico já possui agenda gerada para ${existingYear}. Ao confirmar, ela será substituída pela agenda de ${year}.`,
-        variant: 'warning',
-        confirmLabel: 'Confirmar',
-      });
-      if (!ok) return;
-    } else if (appointments.length > 0) {
-      const ok = await confirmAction({
-        title: 'Re-gerar agenda?',
-        message: `Já existe uma agenda gerada para ${year}. Ao confirmar, ela será apagada e uma nova será criada do zero.`,
-        variant: 'warning',
-        confirmLabel: 'Confirmar',
-      });
-      if (!ok) return;
+  // Fluxo: preview → modal com resumo/aviso → confirmar → generate.
+  // O modal de preview é o único ponto de confirmação; mostra o impacto antes
+  // de disparar a transação destrutiva.
+  const openPreview = async () => {
+    setLoadingPreview(true);
+    try {
+      const res = await scheduleApi.preview(professionalId, year);
+      if (res.ok && res.data) {
+        setPreview(res.data);
+      } else {
+        showToast(res.error || 'Erro ao gerar prévia. Tente novamente.', 'error');
+      }
+    } catch {
+      showToast('Falha de conexão ao gerar prévia. Tente novamente.', 'error');
+    } finally {
+      setLoadingPreview(false);
     }
-    setLoading(true);
+  };
+
+  const confirmGenerate = async () => {
+    setLoadingGenerate(true);
     try {
       const res = await scheduleApi.generate(professionalId, year);
-      await fetchAppointments();
       if (res.ok && res.data) {
+        await Promise.all([fetchAppointments(), refreshExistingYear(professionalId)]);
+        setPreview(null);
         showToast(
           `${res.data.contractCount} agendas criadas: ${res.data.count} atendimentos agendados`,
         );
+      } else {
+        showToast(res.error || 'Erro ao gerar agenda. Tente novamente.', 'error');
       }
     } catch {
-      showToast('Erro ao gerar agenda. Tente novamente.', 'error');
+      showToast('Falha de conexão. Tente novamente.', 'error');
     } finally {
-      setLoading(false);
+      setLoadingGenerate(false);
     }
   };
 
@@ -270,7 +286,7 @@ export default function CalendarPage() {
     if (!ok) return;
     setLoading(true);
     await scheduleApi.clearYear(professionalId, year);
-    await fetchAppointments();
+    await Promise.all([fetchAppointments(), refreshExistingYear(professionalId)]);
     setLoading(false);
     showToast('Agenda excluída com sucesso');
   };
@@ -308,6 +324,19 @@ export default function CalendarPage() {
       }}
     >
       {confirmModalEl}
+
+      <SchedulePreviewModal
+        isOpen={!!preview}
+        preview={preview}
+        year={year}
+        existingYear={existingYear}
+        hasExistingSchedule={existingYear !== null || appointments.length > 0}
+        loading={loadingGenerate}
+        onConfirm={confirmGenerate}
+        onClose={() => {
+          if (!loadingGenerate) setPreview(null);
+        }}
+      />
 
       <ManualScheduleModal
         isOpen={isManualModalOpen}
@@ -455,8 +484,9 @@ export default function CalendarPage() {
           professionalId={professionalId}
           setProfessionalId={setProfessionalId}
           loading={loading}
+          loadingPreview={loadingPreview}
           appointments={appointments}
-          onGenerate={generateAppointments}
+          onGenerate={openPreview}
           onClear={handleClearSchedule}
           contractIds={linkedClients.flatMap((c) => (c.contracts || []).map((ct) => ct.id))}
         />

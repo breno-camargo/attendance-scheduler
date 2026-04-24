@@ -7,6 +7,7 @@ interface ScheduleControlsProps {
   professionalId: string;
   setProfessionalId: (id: string) => void;
   loading: boolean;
+  loadingPreview?: boolean;
   appointments: Appointment[];
   onGenerate: () => void;
   onClear: () => void;
@@ -18,11 +19,20 @@ export default function ScheduleControls({
   professionalId,
   setProfessionalId,
   loading,
+  loadingPreview = false,
   appointments,
   onGenerate,
   onClear,
   contractIds,
 }: ScheduleControlsProps) {
+  const generateDisabled = loading || loadingPreview || !professionalId;
+  const generateLabel = loadingPreview
+    ? '⌛ Carregando prévia...'
+    : loading
+      ? '⌛ Processando...'
+      : appointments.length > 0
+        ? '🔄 Re-gerar'
+        : '📅 Gerar Agenda';
   return (
     <div
       className="glass-panel schedule-controls"
@@ -74,7 +84,7 @@ export default function ScheduleControls({
           <button
             onClick={onGenerate}
             className="btn-primary"
-            disabled={loading || !professionalId}
+            disabled={generateDisabled}
             style={{
               flex: 1,
               display: 'flex',
@@ -84,11 +94,7 @@ export default function ScheduleControls({
               height: '54px',
             }}
           >
-            {loading
-              ? '⌛ Agendando...'
-              : appointments.length > 0
-                ? '🔄 Re-gerar'
-                : '📅 Gerar Agenda'}
+            {generateLabel}
           </button>
           <button
             onClick={() => {
