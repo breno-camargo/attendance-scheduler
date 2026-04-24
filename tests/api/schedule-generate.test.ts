@@ -23,7 +23,8 @@ vi.mock('next-auth', () => ({
   getServerSession: (...args: any[]) => mockGetServerSession(...args),
 }));
 vi.mock('@/lib/auth', () => ({ authOptions: {} }));
-vi.mock('@/lib/audit', () => ({ audit: vi.fn() }));
+const mockAudit = vi.fn();
+vi.mock('@/lib/audit', () => ({ audit: (...args: any[]) => mockAudit(...args) }));
 
 import { POST } from '@/app/api/schedule/generate/route';
 import prisma from '@/lib/prisma';
@@ -123,10 +124,12 @@ async function runGenerate(
 
 beforeEach(() => {
   mockReset(prismaMock);
+  mockAudit.mockReset();
   mockGetServerSession.mockResolvedValue({ user: { name: 'Admin' } });
   prismaMock.holiday.findMany.mockResolvedValue([]);
   prismaMock.appointment.deleteMany.mockResolvedValue({ count: 0 });
   prismaMock.appointment.createMany.mockResolvedValue({ count: 0 });
+  prismaMock.appointment.count.mockResolvedValue(0);
   // $transaction é chamado com callback — executa callback com prismaMock como tx
   prismaMock.$transaction.mockImplementation(async (cb: any) => cb(prismaMock));
 });
@@ -224,6 +227,25 @@ describe('POST /api/schedule/generate — persistência', () => {
     expect(responseBody).toHaveProperty('count');
     expect(responseBody).toHaveProperty('contractCount');
     expect(responseBody).toHaveProperty('message');
+  });
+
+  it('audit log registra quantos foram substituídos e quantos criados', async () => {
+    prismaMock.professional.findUnique.mockResolvedValue(
+      makeProfessional([{ frequency: 'MONTHLY', systemTypes: 'CFTV', visitsPerMonth: 1 }]) as any,
+    );
+    prismaMock.appointment.count.mockResolvedValue(9);
+    await runGenerate();
+    expect(mockAudit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: 'SCHEDULE_GENERATED',
+        details: expect.stringContaining('substituiu 9'),
+      }),
+    );
+    expect(mockAudit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        details: expect.stringContaining('criou'),
+      }),
+    );
   });
 });
 

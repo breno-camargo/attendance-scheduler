@@ -90,6 +90,7 @@ beforeEach(() => {
   mockReset(prismaMock);
   mockGetServerSession.mockResolvedValue({ user: { name: 'Admin' } });
   prismaMock.holiday.findMany.mockResolvedValue([]);
+  prismaMock.appointment.count.mockResolvedValue(0);
   // Transação mockada pra falhar se alguém tentar — preview nunca deve chamar.
   prismaMock.$transaction.mockImplementation(async (cb: any) =>
     typeof cb === 'function' ? cb(prismaMock) : cb,
@@ -191,6 +192,40 @@ describe('POST /api/schedule/generate/preview — resumo', () => {
       .map(([m]) => Number(m))
       .sort((a, b) => a - b);
     expect(monthsWithVisits).toEqual([0, 3, 6, 9]);
+  });
+
+  it('existingCount é 0 quando não há agenda anterior no ano alvo', async () => {
+    prismaMock.professional.findUnique.mockResolvedValue(
+      makeProfessional([{ frequency: 'MONTHLY', systemTypes: 'CFTV', visitsPerMonth: 1 }]) as any,
+    );
+    prismaMock.appointment.count.mockResolvedValue(0);
+    const { responseBody } = await runPreview();
+    expect(responseBody.existingCount).toBe(0);
+  });
+
+  it('existingCount reflete quantidade retornada pelo count no escopo do ano', async () => {
+    const prof = makeProfessional([
+      { frequency: 'MONTHLY', systemTypes: 'CFTV', visitsPerMonth: 1 },
+    ]);
+    prismaMock.professional.findUnique.mockResolvedValue(prof as any);
+    prismaMock.appointment.count.mockResolvedValue(17);
+
+    const { responseBody } = await runPreview({ professionalId: VALID_PROF_ID, year: 2027 });
+
+    expect(responseBody.existingCount).toBe(17);
+    // Escopo do count precisa bater com o do deleteMany (professionalId OR contractId in [...], date ano)
+    expect(prismaMock.appointment.count).toHaveBeenCalledWith({
+      where: {
+        OR: [
+          { professionalId: prof.id },
+          { contractId: { in: prof.contracts.map((c: any) => c.id) } },
+        ],
+        date: {
+          gte: new Date(Date.UTC(2027, 0, 1)),
+          lt: new Date(Date.UTC(2028, 0, 1)),
+        },
+      },
+    });
   });
 });
 

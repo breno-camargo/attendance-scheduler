@@ -335,7 +335,6 @@ export default function CalendarPage() {
         preview={preview}
         year={year}
         existingYears={existingYears}
-        willReplaceCurrentYear={existingYears.includes(year) || appointments.length > 0}
         loading={loadingGenerate}
         onConfirm={confirmGenerate}
         onClose={() => {

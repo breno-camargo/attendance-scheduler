@@ -13,6 +13,11 @@ export interface ScheduleGenerationResult {
   contractCount: number;
   professionalId: string;
   contractIds: string[];
+  // Quantos appointments já existem no banco dentro do mesmo escopo que o
+  // deleteMany do /generate usa (professionalId OR contractId in [...], date
+  // do ano). Permite ao preview dizer "serão substituídos X" honestamente
+  // e ao audit registrar "substituiu X, criou Y".
+  existingCount: number;
 }
 
 // Carrega profissional + feriados e roda o algoritmo. Não faz I/O de escrita —
@@ -57,11 +62,23 @@ export async function runScheduleGeneration(
   const contractIds = professional.contracts.map((c) => c.id);
   const contractCount = new Set(appointments.map((a) => a.contractId)).size;
 
+  // Mesmo escopo do deleteMany do /generate — fora isso, existingCount mentiria.
+  const existingCount = await prisma.appointment.count({
+    where: {
+      OR: [{ professionalId: professional.id }, { contractId: { in: contractIds } }],
+      date: {
+        gte: new Date(Date.UTC(year, 0, 1)),
+        lt: new Date(Date.UTC(year + 1, 0, 1)),
+      },
+    },
+  });
+
   return {
     appointments,
     contractCount,
     professionalId: professional.id,
     contractIds,
+    existingCount,
   };
 }
 

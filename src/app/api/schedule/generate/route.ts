@@ -33,7 +33,7 @@ export async function POST(request: Request) {
       return ApiUtils.error(generation.message, null, 404);
     }
 
-    const { appointments, contractCount, contractIds } = generation;
+    const { appointments, contractCount, contractIds, existingCount } = generation;
     const appointmentsToCreate = appointments.map((a) => ({
       ...a,
       professionalId: generation.professionalId,
@@ -65,7 +65,7 @@ export async function POST(request: Request) {
 
     audit({
       event: 'SCHEDULE_GENERATED',
-      details: `${contractCount} contratos, ${result.length} atendimentos`,
+      details: `${contractCount} contratos, substituiu ${existingCount}, criou ${result.length}`,
     });
 
     return ApiUtils.success(
