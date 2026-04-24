@@ -31,7 +31,7 @@ vi.mock('@/lib/rate-limit', () => ({
   checkGenerateRateLimit: (...args: any[]) => mockCheckGenerateRateLimit(...args),
 }));
 
-import { POST } from '@/app/api/schedule/generate/route';
+import { DELETE, POST } from '@/app/api/schedule/generate/route';
 import prisma from '@/lib/prisma';
 
 const prismaMock = prisma as unknown as ReturnType<typeof mockDeep<PrismaClient>>;
@@ -138,6 +138,7 @@ beforeEach(() => {
   prismaMock.appointment.createMany.mockResolvedValue({ count: 0 });
   prismaMock.appointment.count.mockResolvedValue(0);
   prismaMock.scheduleGenerationLog.create.mockResolvedValue({} as any);
+  prismaMock.auditLog.create.mockResolvedValue({} as any);
   // $transaction é chamado com callback — executa callback com prismaMock como tx
   prismaMock.$transaction.mockImplementation(async (cb: any) => cb(prismaMock));
 });
@@ -660,6 +661,44 @@ describe('POST /api/schedule/generate — numeração', () => {
       });
     byContract.forEach((obs) => {
       expect(obs[0]).toBe('Visita 01');
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// DELETE /api/schedule/generate — limpar agenda do ano
+// ---------------------------------------------------------------------------
+describe('DELETE /api/schedule/generate — audit', () => {
+  it('limpa agenda do ano e grava SCHEDULE_CLEARED audit log', async () => {
+    prismaMock.professional.findUnique.mockResolvedValue({
+      id: VALID_PROF_ID,
+      name: 'Técnico Teste',
+    } as any);
+    prismaMock.appointment.deleteMany.mockResolvedValue({ count: 11 });
+
+    const req = new Request(
+      `http://localhost/api/schedule/generate?professionalId=${VALID_PROF_ID}&year=2027`,
+      { method: 'DELETE' },
+    );
+
+    const response = await DELETE(req);
+
+    expect(response.status).toBe(200);
+    expect(prismaMock.auditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        userId: 'admin-1',
+        actorLabel: 'Admin',
+        action: 'SCHEDULE_CLEARED',
+        entityType: 'SCHEDULE',
+        entityId: VALID_PROF_ID,
+        entityLabel: 'Técnico Teste — 2027',
+      }),
+    });
+    const data = prismaMock.auditLog.create.mock.calls[0][0].data;
+    expect(JSON.parse(data.metadataJson ?? '{}')).toMatchObject({
+      professionalId: VALID_PROF_ID,
+      year: 2027,
+      deletedCount: 11,
     });
   });
 });

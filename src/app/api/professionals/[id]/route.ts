@@ -1,4 +1,5 @@
 import { ApiUtils, getScopedProfessionalIds, requireAuthWithScope } from '@/lib/api-utils';
+import { writeAuditLog } from '@/lib/audit-log';
 import prisma from '@/lib/prisma';
 import { professionalSchema } from '@/lib/schemas';
 
@@ -88,7 +89,7 @@ export async function DELETE(_request: Request, props: { params: Promise<{ id: s
   const params = await props.params;
   const result = await requireAuthWithScope();
   if ('error' in result) return result.error;
-  const { auth } = result;
+  const { auth, session } = result;
 
   try {
     const { id } = params;
@@ -101,7 +102,15 @@ export async function DELETE(_request: Request, props: { params: Promise<{ id: s
       return ApiUtils.error('Você não tem permissão para excluir este técnico', null, 403);
     }
 
-    await prisma.$transaction([
+    const existing = await prisma.professional.findUnique({
+      where: { id },
+      select: { id: true, name: true },
+    });
+    if (!existing) {
+      return ApiUtils.error('Técnico não encontrado', null, 404);
+    }
+
+    const [, detachedContracts, detachedAppointments] = await prisma.$transaction([
       prisma.availability.deleteMany({ where: { professionalId: id } }),
       prisma.contract.updateMany({
         where: { professionalId: id },
@@ -113,6 +122,18 @@ export async function DELETE(_request: Request, props: { params: Promise<{ id: s
       }),
       prisma.professional.delete({ where: { id } }),
     ]);
+
+    await writeAuditLog({
+      session,
+      action: 'PROFESSIONAL_DELETED',
+      entityType: 'PROFESSIONAL',
+      entityId: existing.id,
+      entityLabel: existing.name,
+      metadata: {
+        detachedContractCount: detachedContracts.count,
+        detachedAppointmentCount: detachedAppointments.count,
+      },
+    });
 
     return ApiUtils.success({ success: true });
   } catch (error: unknown) {

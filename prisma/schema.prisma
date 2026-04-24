@@ -134,6 +134,7 @@ model User {
   resetToken         String?
   resetTokenExpiry   DateTime?
   generationLogs     ScheduleGenerationLog[]
+  auditLogs          AuditLog[]
   createdAt          DateTime         @default(now())
   updatedAt          DateTime         @updatedAt
 }
@@ -159,4 +160,25 @@ model ScheduleGenerationLog {
   @@index([createdAt])
   @@index([professionalId, year])
   @@index([userId])
+}
+
+/// Log genérico para ações administrativas/destrutivas de shape simples.
+/// Eventos ricos continuam em tabelas próprias (ex.: ScheduleGenerationLog).
+/// actorLabel preserva quem fez a ação mesmo se userId virar null por SetNull.
+model AuditLog {
+  id           String   @id @default(cuid())
+  userId       String?
+  user         User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  actorLabel   String
+  action       String
+  entityType   String
+  entityId     String?
+  entityLabel  String?
+  metadataJson String?
+  createdAt    DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([userId])
+  @@index([action])
+  @@index([entityType, entityId])
 }

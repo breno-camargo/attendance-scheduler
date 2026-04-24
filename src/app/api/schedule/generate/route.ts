@@ -5,6 +5,7 @@ import {
   requireAuthSession,
 } from '@/lib/api-utils';
 import { audit } from '@/lib/audit';
+import { writeAuditLog } from '@/lib/audit-log';
 import prisma from '@/lib/prisma';
 import { checkGenerateRateLimit } from '@/lib/rate-limit';
 import { isGenerationError, runScheduleGeneration } from '@/lib/schedule-service';
@@ -179,8 +180,8 @@ export async function GET(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  const authError = await requireAuth();
-  if (authError) return authError;
+  const auth = await requireAuthSession();
+  if (auth.error) return auth.error;
 
   try {
     const { searchParams } = new URL(request.url);
@@ -192,11 +193,28 @@ export async function DELETE(request: Request) {
       return ApiUtils.error('Ano inválido', null, 400);
     }
 
+    const professional = await prisma.professional.findUnique({
+      where: { id: professionalId },
+      select: { id: true, name: true },
+    });
+    if (!professional) {
+      return ApiUtils.error('Técnico não encontrado', null, 404);
+    }
+
     const deleted = await prisma.appointment.deleteMany({
       where: {
         professionalId,
         date: { gte: new Date(Date.UTC(year, 0, 1)), lt: new Date(Date.UTC(year + 1, 0, 1)) },
       },
+    });
+
+    await writeAuditLog({
+      session: auth.session,
+      action: 'SCHEDULE_CLEARED',
+      entityType: 'SCHEDULE',
+      entityId: professional.id,
+      entityLabel: `${professional.name} — ${year}`,
+      metadata: { professionalId, year, deletedCount: deleted.count },
     });
 
     return ApiUtils.success({ message: `Agenda limpa (${deleted.count} removidos)` });

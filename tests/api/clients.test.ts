@@ -24,6 +24,7 @@ vi.mock('next-auth', () => ({
 }));
 vi.mock('@/lib/auth', () => ({ authOptions: {} }));
 
+import { DELETE as DELETE_CLIENT } from '@/app/api/clients/[id]/route';
 import { GET, POST } from '@/app/api/clients/route';
 import prisma from '@/lib/prisma';
 
@@ -31,7 +32,8 @@ const prismaMock = prisma as unknown as ReturnType<typeof mockDeep<PrismaClient>
 
 beforeEach(() => {
   mockReset(prismaMock);
-  mockGetServerSession.mockResolvedValue({ user: { name: 'Admin' } });
+  mockGetServerSession.mockResolvedValue({ user: { id: 'user-1', name: 'Admin' } });
+  prismaMock.auditLog.create.mockResolvedValue({} as any);
 });
 
 // ---------------------------------------------------------------------------
@@ -287,5 +289,54 @@ describe('POST /api/clients', () => {
     const createCall = prismaMock.client.create.mock.calls[0][0] as any;
     expect(createCall.data.phone).toBeNull();
     expect(createCall.data.contracts.create.professionalId).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// DELETE /api/clients/[id]
+// ---------------------------------------------------------------------------
+describe('DELETE /api/clients/[id]', () => {
+  const validClientId = 'cabcdefghijklmnopqrstuvwx';
+
+  it('deletes a client and writes CLIENT_DELETED audit log', async () => {
+    const existing = { ...mockClient, id: validClientId };
+    prismaMock.client.findUnique.mockResolvedValue(existing as any);
+    prismaMock.client.delete.mockResolvedValue(existing as any);
+
+    const req = new Request(`http://localhost/api/clients/${validClientId}`, {
+      method: 'DELETE',
+    });
+
+    const response = await DELETE_CLIENT(req, { params: Promise.resolve({ id: validClientId }) });
+
+    expect(response.status).toBe(200);
+    expect(prismaMock.auditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        userId: 'user-1',
+        actorLabel: 'Admin',
+        action: 'CLIENT_DELETED',
+        entityType: 'CLIENT',
+        entityId: validClientId,
+        entityLabel: existing.name,
+      }),
+    });
+  });
+
+  it('audit log failure does not fail client deletion', async () => {
+    const existing = { ...mockClient, id: validClientId };
+    prismaMock.client.findUnique.mockResolvedValue(existing as any);
+    prismaMock.client.delete.mockResolvedValue(existing as any);
+    prismaMock.auditLog.create.mockRejectedValueOnce(new Error('audit unavailable'));
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const req = new Request(`http://localhost/api/clients/${validClientId}`, {
+      method: 'DELETE',
+    });
+
+    const response = await DELETE_CLIENT(req, { params: Promise.resolve({ id: validClientId }) });
+
+    expect(response.status).toBe(200);
+    expect(errSpy).toHaveBeenCalledWith(expect.stringContaining('[AuditLog]'), expect.any(Error));
+    errSpy.mockRestore();
   });
 });
