@@ -55,13 +55,18 @@ export interface SchedulePreviewAppointment {
 export type ScheduleWarningCode =
   | 'NON_MONTHLY_SDAI'
   | 'NO_MONTHLY_VISITS'
-  | 'INVALID_TARGET_MONTHS';
+  | 'INVALID_TARGET_MONTHS'
+  | 'SDAI_FELL_ON_WEEKDAY'
+  | 'UNPLACED_VISITS';
 
 export interface ScheduleWarning {
   code: ScheduleWarningCode;
   contractId: string;
   clientName?: string;
   message: string;
+  date?: string;
+  month?: number;
+  missingCount?: number;
 }
 
 export interface SchedulePreviewData {

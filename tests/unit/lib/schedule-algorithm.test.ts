@@ -98,7 +98,7 @@ describe('schedule-algorithm', () => {
 
   describe('generateYearSchedule', () => {
     it('generates quarterly SDAI tests only for exact SDAI system tokens', () => {
-      const appointments = generateYearSchedule(
+      const { appointments } = generateYearSchedule(
         [makeContract({ systemTypes: 'SDAI2,CFTV', visitsPerMonth: 1 })],
         2027,
         new Set(),
@@ -110,7 +110,7 @@ describe('schedule-algorithm', () => {
     });
 
     it('normalizes system tokens before applying SDAI rules', () => {
-      const appointments = generateYearSchedule(
+      const { appointments } = generateYearSchedule(
         [makeContract({ systemTypes: ' sdai , cftv ', visitsPerMonth: 1 })],
         2027,
         new Set(),
@@ -122,7 +122,7 @@ describe('schedule-algorithm', () => {
     });
 
     it('does not place technical visits on custom holidays', () => {
-      const appointments = generateYearSchedule(
+      const { appointments } = generateYearSchedule(
         [makeContract({ visitsPerMonth: 1, preferredDays: '1' })],
         2027,
         new Set(['2027-01-18']),
@@ -133,7 +133,7 @@ describe('schedule-algorithm', () => {
     });
 
     it('renumbers technical visits chronologically for each contract', () => {
-      const appointments = generateYearSchedule(
+      const { appointments } = generateYearSchedule(
         [makeContract({ visitsPerMonth: 2, systemTypes: 'CFTV' })],
         2027,
         new Set(),
@@ -148,6 +148,61 @@ describe('schedule-algorithm', () => {
         'Visita 02',
         'Visita 03',
       ]);
+    });
+  });
+
+  describe('generateYearSchedule — warnings Tier B', () => {
+    it('não emite warnings quando tudo cabe', () => {
+      const { warnings } = generateYearSchedule(
+        [makeContract({ visitsPerMonth: 1, systemTypes: 'CFTV' })],
+        2027,
+        new Set(),
+      );
+      expect(warnings).toEqual([]);
+    });
+
+    it('emite SDAI_FELL_ON_WEEKDAY quando nenhum sábado está disponível no mês', () => {
+      // Bloqueia todos os 4 sábados de jan/2027 como feriado: 2, 9, 16, 23, 30.
+      // Grupo 0 inclui janeiro, então o contrato vai cair em fallback pra dia útil.
+      const holidayKeys = new Set([
+        '2027-01-02',
+        '2027-01-09',
+        '2027-01-16',
+        '2027-01-23',
+        '2027-01-30',
+      ]);
+      const { warnings } = generateYearSchedule(
+        [makeContract({ visitsPerMonth: 1, systemTypes: 'SDAI' })],
+        2027,
+        holidayKeys,
+      );
+
+      const fallback = warnings.filter((w) => w.code === 'SDAI_FELL_ON_WEEKDAY');
+      expect(fallback.length).toBeGreaterThanOrEqual(1);
+      // Tem que ser de janeiro (month === 0), e date ISO preenchido
+      const jan = fallback.find((w) => w.month === 0);
+      expect(jan).toBeDefined();
+      expect(jan?.date).toMatch(/^2027-01-/);
+    });
+
+    it('emite UNPLACED_VISITS quando o mês não tem dias úteis suficientes', () => {
+      // Bloqueia quase todos os dias úteis de janeiro — sobra pouquíssimo.
+      const jan27Holidays: string[] = [];
+      for (let d = 1; d <= 31; d++) {
+        const iso = `2027-01-${String(d).padStart(2, '0')}`;
+        // deixa só 1 dia útil livre (dia 4, segunda-feira) — contrato pede 10 visitas,
+        // não tem como caber.
+        if (iso !== '2027-01-04') jan27Holidays.push(iso);
+      }
+      const { warnings } = generateYearSchedule(
+        [makeContract({ visitsPerMonth: 10, systemTypes: 'CFTV' })],
+        2027,
+        new Set(jan27Holidays),
+      );
+
+      const unplaced = warnings.filter((w) => w.code === 'UNPLACED_VISITS' && w.month === 0);
+      expect(unplaced.length).toBe(1);
+      expect(unplaced[0].missingCount).toBeGreaterThan(0);
     });
   });
 });
