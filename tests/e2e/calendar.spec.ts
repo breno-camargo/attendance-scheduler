@@ -1,4 +1,13 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
+
+// Seleciona o técnico da fixture E2E antes dos testes que dependem dos
+// appointments seedados. A UI auto-seleciona o primeiro técnico retornado
+// pela API, o que em DB de dev não costuma ser "E2E - Técnico A".
+async function selectE2eProfessional(page: Page) {
+  const select = page.locator('select').first();
+  await select.selectOption({ label: 'E2E - Técnico A' });
+  await page.waitForLoadState('networkidle');
+}
 
 test.describe('Calendar page', () => {
   test.beforeEach(async ({ page }) => {
@@ -75,29 +84,22 @@ test.describe('Calendar page', () => {
 
   // -------------------------------------------------------------------------
   // 4. Switching professional triggers a reload (appointments change)
+  //    Fixture E2E garante >=2 técnicos, então o skip saiu.
   // -------------------------------------------------------------------------
   test('switching professional reloads the calendar data', async ({ page }) => {
     const select = page.locator('select').first();
     const options = await select.locator('option').all();
 
-    if (options.length < 2) {
-      test.skip();
-      return;
-    }
-
-    // Select the second professional
+    expect(options.length).toBeGreaterThanOrEqual(2);
     const secondValue = await options[1].getAttribute('value');
-    if (!secondValue) {
-      test.skip();
-      return;
-    }
+    expect(secondValue).toBeTruthy();
 
     // Listen for the API call triggered by changing the professional
     const [response] = await Promise.all([
       page.waitForResponse(
         (r) => new URL(r.url()).pathname === '/api/schedule/generate' && r.status() === 200,
       ),
-      select.selectOption(secondValue),
+      select.selectOption(secondValue as string),
     ]);
 
     expect(response.ok()).toBe(true);
@@ -121,6 +123,10 @@ test.describe('Calendar page', () => {
   test('"Gerar Agenda" / "Re-gerar Agenda" abre prévia antes e só confirma depois', async ({
     page,
   }) => {
+    // Sem isso, o preview pode 404 em dev DB onde o técnico auto-selecionado
+    // não tem contratos. Fixture garante contratos pro E2E - Técnico A.
+    await selectE2eProfessional(page);
+
     const generateBtn = page.getByRole('button', { name: /Gerar Agenda|Re-gerar Agenda/ });
 
     // Preview é chamado primeiro, modal aparece com resumo
@@ -153,8 +159,11 @@ test.describe('Calendar page', () => {
 
   // -------------------------------------------------------------------------
   // 7. Calendar cells with appointments show colored background
+  //    Fixture E2E garante appointments do Técnico A no ano corrente.
   // -------------------------------------------------------------------------
   test('calendar cells with appointments have a non-default background color', async ({ page }) => {
+    await selectE2eProfessional(page);
+
     // Look for cells with appointment colors (green or orange-red)
     const greenCells = page.locator('[style*="#22c55e"]');
     const orangeCells = page.locator('[style*="#ea580c"]');
@@ -162,8 +171,6 @@ test.describe('Calendar page', () => {
     const orangeCount = await orangeCells.count();
     const totalColored = greenCount + orangeCount;
 
-    // If no appointments, skip — generating requires specific DB state
-    test.skip(totalColored === 0, 'No appointments in calendar to verify colors');
     expect(totalColored).toBeGreaterThan(0);
   });
 
@@ -171,16 +178,12 @@ test.describe('Calendar page', () => {
   // 8. Clicking an appointment day opens the detail modal
   // -------------------------------------------------------------------------
   test('clicking an appointment cell opens the "Gerenciar Visita" modal', async ({ page }) => {
-    // Find any colored (appointment) cell
+    await selectE2eProfessional(page);
+
     const coloredCells = page.locator(
       '[style*="background: #22c55e"], [style*="background: #ea580c"]',
     );
-    const count = await coloredCells.count();
-
-    if (count === 0) {
-      test.skip();
-      return;
-    }
+    expect(await coloredCells.count()).toBeGreaterThan(0);
 
     await coloredCells.first().click();
     await expect(page.getByRole('heading', { name: 'Gerenciar Visita' })).toBeVisible();
@@ -196,15 +199,13 @@ test.describe('Calendar page', () => {
   // 9. Can delete an appointment from the detail modal
   // -------------------------------------------------------------------------
   test('can delete an appointment from the detail modal', async ({ page }) => {
+    await selectE2eProfessional(page);
+
     const coloredCells = page.locator(
       '[style*="background: #22c55e"], [style*="background: #ea580c"]',
     );
     const count = await coloredCells.count();
-
-    if (count === 0) {
-      test.skip();
-      return;
-    }
+    expect(count).toBeGreaterThan(0);
 
     await coloredCells.first().click();
     await expect(page.getByRole('heading', { name: 'Gerenciar Visita' })).toBeVisible();

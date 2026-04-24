@@ -18,7 +18,8 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:all": "vitest run && playwright test",
-    "seed:admin": "npx tsx prisma/seed-admin.ts"
+    "seed:admin": "npx tsx prisma/seed-admin.ts",
+    "seed:e2e": "tsx prisma/seed-e2e.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
@@ -52,6 +53,7 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "prettier": "^3.8.1",
     "prisma": "^6.19.3",
+    "tsx": "^4.21.0",
     "typescript": "^6.0.3",
     "vitest": "^4.1.2",
     "vitest-mock-extended": "^3.1.1"
