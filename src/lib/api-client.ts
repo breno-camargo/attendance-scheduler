@@ -138,7 +138,9 @@ export const scheduleApi = {
     patch<Appointment>(`/api/schedule/${id}`, data),
   delete: (id: string) => del(`/api/schedule/${id}`),
   clearYear: (professionalId: string, year: number) =>
-    del(`/api/schedule/generate?professionalId=${professionalId}&year=${year}`),
+    del<{ message: string }>(
+      `/api/schedule/generate?professionalId=${professionalId}&year=${year}`,
+    ),
 };
 
 export const contactsApi = {
