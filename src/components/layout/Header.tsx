@@ -56,25 +56,47 @@ export default function Header() {
     };
 
     const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    // View Transitions API — tipo opcional até TS/lib.dom cobrirem 100%
-    const doc = document as Document & {
-      startViewTransition?: (cb: () => void) => { finished: Promise<unknown> };
-    };
 
-    // Mantém .theme-switching durante toda a transição pra evitar que
-    // transições internas de componentes compitam com o cross-fade.
+    // Mantém .theme-switching durante toda a transição pra impedir que
+    // transições internas de componentes compitam com o fade do overlay.
     root.classList.add('theme-switching');
 
-    if (doc.startViewTransition && !prefersReduced) {
-      const transition = doc.startViewTransition(apply);
-      transition.finished.finally(() => root.classList.remove('theme-switching'));
+    if (prefersReduced) {
+      apply();
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => root.classList.remove('theme-switching'));
+      });
       return;
     }
 
-    // Fallback: sem View Transitions ou usuário prefere menos movimento.
+    // Captura a cor do fundo ATUAL antes de trocar o tema. O overlay entra
+    // opaco com essa cor — o usuário continua vendo o mesmo fundo. Trocamos
+    // data-theme por baixo (invisível), e o overlay faz fade-out revelando
+    // o tema novo. Sem snapshot da viewport, sem raster de backdrop-filter.
+    const oldBg = getComputedStyle(root).getPropertyValue('--background').trim();
+    const overlay = document.createElement('div');
+    overlay.className = 'theme-transition-overlay';
+    overlay.style.backgroundColor = oldBg;
+    document.body.appendChild(overlay);
+    // Força reflow pra opacity:1 ser commitada antes de pedir o fade-out.
+    void overlay.offsetWidth;
+
     apply();
+
+    let done = false;
+    const cleanup = () => {
+      if (done) return;
+      done = true;
+      overlay.remove();
+      root.classList.remove('theme-switching');
+    };
+    overlay.addEventListener('transitionend', cleanup, { once: true });
+    // safety: garante cleanup mesmo se transitionend não disparar (aba em
+    // background, interrupção do compositor, etc.)
+    window.setTimeout(cleanup, 500);
+
     requestAnimationFrame(() => {
-      requestAnimationFrame(() => root.classList.remove('theme-switching'));
+      overlay.style.opacity = '0';
     });
   };
 
