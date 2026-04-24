@@ -24,6 +24,7 @@ vi.mock('next-auth', () => ({
 }));
 vi.mock('@/lib/auth', () => ({ authOptions: {} }));
 
+import { DELETE as DELETE_PROFESSIONAL } from '@/app/api/professionals/[id]/route';
 import { GET, POST } from '@/app/api/professionals/route';
 import prisma from '@/lib/prisma';
 
@@ -31,7 +32,8 @@ const prismaMock = prisma as unknown as ReturnType<typeof mockDeep<PrismaClient>
 
 beforeEach(() => {
   mockReset(prismaMock);
-  mockGetServerSession.mockResolvedValue({ user: { name: 'Admin' } });
+  mockGetServerSession.mockResolvedValue({ user: { id: 'user-1', name: 'Admin' } });
+  prismaMock.auditLog.create.mockResolvedValue({} as any);
   delete process.env.EMAIL_DOMAIN;
 });
 
@@ -303,5 +305,47 @@ describe('POST /api/professionals', () => {
     expect(response.status).toBe(500);
     const body = await response.json();
     expect(body).toHaveProperty('error');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// DELETE /api/professionals/[id]
+// ---------------------------------------------------------------------------
+describe('DELETE /api/professionals/[id]', () => {
+  it('deletes a professional and writes PROFESSIONAL_DELETED audit log', async () => {
+    const validProfessionalId = 'cabcdefghijklmnopqrstuvwx';
+    const existingProfessional = { ...mockProfessional, id: validProfessionalId };
+    prismaMock.professional.findUnique.mockResolvedValue(existingProfessional as any);
+    prismaMock.$transaction.mockResolvedValue([
+      { count: 0 },
+      { count: 2 },
+      { count: 5 },
+      existingProfessional,
+    ] as any);
+
+    const req = new Request(`http://localhost/api/professionals/${validProfessionalId}`, {
+      method: 'DELETE',
+    });
+
+    const response = await DELETE_PROFESSIONAL(req, {
+      params: Promise.resolve({ id: validProfessionalId }),
+    });
+
+    expect(response.status).toBe(200);
+    expect(prismaMock.auditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        userId: 'user-1',
+        actorLabel: 'Admin',
+        action: 'PROFESSIONAL_DELETED',
+        entityType: 'PROFESSIONAL',
+        entityId: validProfessionalId,
+        entityLabel: existingProfessional.name,
+      }),
+    });
+    const data = prismaMock.auditLog.create.mock.calls[0][0].data;
+    expect(JSON.parse(data.metadataJson ?? '{}')).toMatchObject({
+      detachedContractCount: 2,
+      detachedAppointmentCount: 5,
+    });
   });
 });

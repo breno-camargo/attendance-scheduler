@@ -280,6 +280,41 @@ O `warningsJson` é um array: cada item tem `code`, `contractId` e campos opcion
 
 ---
 
+## Consultar audit log administrativo
+
+**Quando usar:** investigar ações destrutivas simples: quem excluiu cliente, técnico, visita individual ou limpou a agenda de um ano.
+
+Eventos ricos continuam em tabelas próprias. Exemplo: geração/re-geração usa `ScheduleGenerationLog`, porque tem contagens e warnings estruturados. O `AuditLog` genérico cobre eventos de shape simples.
+
+### Eventos gravados hoje
+
+- `CLIENT_DELETED`
+- `PROFESSIONAL_DELETED`
+- `APPOINTMENT_DELETED`
+- `SCHEDULE_CLEARED`
+
+### Últimas 100 ações
+
+```sql
+SELECT
+  l."createdAt",
+  l."actorLabel",
+  u.username,
+  l.action,
+  l."entityType",
+  l."entityId",
+  l."entityLabel",
+  l."metadataJson"
+FROM "AuditLog" l
+LEFT JOIN "User" u ON u.id = l."userId"
+ORDER BY l."createdAt" DESC
+LIMIT 100;
+```
+
+`actorLabel` é salvo no momento da ação, então o histórico continua legível mesmo se `userId` virar `null` por exclusão do usuário.
+
+---
+
 ## Fixture E2E (Playwright)
 
 **Sintoma:** E2E começa a pular 20+ testes com `test.skip()` silenciosos, ou afirma "count === 0" onde deveria ter dados.

@@ -1,4 +1,5 @@
-import { ApiUtils, requireAuth } from '@/lib/api-utils';
+import { ApiUtils, requireAuth, requireAuthSession } from '@/lib/api-utils';
+import { writeAuditLog } from '@/lib/audit-log';
 import prisma from '@/lib/prisma';
 import { clientSchema } from '@/lib/schemas';
 
@@ -87,15 +88,31 @@ export async function PUT(request: Request, props: { params: Promise<{ id: strin
  */
 export async function DELETE(_request: Request, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
-  const authError = await requireAuth();
-  if (authError) return authError;
+  const auth = await requireAuthSession();
+  if (auth.error) return auth.error;
 
   try {
     const { id } = params;
     if (!id || !/^c[a-z0-9]{24}$/.test(id)) {
       return ApiUtils.error('ID inválido', null, 400);
     }
+    const existing = await prisma.client.findUnique({
+      where: { id },
+      select: { id: true, name: true, contracts: { select: { id: true } } },
+    });
+    if (!existing) {
+      return ApiUtils.error('Cliente não encontrado', null, 404);
+    }
+
     await prisma.client.delete({ where: { id } });
+    await writeAuditLog({
+      session: auth.session,
+      action: 'CLIENT_DELETED',
+      entityType: 'CLIENT',
+      entityId: existing.id,
+      entityLabel: existing.name,
+      metadata: { contractCount: existing.contracts.length },
+    });
     return ApiUtils.success({ success: true });
   } catch (error: unknown) {
     return ApiUtils.error('Erro ao excluir cliente', error);

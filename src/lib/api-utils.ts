@@ -46,7 +46,7 @@ export type AuthScope =
  * Supervisor/Líder = vê só profissionais do seu escopo.
  */
 export async function requireAuthWithScope(): Promise<
-  { error: NextResponse } | { auth: AuthScope }
+  { error: NextResponse } | { auth: AuthScope; session: Session }
 > {
   const session = await getServerSession(authOptions);
   if (!session) {
@@ -58,16 +58,16 @@ export async function requireAuthWithScope(): Promise<
 
   // Coordenador ou user sem vínculo (compatibilidade) = admin
   if (!contactId || role.includes('coordenador')) {
-    return { auth: { scope: 'all', internalContactId: null } };
+    return { auth: { scope: 'all', internalContactId: null }, session };
   }
 
   // Supervisor ou Líder = escopo filtrado
   if (role.includes('supervisor') || role.includes('líder') || role.includes('lider')) {
-    return { auth: { scope: 'filtered', internalContactId: contactId } };
+    return { auth: { scope: 'filtered', internalContactId: contactId }, session };
   }
 
   // Qualquer outro papel = admin por segurança (evita bloquear acidentalmente)
-  return { auth: { scope: 'all', internalContactId: null } };
+  return { auth: { scope: 'all', internalContactId: null }, session };
 }
 
 /** Retorna IDs dos profissionais no escopo, ou undefined pra "todos". */

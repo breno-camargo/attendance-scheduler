@@ -32,7 +32,8 @@ const prismaMock = prisma as unknown as ReturnType<typeof mockDeep<PrismaClient>
 
 beforeEach(() => {
   mockReset(prismaMock);
-  mockGetServerSession.mockResolvedValue({ user: { name: 'Admin' } });
+  mockGetServerSession.mockResolvedValue({ user: { id: 'user-1', name: 'Admin' } });
+  prismaMock.auditLog.create.mockResolvedValue({} as any);
 });
 
 // ---------------------------------------------------------------------------
@@ -264,7 +265,10 @@ describe('DELETE /api/schedule/[id]', () => {
   });
 
   it('deletes an appointment and returns { success: true }', async () => {
-    prismaMock.appointment.findUnique.mockResolvedValue(mockAppointment as any);
+    prismaMock.appointment.findUnique.mockResolvedValue({
+      ...mockAppointment,
+      client: { name: 'Cliente Teste' },
+    } as any);
     prismaMock.appointment.delete.mockResolvedValue(mockAppointment as any);
 
     const req = new Request(`http://localhost/api/schedule/${validId}`, {
@@ -276,6 +280,16 @@ describe('DELETE /api/schedule/[id]', () => {
     expect(response.status).toBe(200);
     const body = await response.json();
     expect(body).toEqual({ success: true });
+    expect(prismaMock.auditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        userId: 'user-1',
+        actorLabel: 'Admin',
+        action: 'APPOINTMENT_DELETED',
+        entityType: 'APPOINTMENT',
+        entityId: validId,
+        entityLabel: 'Cliente Teste',
+      }),
+    });
   });
 
   it('calls prisma.appointment.delete with the correct id', async () => {

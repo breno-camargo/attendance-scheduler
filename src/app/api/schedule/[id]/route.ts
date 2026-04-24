@@ -1,4 +1,5 @@
-import { ApiUtils, requireAuth } from '@/lib/api-utils';
+import { ApiUtils, requireAuth, requireAuthSession } from '@/lib/api-utils';
+import { writeAuditLog } from '@/lib/audit-log';
 import { getHolidaysForYear } from '@/lib/holidays';
 import prisma from '@/lib/prisma';
 import { appointmentPatchSchema } from '@/lib/schemas';
@@ -9,19 +10,36 @@ import { appointmentPatchSchema } from '@/lib/schemas';
  */
 export async function DELETE(_request: Request, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
-  const authError = await requireAuth();
-  if (authError) return authError;
+  const auth = await requireAuthSession();
+  if (auth.error) return auth.error;
 
   try {
     const { id } = params;
     if (!id || !/^c[a-z0-9]{24}$/.test(id)) {
       return ApiUtils.error('ID inválido', null, 400);
     }
-    const existing = await prisma.appointment.findUnique({ where: { id } });
+    const existing = await prisma.appointment.findUnique({
+      where: { id },
+      include: { client: { select: { name: true } } },
+    });
     if (!existing) {
       return ApiUtils.error('Agendamento não encontrado', null, 404);
     }
     await prisma.appointment.delete({ where: { id } });
+    await writeAuditLog({
+      session: auth.session,
+      action: 'APPOINTMENT_DELETED',
+      entityType: 'APPOINTMENT',
+      entityId: existing.id,
+      entityLabel: existing.client?.name ?? existing.date.toISOString(),
+      metadata: {
+        clientId: existing.clientId,
+        professionalId: existing.professionalId,
+        contractId: existing.contractId,
+        date: existing.date.toISOString(),
+        type: existing.type,
+      },
+    });
     return ApiUtils.success({ success: true });
   } catch (error: unknown) {
     return ApiUtils.error('Erro ao excluir agendamento', error);
