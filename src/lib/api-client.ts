@@ -129,10 +129,8 @@ export const scheduleApi = {
       professionalId,
       year,
     }),
-  getExistingYear: (professionalId: string) =>
-    apiFetch<{ existingYear: number | null }>(
-      `/api/schedule/generate?professionalId=${professionalId}`,
-    ),
+  getExistingYears: (professionalId: string) =>
+    apiFetch<{ years: number[] }>(`/api/schedule/generate?professionalId=${professionalId}`),
   listByYear: (professionalId: string, year: number) =>
     apiFetch<Appointment[]>(`/api/schedule/generate?professionalId=${professionalId}&year=${year}`),
   create: (data: Record<string, unknown>) => post<Appointment>('/api/schedule', data),
