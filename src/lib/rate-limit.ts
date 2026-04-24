@@ -128,3 +128,46 @@ export async function checkForgotPasswordRateLimit(ip: string): Promise<boolean>
   }
   return checkMemoryRateLimit(`forgot:${ip}`, FORGOT_MAX_ATTEMPTS, FORGOT_WINDOW_SECONDS);
 }
+
+// ── /api/schedule/generate — destrutivo, ~1s de processamento ──
+// 10/h em prod é generoso pro uso normal (1-2 gerações por técnico/ano).
+const GENERATE_MAX_ATTEMPTS = isDev ? 50 : 10;
+const GENERATE_WINDOW_SECONDS = 60 * 60; // 1 hora
+
+const generateRatelimit = redis
+  ? new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(GENERATE_MAX_ATTEMPTS, `${GENERATE_WINDOW_SECONDS} s`),
+      analytics: false,
+      prefix: 'compasss:generate',
+    })
+  : null;
+
+export async function checkGenerateRateLimit(key: string): Promise<boolean> {
+  if (generateRatelimit) {
+    const { success } = await generateRatelimit.limit(key);
+    return success;
+  }
+  return checkMemoryRateLimit(`generate:${key}`, GENERATE_MAX_ATTEMPTS, GENERATE_WINDOW_SECONDS);
+}
+
+// ── /api/schedule/generate/preview — read-only, mais permissivo ──
+const PREVIEW_MAX_ATTEMPTS = isDev ? 200 : 30;
+const PREVIEW_WINDOW_SECONDS = 60; // 1 minuto
+
+const previewRatelimit = redis
+  ? new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(PREVIEW_MAX_ATTEMPTS, `${PREVIEW_WINDOW_SECONDS} s`),
+      analytics: false,
+      prefix: 'compasss:preview',
+    })
+  : null;
+
+export async function checkPreviewRateLimit(key: string): Promise<boolean> {
+  if (previewRatelimit) {
+    const { success } = await previewRatelimit.limit(key);
+    return success;
+  }
+  return checkMemoryRateLimit(`preview:${key}`, PREVIEW_MAX_ATTEMPTS, PREVIEW_WINDOW_SECONDS);
+}

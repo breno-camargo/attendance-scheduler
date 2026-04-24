@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { getServerSession, type Session } from 'next-auth';
 
 import { authOptions } from './auth';
 import { capitalizeName, formatPhone, maskPII } from './formatting';
@@ -10,6 +10,30 @@ export async function requireAuth() {
     return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
   }
   return null;
+}
+
+// Variante que devolve a sessão quando autenticada. Usada em rotas que precisam
+// do user.id pra rate limit ou audit por usuário. Retorna discriminated union
+// seguindo o padrão do requireAuthWithScope.
+export async function requireAuthSession(): Promise<
+  { error: NextResponse; session: null } | { error: null; session: Session }
+> {
+  const session = await getServerSession(authOptions);
+  if (!session) {
+    return {
+      error: NextResponse.json({ error: 'Não autorizado' }, { status: 401 }),
+      session: null,
+    };
+  }
+  return { error: null, session };
+}
+
+// Deriva uma chave estável pra rate limit a partir da sessão. Prefere user.id
+// (mais estável), cai pra email e, em último caso, pra IP — pra não virar
+// "unknown" global que degradaria a proteção.
+export function rateLimitKeyFromSession(session: Session, request: Request): string {
+  const user = session.user as { id?: string; email?: string } | undefined;
+  return user?.id || user?.email || getClientIp(request);
 }
 
 export type AuthScope =

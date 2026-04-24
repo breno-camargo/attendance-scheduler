@@ -24,6 +24,11 @@ vi.mock('next-auth', () => ({
 }));
 vi.mock('@/lib/auth', () => ({ authOptions: {} }));
 
+const mockCheckPreviewRateLimit = vi.fn().mockResolvedValue(true);
+vi.mock('@/lib/rate-limit', () => ({
+  checkPreviewRateLimit: (...args: any[]) => mockCheckPreviewRateLimit(...args),
+}));
+
 import { POST } from '@/app/api/schedule/generate/preview/route';
 import prisma from '@/lib/prisma';
 
@@ -88,7 +93,9 @@ async function runPreview(body: any = { professionalId: VALID_PROF_ID, year: 202
 
 beforeEach(() => {
   mockReset(prismaMock);
-  mockGetServerSession.mockResolvedValue({ user: { name: 'Admin' } });
+  mockCheckPreviewRateLimit.mockReset();
+  mockCheckPreviewRateLimit.mockResolvedValue(true);
+  mockGetServerSession.mockResolvedValue({ user: { id: 'admin-1', name: 'Admin' } });
   prismaMock.holiday.findMany.mockResolvedValue([]);
   prismaMock.appointment.count.mockResolvedValue(0);
   // Transação mockada pra falhar se alguém tentar — preview nunca deve chamar.
@@ -102,6 +109,22 @@ describe('POST /api/schedule/generate/preview — auth & validação', () => {
     mockGetServerSession.mockResolvedValueOnce(null);
     const { status } = await runPreview();
     expect(status).toBe(401);
+  });
+
+  it('retorna 429 quando rate limit estoura', async () => {
+    mockCheckPreviewRateLimit.mockResolvedValueOnce(false);
+    const { status } = await runPreview();
+    expect(status).toBe(429);
+    expect(prismaMock.professional.findUnique).not.toHaveBeenCalled();
+  });
+
+  it('usa session.user.id como chave de rate limit', async () => {
+    mockGetServerSession.mockResolvedValueOnce({ user: { id: 'u-99', name: 'Admin' } });
+    prismaMock.professional.findUnique.mockResolvedValue(
+      makeProfessional([{ frequency: 'MONTHLY', systemTypes: 'CFTV', visitsPerMonth: 1 }]) as any,
+    );
+    await runPreview();
+    expect(mockCheckPreviewRateLimit).toHaveBeenCalledWith('u-99');
   });
 
   it('retorna 400 quando professionalId está ausente', async () => {
