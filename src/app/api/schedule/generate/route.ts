@@ -1,9 +1,7 @@
 import { ApiUtils, requireAuth } from '@/lib/api-utils';
 import { audit } from '@/lib/audit';
-import { toDateKey } from '@/lib/date-utils';
-import { getHolidaysForYear } from '@/lib/holidays';
 import prisma from '@/lib/prisma';
-import { generateYearSchedule } from '@/lib/schedule-algorithm';
+import { isGenerationError, runScheduleGeneration } from '@/lib/schedule-service';
 import { generateScheduleSchema } from '@/lib/schemas';
 
 export const dynamic = 'force-dynamic';
@@ -30,54 +28,27 @@ export async function POST(request: Request) {
     }
 
     const { professionalId, year } = validation.data;
-
-    const professional = await prisma.professional.findUnique({
-      where: { id: professionalId },
-      include: {
-        contracts: {
-          include: { client: { select: { id: true, name: true } } },
-        },
-      },
-    });
-
-    if (!professional || professional.contracts.length === 0) {
-      return ApiUtils.error('Técnico não encontrado ou sem contratos', null, 404);
+    const generation = await runScheduleGeneration(professionalId, year);
+    if (isGenerationError(generation)) {
+      return ApiUtils.error(generation.message, null, 404);
     }
 
-    // Feriados fixos (calculados) + customizados (do banco)
-    const fixedHolidays = getHolidaysForYear(year);
-    const customHolidays = await prisma.holiday.findMany({
-      where: {
-        fixed: false,
-        date: {
-          gte: new Date(Date.UTC(year, 0, 1)),
-          lt: new Date(Date.UTC(year + 1, 0, 1)),
-        },
-      },
-    });
-    const holidayKeys = new Set([
-      ...fixedHolidays.map((h) => h.date),
-      ...customHolidays.map((h) => toDateKey(new Date(h.date))),
-    ]);
-
-    const generated = generateYearSchedule(professional.contracts, year, holidayKeys);
-    const appointmentsToCreate = generated.map((a) => ({
+    const { appointments, contractCount, contractIds } = generation;
+    const appointmentsToCreate = appointments.map((a) => ({
       ...a,
-      professionalId: professional.id,
+      professionalId: generation.professionalId,
     }));
 
     // ── OPERAÇÃO ATÔMICA ──
     // Aprendemos da pior forma: uma vez a geração falhou no meio e ficou metade
     // da agenda antiga com metade da nova. Transação resolve isso — ou gera tudo
     // ou não muda nada.
-    const contractIds = professional.contracts.map((c) => c.id);
-
     const result = await prisma.$transaction(async (tx) => {
       // Apaga TODA a agenda do profissional (todos os anos) — quando o usuário gera
       // um novo ano, a agenda anterior é substituída conforme confirmação do frontend.
       await tx.appointment.deleteMany({
         where: {
-          OR: [{ professionalId: professional.id }, { contractId: { in: contractIds } }],
+          OR: [{ professionalId: generation.professionalId }, { contractId: { in: contractIds } }],
         },
       });
 
@@ -86,8 +57,6 @@ export async function POST(request: Request) {
       await tx.appointment.createMany({ data: appointmentsToCreate });
       return appointmentsToCreate;
     });
-
-    const contractCount = new Set(result.map((a) => a.contractId)).size;
 
     audit({
       event: 'SCHEDULE_GENERATED',
