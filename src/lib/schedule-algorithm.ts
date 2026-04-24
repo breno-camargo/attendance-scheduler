@@ -1,4 +1,5 @@
 import { getSaturdays, isWeekend, toDateKey } from './date-utils';
+import { parseSystemTypes } from './formatting';
 
 export const FREQUENCY_PERIOD: Record<string, number> = {
   MONTHLY: 1,
@@ -34,6 +35,20 @@ interface SlotEntry<C extends ScheduleContract> {
   observation?: string;
 }
 
+function parseNumberList(raw: string | null): number[] {
+  if (!raw) return [];
+  return raw
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean)
+    .map(Number)
+    .filter((value) => Number.isInteger(value) && value >= 0);
+}
+
+function hasSdaiSystem(systemTypes: string | null): boolean {
+  return parseSystemTypes(systemTypes).includes('SDAI');
+}
+
 /**
  * Decide se o contrato tem visita no mês dado.
  * - MONTHLY: sempre ativo.
@@ -46,7 +61,7 @@ export function checkMonthActivity(
 ): boolean {
   if (contract.frequency === 'MONTHLY') return true;
   if (contract.targetMonths) {
-    const enabledMonths = contract.targetMonths.split(',').map(Number);
+    const enabledMonths = parseNumberList(contract.targetMonths);
     return enabledMonths.includes(month);
   }
   const period = FREQUENCY_PERIOD[contract.frequency ?? 'MONTHLY'] || 1;
@@ -112,7 +127,7 @@ function allocateSdaiDates<C extends ScheduleContract>(
   getWorkDays: (year: number, month: number) => Date[],
 ): Record<number, { contract: C; date: Date }[]> {
   const sdaiContracts = contracts.filter(
-    (c) => c.frequency === 'MONTHLY' && c.systemTypes?.includes('SDAI'),
+    (c) => c.frequency === 'MONTHLY' && hasSdaiSystem(c.systemTypes),
   );
   const sdaiSchedule: Record<number, { contract: C; date: Date }[]> = {};
   const used = new Set<string>();
@@ -213,7 +228,7 @@ function distributeMonthVisits<C extends ScheduleContract>(
         : 1;
     if (remaining <= 0) continue;
 
-    const prefDays = contract.preferredDays?.split(',').map(Number) || [];
+    const prefDays = parseNumberList(contract.preferredDays);
     const usedIndices: number[] = [];
 
     if (hasSdaiThisMonth) {
