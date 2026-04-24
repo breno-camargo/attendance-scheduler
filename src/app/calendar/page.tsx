@@ -31,7 +31,7 @@ export default function CalendarPage() {
   const [clients, setClients] = useState<Client[]>([]);
   const [year, setYear] = useState(new Date().getFullYear());
   const [yearInitialized, setYearInitialized] = useState(false);
-  const [existingYear, setExistingYear] = useState<number | null>(null);
+  const [existingYears, setExistingYears] = useState<number[]>([]);
   const [confirmModalEl, confirmAction] = useConfirm();
   const { showToast } = useToast();
   const [holidays, setHolidays] = useState<{ date: string; name: string }[]>([]);
@@ -99,17 +99,22 @@ export default function CalendarPage() {
     }
   }, [professionalId, year, yearInitialized, fetchHolidays, showToast]);
 
-  // Consulta o backend pra saber se o técnico tem qualquer agenda e em qual ano.
-  // Usado na primeira carga, ao trocar de técnico e sempre que uma operação
-  // destrutiva (clear, generate) pode ter mudado esse estado.
-  const refreshExistingYear = useCallback(
+  // Consulta os anos que o técnico tem agenda. Usado na primeira carga, ao trocar
+  // de técnico e após operações destrutivas (clear/generate) pra manter o aviso
+  // destrutivo do preview honesto.
+  const refreshExistingYears = useCallback(
     async (id: string, opts: { syncYearFromExisting?: boolean } = {}) => {
-      const res = await scheduleApi.getExistingYear(id);
+      const res = await scheduleApi.getExistingYears(id);
       if (!res.ok) return;
-      const ey = res.data?.existingYear ?? null;
-      setExistingYear(ey);
-      if (opts.syncYearFromExisting && ey !== null && !sessionStorage.getItem('calendar-year')) {
-        setYear(ey);
+      const years = res.data?.years ?? [];
+      setExistingYears(years);
+      if (
+        opts.syncYearFromExisting &&
+        years.length > 0 &&
+        !sessionStorage.getItem('calendar-year')
+      ) {
+        // Pula pro ano mais recente pra não abrir num ano vazio.
+        setYear(years[years.length - 1]);
       }
     },
     [],
@@ -117,8 +122,8 @@ export default function CalendarPage() {
 
   useEffect(() => {
     if (!professionalId) return;
-    refreshExistingYear(professionalId, { syncYearFromExisting: true });
-  }, [professionalId, refreshExistingYear]);
+    refreshExistingYears(professionalId, { syncYearFromExisting: true });
+  }, [professionalId, refreshExistingYears]);
 
   // fetchHolidays já é chamado dentro de fetchAppointments via Promise.all
   // clients são carregados no init junto com professionals
@@ -159,7 +164,7 @@ export default function CalendarPage() {
     try {
       const res = await scheduleApi.generate(professionalId, year);
       if (res.ok && res.data) {
-        await Promise.all([fetchAppointments(), refreshExistingYear(professionalId)]);
+        await Promise.all([fetchAppointments(), refreshExistingYears(professionalId)]);
         setPreview(null);
         showToast(
           `${res.data.contractCount} agendas criadas: ${res.data.count} atendimentos agendados`,
@@ -286,7 +291,7 @@ export default function CalendarPage() {
     if (!ok) return;
     setLoading(true);
     await scheduleApi.clearYear(professionalId, year);
-    await Promise.all([fetchAppointments(), refreshExistingYear(professionalId)]);
+    await Promise.all([fetchAppointments(), refreshExistingYears(professionalId)]);
     setLoading(false);
     showToast('Agenda excluída com sucesso');
   };
@@ -329,8 +334,8 @@ export default function CalendarPage() {
         isOpen={!!preview}
         preview={preview}
         year={year}
-        existingYear={existingYear}
-        hasExistingSchedule={existingYear !== null || appointments.length > 0}
+        existingYears={existingYears}
+        willReplaceCurrentYear={existingYears.includes(year) || appointments.length > 0}
         loading={loadingGenerate}
         onConfirm={confirmGenerate}
         onClose={() => {

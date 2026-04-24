@@ -195,11 +195,11 @@ describe('POST /api/schedule/generate — estado inválido', () => {
 // ---------------------------------------------------------------------------
 
 describe('POST /api/schedule/generate — persistência', () => {
-  it('deleta tudo do técnico OU dos contratos antes de criar', async () => {
+  it('deleta só a agenda do ano alvo (técnico OU contratos), preservando outros anos', async () => {
     const prof = makeProfessional([{ frequency: 'ANNUAL', systemTypes: 'CFTV' }]);
     prismaMock.professional.findUnique.mockResolvedValue(prof as any);
 
-    const { deleteManyArgs } = await runGenerate();
+    const { deleteManyArgs } = await runGenerate({ professionalId: VALID_PROF_ID, year: 2027 });
 
     expect(prismaMock.$transaction).toHaveBeenCalled();
     expect(prismaMock.appointment.deleteMany).toHaveBeenCalledTimes(1);
@@ -207,6 +207,11 @@ describe('POST /api/schedule/generate — persistência', () => {
     expect(deleteManyArgs.where.OR).toContainEqual({ professionalId: prof.id });
     expect(deleteManyArgs.where.OR).toContainEqual({
       contractId: { in: prof.contracts.map((c: any) => c.id) },
+    });
+    // Filtro de ano é o que impede o delete de apagar outros anos.
+    expect(deleteManyArgs.where.date).toEqual({
+      gte: new Date(Date.UTC(2027, 0, 1)),
+      lt: new Date(Date.UTC(2028, 0, 1)),
     });
   });
 

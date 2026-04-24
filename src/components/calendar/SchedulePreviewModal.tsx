@@ -8,10 +8,12 @@ interface SchedulePreviewModalProps {
   isOpen: boolean;
   preview: SchedulePreviewData | null;
   year: number;
-  existingYear: number | null;
-  // true se o técnico já tem qualquer atendimento hoje (de qualquer ano ou manual
-  // adicionado agora); guia o aviso destrutivo porque /generate apaga tudo do técnico.
-  hasExistingSchedule: boolean;
+  // Anos em que o técnico já tem agenda (asc). Usado pra informar que os outros
+  // anos não são afetados quando /generate roda só no ano alvo.
+  existingYears: number[];
+  // true se o ano alvo já tem agenda (ou existe manual add carregado agora).
+  // /generate vai apagar e recriar apenas esse ano.
+  willReplaceCurrentYear: boolean;
   loading: boolean;
   onConfirm: () => void;
   onClose: () => void;
@@ -60,21 +62,26 @@ export default function SchedulePreviewModal({
   isOpen,
   preview,
   year,
-  existingYear,
-  hasExistingSchedule,
+  existingYears,
+  willReplaceCurrentYear,
   loading,
   onConfirm,
   onClose,
 }: SchedulePreviewModalProps) {
   if (!isOpen || typeof document === 'undefined' || !preview) return null;
 
-  const destructiveWarning = !hasExistingSchedule
-    ? 'Nenhuma agenda anterior será afetada.'
-    : existingYear !== null
-      ? `Este técnico já possui agenda (último ano detectado: ${existingYear}). Gerar vai substituir toda a agenda existente dele.`
-      : 'Este técnico possui atendimentos cadastrados que serão removidos. Gerar vai substituir todos os atendimentos existentes.';
+  const otherYears = existingYears.filter((y) => y !== year);
 
-  const isDestructive = hasExistingSchedule;
+  const primaryMessage = willReplaceCurrentYear
+    ? `A agenda de ${year} será substituída.`
+    : 'Nenhuma agenda anterior será afetada.';
+
+  const otherYearsNote =
+    otherYears.length > 0
+      ? `Outros anos detectados: ${otherYears.join(', ')}. Eles não serão afetados.`
+      : null;
+
+  const isDestructive = willReplaceCurrentYear;
 
   return createPortal(
     <div
@@ -189,7 +196,10 @@ export default function SchedulePreviewModal({
             lineHeight: 1.4,
           }}
         >
-          {destructiveWarning}
+          <div>{primaryMessage}</div>
+          {otherYearsNote && (
+            <div style={{ marginTop: '0.5rem', color: 'var(--text-muted)' }}>{otherYearsNote}</div>
+          )}
         </div>
 
         <div style={{ display: 'flex', gap: '1rem' }}>

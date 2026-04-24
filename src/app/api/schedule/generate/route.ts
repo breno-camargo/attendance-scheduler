@@ -43,12 +43,17 @@ export async function POST(request: Request) {
     // Aprendemos da pior forma: uma vez a geração falhou no meio e ficou metade
     // da agenda antiga com metade da nova. Transação resolve isso — ou gera tudo
     // ou não muda nada.
+    const yearStart = new Date(Date.UTC(year, 0, 1));
+    const yearEnd = new Date(Date.UTC(year + 1, 0, 1));
+
     const result = await prisma.$transaction(async (tx) => {
-      // Apaga TODA a agenda do profissional (todos os anos) — quando o usuário gera
-      // um novo ano, a agenda anterior é substituída conforme confirmação do frontend.
+      // Apaga a agenda do ano alvo: appointments do profissional OU de contratos
+      // atuais dele (cobre reassociação recente), mas só dentro do intervalo do
+      // ano — outros anos ficam preservados.
       await tx.appointment.deleteMany({
         where: {
           OR: [{ professionalId: generation.professionalId }, { contractId: { in: contractIds } }],
+          date: { gte: yearStart, lt: yearEnd },
         },
       });
 
@@ -86,15 +91,30 @@ export async function GET(request: Request) {
     const yearParam = searchParams.get('year');
     if (!professionalId) return ApiUtils.success([]);
 
-    // Sem ?year → retorna apenas o ano distinto que tem agendamentos (para detecção no frontend)
+    // Sem ?year → retorna os anos distintos que têm agendamentos. Precisa espelhar
+    // o escopo do deleteMany do POST (professionalId OR contractId in [...]) —
+    // senão o preview mente pro usuário no caso de contrato reassociado: prof B
+    // herda um contrato que tinha agenda com prof A, e o generate vai apagar
+    // essa agenda junto, mesmo que prof B "não tenha" appointments próprios.
     if (!yearParam) {
-      const first = await prisma.appointment.findFirst({
-        where: { professionalId },
-        orderBy: { date: 'asc' },
+      const prof = await prisma.professional.findUnique({
+        where: { id: professionalId },
+        include: { contracts: { select: { id: true } } },
+      });
+      const contractIds = prof?.contracts.map((c) => c.id) ?? [];
+      const whereOr: { professionalId?: string; contractId?: { in: string[] } }[] = [
+        { professionalId },
+      ];
+      if (contractIds.length > 0) whereOr.push({ contractId: { in: contractIds } });
+
+      const rows = await prisma.appointment.findMany({
+        where: { OR: whereOr },
         select: { date: true },
       });
-      const existingYear = first ? new Date(first.date).getUTCFullYear() : null;
-      return ApiUtils.success({ existingYear });
+      const years = Array.from(new Set(rows.map((r) => new Date(r.date).getUTCFullYear()))).sort(
+        (a, b) => a - b,
+      );
+      return ApiUtils.success({ years });
     }
 
     const year = yearParam ? parseInt(yearParam) : new Date().getFullYear();
