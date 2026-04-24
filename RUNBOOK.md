@@ -158,6 +158,77 @@ psql "$DIRECT_URL"
 
 ---
 
+## Fluxo de geração de agenda
+
+Referência operacional do que acontece quando o usuário aperta "Gerar Agenda" no calendário. Útil quando alguém pergunta "por que gerou X e antes era Y?", "o que é esse 429?" ou "por que apareceu esse alerta?".
+
+### Passo a passo
+
+1. Usuário seleciona técnico + ano e clica em **Gerar/Re-gerar**.
+2. Frontend chama `POST /api/schedule/generate/preview`.
+3. Preview roda o algoritmo em memória (`runScheduleGeneration`) — **nada é gravado**.
+4. Modal abre mostrando:
+   - Total novo a criar, contratos afetados, visitas vs testes SDAI.
+   - Distribuição por mês.
+   - Seção **Alertas** se houver warnings.
+   - Linha **"Substituição de agenda: X → Y (+Δ)"** quando há agenda existente no ano.
+5. Usuário confirma. Frontend chama `POST /api/schedule/generate`.
+6. `/generate` apaga e recria a agenda dentro de uma transação (atômico).
+7. `audit` registra: `"N contratos, substituiu X, criou Y"`.
+
+### Escopo do delete
+
+O `deleteMany` do `/generate` **só apaga o ano alvo**:
+
+```
+WHERE
+  (professionalId = X OR contractId IN [contratos do X])
+  AND date >= jan-01 do ano
+  AND date <  jan-01 do ano+1
+```
+
+- **Outros anos do mesmo técnico ficam intactos** (mudança introduzida no PR #6).
+- O OR com `contractId` cobre contratos que foram reassociados entre técnicos: se o contrato C estava com o técnico A e agora está com o técnico B, gerar o ano para B apaga também os appointments antigos de A para C naquele ano — preservando invariante "não tem dois técnicos agendando o mesmo contrato".
+
+### Interpretação dos números do modal
+
+| Campo | O que significa |
+|---|---|
+| `existingCount` | Quantos appointments **já existem** no ano alvo, no mesmo escopo do delete. Se `> 0`, a geração vai substituí-los. |
+| `count` | Quantos appointments serão **criados**. |
+| Delta `+Δ` | Diferença líquida (`count - existingCount`). Pode ser positivo, negativo ou zero. |
+| "Outros anos detectados: 2026, 2028" | O técnico tem agenda nesses anos, mas eles **não serão afetados**. |
+
+### Warnings
+
+Todos vêm no array `warnings` do `/preview`. Não bloqueiam geração.
+
+**Tier A — configuração dos contratos** (detectados antes de rodar o algoritmo):
+
+- `NON_MONTHLY_SDAI`: contrato não-mensal com SDAI nos `systemTypes`. Só MONTHLY dispara agendamento automático de SDAI — em outras frequências, tem que inserir manualmente.
+- `NO_MONTHLY_VISITS`: MONTHLY com `visitsPerMonth <= 0`. Contrato vai gerar zero appointments — provavelmente erro de configuração.
+- `INVALID_TARGET_MONTHS`: contrato não-mensal com `targetMonths` preenchido sem nenhum número válido em 0..11. **Esse contrato não vai agendar em nenhum mês** — conferir configuração.
+
+**Tier B — execução do algoritmo** (descobertos durante a geração):
+
+- `SDAI_FELL_ON_WEEKDAY`: teste SDAI caiu em dia útil porque todos os sábados do mês estão bloqueados por feriado. Payload inclui `date`.
+- `UNPLACED_VISITS`: algoritmo tentou alocar N visitas no mês mas só encaixou M. Payload inclui `month` e `missingCount`. Causas comuns: muito feriado no mês, `visitsPerMonth` alto demais pra quantidade de dias úteis.
+
+### Rate limits
+
+Ambos endpoints têm rate limit por `session.user.id` (fallback pra email, fallback pra IP).
+
+| Endpoint | Prod | Dev | Janela |
+|---|---|---|---|
+| `/api/schedule/generate` | 10 | 50 | 1 hora |
+| `/api/schedule/generate/preview` | 30 | 200 | 1 minuto |
+
+Se bater, response é **429** com mensagem amigável. Basta esperar a janela.
+
+Em prod, limites são armazenados no Upstash Redis (sliding window). Sem Redis configurado, cai num fallback in-memory (aceitável em dev, não em prod com múltiplas instâncias).
+
+---
+
 ## 📞 Contatos críticos
 
 - **Dev principal:** Breno Camargo — email: breno.hsc75@gmail.com / tel: (11)99012-7316

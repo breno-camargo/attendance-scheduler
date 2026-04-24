@@ -161,31 +161,42 @@ export default function SchedulePreviewModal({
                 gap: '0.4rem',
               }}
             >
-              {preview.warnings.slice(0, 5).map((w, i) => (
-                <li
-                  key={`${w.contractId}-${w.code}-${i}`}
-                  style={{
-                    padding: '0.6rem 0.8rem',
-                    borderRadius: '6px',
-                    background: 'rgba(234, 179, 8, 0.08)',
-                    border: '1px solid rgba(234, 179, 8, 0.3)',
-                    fontSize: '0.85rem',
-                    lineHeight: 1.4,
-                    display: 'flex',
-                    gap: '0.5rem',
-                  }}
-                >
-                  <span aria-hidden style={{ opacity: 0.9 }}>
-                    ⚠️
-                  </span>
-                  <span>
-                    {w.clientName && (
-                      <strong style={{ marginRight: '0.35rem' }}>{w.clientName}:</strong>
-                    )}
-                    {w.message}
-                  </span>
-                </li>
-              ))}
+              {preview.warnings.slice(0, 5).map((w, i) => {
+                // Tooltip leve pra debug — inclui o code e campos opcionais
+                // quando presentes (Tier B). Nada de UI fancy.
+                const debugParts: string[] = [w.code];
+                if (w.date) debugParts.push(`date: ${w.date}`);
+                if (typeof w.month === 'number') debugParts.push(`month: ${w.month}`);
+                if (typeof w.missingCount === 'number') {
+                  debugParts.push(`missingCount: ${w.missingCount}`);
+                }
+                return (
+                  <li
+                    key={`${w.contractId}-${w.code}-${i}`}
+                    title={debugParts.join(' | ')}
+                    style={{
+                      padding: '0.6rem 0.8rem',
+                      borderRadius: '6px',
+                      background: 'rgba(234, 179, 8, 0.08)',
+                      border: '1px solid rgba(234, 179, 8, 0.3)',
+                      fontSize: '0.85rem',
+                      lineHeight: 1.4,
+                      display: 'flex',
+                      gap: '0.5rem',
+                    }}
+                  >
+                    <span aria-hidden style={{ opacity: 0.9 }}>
+                      ⚠️
+                    </span>
+                    <span>
+                      {w.clientName && (
+                        <strong style={{ marginRight: '0.35rem' }}>{w.clientName}:</strong>
+                      )}
+                      {w.message}
+                    </span>
+                  </li>
+                );
+              })}
               {preview.warnings.length > 5 && (
                 <li
                   style={{
