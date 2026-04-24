@@ -68,9 +68,11 @@ export default function SchedulePreviewModal({
 
   const otherYears = existingYears.filter((y) => y !== year);
   const isDestructive = preview.existingCount > 0;
+  const delta = preview.count - preview.existingCount;
+  const deltaLabel = delta > 0 ? `+${delta}` : String(delta);
 
   const primaryMessage = isDestructive
-    ? `Serão substituídos ${preview.existingCount} atendimentos de ${year}. A nova geração criará ${preview.count}.`
+    ? `Substituição de agenda: ${preview.existingCount} → ${preview.count} (${deltaLabel})`
     : 'Nenhum atendimento existente será substituído.';
 
   const otherYearsNote =
