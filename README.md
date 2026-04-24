@@ -14,7 +14,7 @@
   <img src="https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white" alt="TypeScript" />
   <img src="https://img.shields.io/badge/PostgreSQL-Supabase-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL" />
   <img src="https://img.shields.io/badge/Prisma-6-2D3748?logo=prisma" alt="Prisma" />
-  <img src="https://img.shields.io/badge/tests-350%20passing-success" alt="Tests" />
+  <img src="https://img.shields.io/badge/tests-Vitest%20%2B%20Playwright-success" alt="Tests" />
   <img src="https://img.shields.io/badge/license-private-lightgrey" alt="License" />
 </p>
 
@@ -55,9 +55,9 @@ Antes a agenda era feita em planilha. O problema: fazer 45 agendas na mão por v
 
 - **Algoritmo de geração de agenda** — distribui visitas uniformemente no mês respeitando gap mínimo dinâmico, dias preferenciais por contrato, feriados móveis (Páscoa, Carnaval, Corpus Christi) e fins de semana. Geração transacional: ~400 appointments em < 1s.
 - **Testes SDAI obrigatoriamente aos sábados** — exigência da norma, enforced no algoritmo com fallback pra dia útil se o sábado cair em feriado. Rotação em 3 grupos pra evitar clustering.
-- **Segurança em camadas** — CSRF via origin check no proxy, rate limiting (Redis Upstash em prod, in-memory em dev), audit log de eventos sensíveis, PII masking (telefone/email) em listagens, security headers completos (CSP, HSTS, X-Frame-Options).
+- **Segurança em camadas** — CSRF via origin check no proxy, rate limiting (Redis Upstash em prod, in-memory em dev), auditoria persistente de eventos sensíveis, PII masking (telefone/email) em listagens, security headers completos (CSP, HSTS, X-Frame-Options).
 - **TypeScript strict sem escape hatches** — zero `any`, Zod v4 validando todo input de API, schemas centralizados em `src/lib/schemas.ts`.
-- **383 testes** — unit (Vitest), API com Prisma mockado (vitest-mock-extended) e E2E (Playwright). Cobertura do algoritmo de schedule + security + rate limiting.
+- **Suíte Vitest + Playwright** — unit, API com Prisma mockado (vitest-mock-extended) e E2E com fixture determinística. Cobertura do algoritmo de schedule, security, rate limiting e fluxos críticos do calendário.
 
 ## Arquitetura
 
@@ -91,6 +91,7 @@ graph TB
 - **Gestão de contratos** — cada prédio tem seu contrato com frequência (mensal, bimestral, etc.), sistemas mantidos e técnico responsável.
 - **Lista de contatos** — manutenção e escalonamento por contrato, com sincronização automática da equipe interna.
 - **Relatório PDF** — cronograma imprimível com calendário, tabela de visitas e contatos. O pessoal do prédio precisa disso em papel.
+- **Auditoria operacional** — histórico persistente de geração de agenda, exclusões críticas e edição de visitas, com ator, alvo e metadata suficiente pra investigar mudanças.
 
 ## Stack
 
@@ -168,16 +169,16 @@ tests/             # unit, api, e2e
 ## O que eu faria diferente
 
 - O algoritmo de geração de agenda tem ~350 linhas e mistura concerns. Achei que precisava refactor — depois de reler, está decomposto em 5 funções puras e a complexidade real é linear nos inputs. Documentei a análise honesta no [ROADMAP](./ROADMAP.md). Aprendizado: revisar antes de assumir que código antigo precisa ser reescrito.
-- Testes E2E são frágeis — dependem de dados seed e quebram se a ordem muda. Precisam de fixtures isoladas.
+- Testes E2E já têm fixture determinística para o calendário; o próximo passo é expandir o mesmo padrão para outras specs e reduzir skips restantes.
 - Usar `legacy-peer-deps=true` no `.npmrc` é um band-aid pro conflito `next-auth@4` ↔ `nodemailer@8`. Some quando migrar pra Auth.js v5 (em beta no momento).
 
 ## Roadmap
 
-Plano de evolução e tech debt em [ROADMAP.md](./ROADMAP.md). Sobrou pouco — só itens bloqueados em externos (Auth.js v5 GA, exceljs 5).
+Plano de evolução e tech debt em [ROADMAP.md](./ROADMAP.md). Próximos itens práticos: observabilidade, auditoria de edições de cliente/técnico, tela administrativa de audit e upgrades externos quando estabilizarem (Auth.js v5, exceljs 5).
 
 ## Runbook
 
-Procedimentos de emergência (admin trancado, restore de backup, rotação de secret, build travado) em [RUNBOOK.md](./RUNBOOK.md).
+Procedimentos de emergência e operação (admin trancado, restore de backup, rotação de secret, build travado, auditoria e geração de agenda) em [RUNBOOK.md](./RUNBOOK.md).
 
 ## Licença
 

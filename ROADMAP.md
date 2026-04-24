@@ -2,11 +2,27 @@
 
 Lista das mudanças identificadas no checkup técnico de 2026-04-22. Ordem por prioridade real, não por esforço.
 
-Base sólida: TS strict sem `any`, 323 testes passando, security headers completos, CSRF + audit log. Nada aqui é urgente no sentido "tá quebrando" — é dívida técnica real que vale planejar.
+Base sólida: TS strict sem `any`, suíte unit/API/E2E em evolução, security headers completos, CSRF, preview seguro de geração e audit log persistente para operações críticas. Nada aqui é urgente no sentido "tá quebrando" — é dívida técnica real que vale planejar.
 
 ---
 
 ## ✅ Concluído
+
+**24-abr-2026**
+
+- **Preview de geração de agenda** — `/api/schedule/generate/preview` permite revisar impacto antes da operação destrutiva. UI passou a usar modal de confirmação com resumo, contagens, warnings e confirmação única.
+- **Geração anual com escopo correto** — `/generate` agora substitui apenas o ano alvo, preservando outros anos. O aviso no preview usa `existingCount` e anos detectados para comunicar impacto real.
+- **Warnings de agenda** — Tier A (configuração) e Tier B (resultado do algoritmo) expostos no preview: `NON_MONTHLY_SDAI`, `NO_MONTHLY_VISITS`, `INVALID_TARGET_MONTHS`, `SDAI_FELL_ON_WEEKDAY`, `UNPLACED_VISITS`.
+- **Rate limit de geração/preview** — limites separados para operação destrutiva e preview, reduzindo abuso sem prejudicar uso normal.
+- **RUNBOOK atualizado para geração** — documenta fluxo preview → confirmação → generate, escopo do delete, warnings e rate limits.
+- **Seed E2E determinístico** — `prisma/seed-e2e.ts` + `globalSetup` do Playwright criam fixtures prefixadas `E2E -`, reduzindo skips por banco vazio.
+- **E2E do calendário estabilizado** — `calendar.spec.ts` seleciona explicitamente o técnico fixture e cobre preview → confirmar geração com dados controlados.
+- **Cache leve no `api-client`** — TTL + invalidação por tag para melhorar back-nav/prefetch sem introduzir React Query/SWR.
+- **Transição light/dark otimizada** — overlay leve evita repaints pesados em páginas com `backdrop-filter`, mantendo troca de tema suave.
+- **Modais com rodapé fixo** — formulários de clientes, técnicos, staff, contatos e preview seguem padrão header/body scrollável/footer fixo.
+- **`ScheduleGenerationLog` persistente** — registra quem gerou agenda, técnico, ano, contagens e warnings. `RUNBOOK` documenta query de consulta.
+- **`AuditLog` genérico para destrutivos** — registra `CLIENT_DELETED`, `PROFESSIONAL_DELETED`, `APPOINTMENT_DELETED` e `SCHEDULE_CLEARED`, com `actorLabel` preservado.
+- **Audit de edição de visita** — `APPOINTMENT_UPDATED` registra `before/after` para data, tipo e observação de agendamento.
 
 **23-abr-2026 (quarta parte)**
 
@@ -129,23 +145,24 @@ Após o upgrade Next 16 + nodemailer 8, restam **3 vulns moderate** todas encade
 
 ---
 
-## 🗂️ Backlog pós-preview
+## 🗂️ Backlog atual
 
-Itens surgidos no ciclo de PRs #4-14 (preview backend + UI + rate-limit + warnings + docs). Capturados pra não evaporar; sem prazo.
+Itens capturados durante os ciclos de preview, auditoria e polimento de UX. Sem prazo rígido; ordem prática está na seção "Sequência recomendada".
 
 ### E2E / QA
 
 - Instalar/validar browsers do Playwright no ambiente local/CI.
-- Criar/estabilizar seed específica para `calendar.spec.ts`.
-- Cobrir fluxo completo: abrir calendário → gerar preview → confirmar geração → agenda atualizada.
+- Evoluir fixtures E2E para mais specs além do calendário quando começarem a falhar por estado do banco.
 - Cobrir caso de warnings no preview — validar que a seção "Alertas" aparece quando a fixture tem configuração problemática.
+- Avaliar E2E leve para audit log: executar ação destrutiva/controlada e confirmar que a UI continua estável. A consulta do log em si pode ficar no RUNBOOK.
 
-### Auditoria de geração
+### Auditoria / rastreabilidade
 
-- Criar tabela `ScheduleGenerationLog`.
-- Registrar `userId`, `professionalId`, `year`, `existingCount`, `createdCount`, `warnings`, `createdAt`.
-- Persistir log após geração bem-sucedida (no final da transação do `/generate`).
-- Consulta administrativa simples (endpoint ou query Prisma documentada no RUNBOOK).
+- **`CLIENT_UPDATED`**: auditar edição de cliente + contrato principal com `before/after` no `metadataJson` (técnico responsável, frequência, visitas/mês, sistemas, meses alvo, dias preferenciais).
+- **`PROFESSIONAL_UPDATED`**: auditar edição de técnico (nome, email, telefone, supervisor). Menor risco que cliente, mas fecha rastreabilidade de cadastro.
+- **Contatos de contrato**: avaliar audit para alterações em `contactsJson` quando houver dor real ("quem mudou escalonamento/telefone/email?").
+- **Tela interna de logs**: criar `/admin/audit` simples com filtros por data, ação, usuário e entidade. Hoje SQL Editor resolve, mas uma UI reduz atrito operacional.
+- **Política de retenção**: decidir se `AuditLog`/`ScheduleGenerationLog` ficam indefinidamente ou se haverá retenção/arquivamento futuro.
 
 ### Preview / algoritmo
 
@@ -157,6 +174,8 @@ Itens surgidos no ciclo de PRs #4-14 (preview backend + UI + rate-limit + warnin
 
 - Confirmar limites de rate-limit em produção após alguns dias de uso real — ajustar se bloquearem uso legítimo.
 - Documentar procedimento pra liberar rate-limit de geração/preview manualmente (reset do Redis), seguindo padrão do `resetAccountRateLimit`.
+- Formalizar checklist de mudanças de banco: confirmar projeto Supabase, rodar queries de duplicata quando houver novas constraints, registrar `db push` aplicado e query de validação pós-deploy.
+- Adicionar monitoramento leve: UptimeRobot para disponibilidade e Sentry para erros de frontend/backend.
 
 ### UI / componentes compartilhados
 
@@ -176,10 +195,12 @@ Quando sair, remove o `@ts-expect-error` em `src/app/api/import/route.ts:97`. Ve
 
 **Próximas sessões dedicadas (em ordem de payoff):**
 
-1. **UptimeRobot + Sentry** (item 9) — ~30min total. Maior leverage, evita downtime invisível. Faz primeiro.
-2. **Testes unitários por regra do algoritmo** (item 10) — ~1h. Protege a parte mais crítica do produto contra regressão silenciosa.
-3. **Fixtures isoladas pros E2E** (item 11) — ~meio dia. Devolve confiança na suite E2E.
-4. **NextAuth → Auth.js v5** (item 2) — esperar GA (beta.31 em 23-abr-26). Quando sair, resolve as 3 moderates restantes e permite remover `legacy-peer-deps=true`.
+1. **UptimeRobot + Sentry** (item 9) — ~30min total. Maior leverage agora: evita downtime/erro silencioso depois que auditoria e preview já estão em produção.
+2. **`CLIENT_UPDATED` no AuditLog** — PR pequeno/médio, com `before/after` de cliente + contrato principal. Fecha a pergunta "quem mudou o contrato/técnico/frequência?".
+3. **`PROFESSIONAL_UPDATED` no AuditLog** — PR pequeno, fecha rastreabilidade de cadastro de técnico.
+4. **Tela simples `/admin/audit`** — só depois que os eventos principais estiverem cobertos; por enquanto o SQL Editor resolve.
+5. **Testes unitários por regra do algoritmo** (item 10) — ~1h. Protege a parte mais crítica do produto contra regressão silenciosa.
+6. **NextAuth → Auth.js v5** (item 2) — esperar GA/estabilidade. Quando fizer, release isolado.
 
 Item 8 (`exceljs` 5) depende de upstream — sem prazo.
 
