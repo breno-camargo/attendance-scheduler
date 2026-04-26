@@ -1,8 +1,8 @@
 import {
   ApiUtils,
   rateLimitKeyFromSession,
-  requireAuth,
-  requireAuthSession,
+  requireAuthWithScope,
+  requireProfessionalInScope,
 } from '@/lib/api-utils';
 import { audit } from '@/lib/audit';
 import { writeAuditLog } from '@/lib/audit-log';
@@ -25,10 +25,11 @@ export const dynamic = 'force-dynamic';
  * Gera a agenda anual completa para um técnico (Operação Atômica).
  */
 export async function POST(request: Request) {
-  const auth = await requireAuthSession();
-  if (auth.error) return auth.error;
+  const result = await requireAuthWithScope();
+  if ('error' in result) return result.error;
+  const { auth, session } = result;
 
-  const rateKey = rateLimitKeyFromSession(auth.session, request);
+  const rateKey = rateLimitKeyFromSession(session, request);
   const allowed = await checkGenerateRateLimit(rateKey);
   if (!allowed) {
     return ApiUtils.error(
@@ -46,6 +47,9 @@ export async function POST(request: Request) {
     }
 
     const { professionalId, year } = validation.data;
+    const scopeError = await requireProfessionalInScope(auth, professionalId);
+    if (scopeError) return scopeError;
+
     const generation = await runScheduleGeneration(professionalId, year);
     if (isGenerationError(generation)) {
       return ApiUtils.error(generation.message, null, 404);
@@ -95,7 +99,7 @@ export async function POST(request: Request) {
         ...computeScheduleWarnings(generation.contracts),
         ...generation.algorithmWarnings,
       ];
-      const userId = (auth.session.user as { id?: string } | undefined)?.id ?? null;
+      const userId = (session.user as { id?: string } | undefined)?.id ?? null;
       await prisma.scheduleGenerationLog.create({
         data: {
           userId,
@@ -125,14 +129,17 @@ export async function POST(request: Request) {
 }
 
 export async function GET(request: Request) {
-  const authError = await requireAuth();
-  if (authError) return authError;
+  const result = await requireAuthWithScope();
+  if ('error' in result) return result.error;
+  const { auth } = result;
 
   try {
     const { searchParams } = new URL(request.url);
     const professionalId = searchParams.get('professionalId');
     const yearParam = searchParams.get('year');
     if (!professionalId) return ApiUtils.success([]);
+    const scopeError = await requireProfessionalInScope(auth, professionalId);
+    if (scopeError) return scopeError;
 
     // Sem ?year → retorna os anos distintos que têm agendamentos. Precisa espelhar
     // o escopo do deleteMany do POST (professionalId OR contractId in [...]) —
@@ -180,8 +187,9 @@ export async function GET(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  const auth = await requireAuthSession();
-  if (auth.error) return auth.error;
+  const result = await requireAuthWithScope();
+  if ('error' in result) return result.error;
+  const { auth, session } = result;
 
   try {
     const { searchParams } = new URL(request.url);
@@ -192,6 +200,9 @@ export async function DELETE(request: Request) {
     if (isNaN(year) || year < 2020 || year > 2100) {
       return ApiUtils.error('Ano inválido', null, 400);
     }
+
+    const scopeError = await requireProfessionalInScope(auth, professionalId);
+    if (scopeError) return scopeError;
 
     const professional = await prisma.professional.findUnique({
       where: { id: professionalId },
@@ -209,7 +220,7 @@ export async function DELETE(request: Request) {
     });
 
     await writeAuditLog({
-      session: auth.session,
+      session,
       action: 'SCHEDULE_CLEARED',
       entityType: 'SCHEDULE',
       entityId: professional.id,

@@ -3,8 +3,8 @@ import {
   getClientIp,
   getScopedProfessionalIds,
   parsePagination,
-  requireAuth,
   requireAuthWithScope,
+  requireProfessionalInScope,
 } from '@/lib/api-utils';
 import prisma from '@/lib/prisma';
 import { checkApiRateLimit } from '@/lib/rate-limit';
@@ -55,8 +55,9 @@ export async function GET(request: Request) {
  * Cria um novo cliente e seu contrato inicial em uma única operação.
  */
 export async function POST(request: Request) {
-  const authError = await requireAuth();
-  if (authError) return authError;
+  const result = await requireAuthWithScope();
+  if ('error' in result) return result.error;
+  const { auth } = result;
 
   try {
     const body = await request.json();
@@ -69,6 +70,8 @@ export async function POST(request: Request) {
     }
 
     const data = validation.data;
+    const scopeError = await requireProfessionalInScope(auth, data.professionalId);
+    if (scopeError) return scopeError;
 
     const client = await prisma.client.create({
       data: {

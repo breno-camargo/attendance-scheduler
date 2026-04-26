@@ -66,8 +66,8 @@ export async function requireAuthWithScope(): Promise<
     return { auth: { scope: 'filtered', internalContactId: contactId }, session };
   }
 
-  // Qualquer outro papel = admin por segurança (evita bloquear acidentalmente)
-  return { auth: { scope: 'all', internalContactId: null }, session };
+  // Cargo vinculado mas nao reconhecido: negar por padrao.
+  return { error: NextResponse.json({ error: 'Sem permissao' }, { status: 403 }) };
 }
 
 /** Retorna IDs dos profissionais no escopo, ou undefined pra "todos". */
@@ -80,6 +80,64 @@ export async function getScopedProfessionalIds(auth: AuthScope): Promise<string[
     select: { id: true },
   });
   return profs.map((p) => p.id);
+}
+
+export async function requireProfessionalInScope(
+  auth: AuthScope,
+  professionalId: string | null | undefined,
+): Promise<NextResponse | null> {
+  if (auth.scope === 'all') return null;
+  if (!professionalId) {
+    return NextResponse.json({ error: 'Sem permissao' }, { status: 403 });
+  }
+
+  const profIds = await getScopedProfessionalIds(auth);
+  if (!profIds?.includes(professionalId)) {
+    return NextResponse.json({ error: 'Sem permissao' }, { status: 403 });
+  }
+  return null;
+}
+
+export async function requireContractInScope(
+  auth: AuthScope,
+  contractId: string,
+): Promise<NextResponse | null> {
+  if (auth.scope === 'all') return null;
+
+  const { default: prisma } = await import('./prisma');
+  const contract = await prisma.contract.findUnique({
+    where: { id: contractId },
+    select: { professionalId: true },
+  });
+  if (!contract) {
+    return NextResponse.json({ error: 'Contrato nao encontrado' }, { status: 404 });
+  }
+  return requireProfessionalInScope(auth, contract.professionalId);
+}
+
+export async function requireClientInScope(
+  auth: AuthScope,
+  clientId: string,
+): Promise<NextResponse | null> {
+  if (auth.scope === 'all') return null;
+
+  const profIds = await getScopedProfessionalIds(auth);
+  if (!profIds || profIds.length === 0) {
+    return NextResponse.json({ error: 'Sem permissao' }, { status: 403 });
+  }
+
+  const { default: prisma } = await import('./prisma');
+  const client = await prisma.client.findFirst({
+    where: {
+      id: clientId,
+      contracts: { some: { professionalId: { in: profIds } } },
+    },
+    select: { id: true },
+  });
+  if (!client) {
+    return NextResponse.json({ error: 'Sem permissao' }, { status: 403 });
+  }
+  return null;
 }
 
 // limit=200 porque o frontend carrega todos os clientes de uma vez pra montar

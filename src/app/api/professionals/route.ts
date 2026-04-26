@@ -1,10 +1,4 @@
-import {
-  ApiUtils,
-  getClientIp,
-  parsePagination,
-  requireAuth,
-  requireAuthWithScope,
-} from '@/lib/api-utils';
+import { ApiUtils, getClientIp, parsePagination, requireAuthWithScope } from '@/lib/api-utils';
 import prisma from '@/lib/prisma';
 import { checkApiRateLimit } from '@/lib/rate-limit';
 import { professionalSchema } from '@/lib/schemas';
@@ -46,8 +40,11 @@ export async function GET(request: Request) {
  * Cria um novo técnico com validação de dados (Ponto 3 da Auditoria).
  */
 export async function POST(request: Request) {
-  const authError = await requireAuth();
-  if (authError) return authError;
+  const result = await requireAuthWithScope();
+  if ('error' in result) return result.error;
+  if (result.auth.scope === 'filtered') {
+    return ApiUtils.error('Apenas o coordenador pode cadastrar tÃ©cnicos', null, 403);
+  }
 
   try {
     const body = await request.json();

@@ -61,6 +61,13 @@ export async function PUT(request: Request, props: { params: Promise<{ id: strin
     }
 
     const data = validation.data;
+    if (
+      auth.scope === 'filtered' &&
+      body.supervisorId !== undefined &&
+      body.supervisorId !== auth.internalContactId
+    ) {
+      return ApiUtils.error('VocÃª nÃ£o tem permissÃ£o para reatribuir este tÃ©cnico', null, 403);
+    }
 
     const email = data.email.includes('@')
       ? data.email

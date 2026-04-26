@@ -1,12 +1,13 @@
-import { ApiUtils, requireAuth } from '@/lib/api-utils';
+import { ApiUtils, requireAuthWithScope, requireContractInScope } from '@/lib/api-utils';
 import prisma from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
-  const authError = await requireAuth();
-  if (authError) return authError;
+  const result = await requireAuthWithScope();
+  if ('error' in result) return result.error;
+  const { auth } = result;
 
   const { id } = params;
 
@@ -14,6 +15,9 @@ export async function GET(request: Request, props: { params: Promise<{ id: strin
     if (!id || !/^c[a-z0-9]{24}$/.test(id)) {
       return ApiUtils.error('ID inválido', null, 400);
     }
+    const scopeError = await requireContractInScope(auth, id);
+    if (scopeError) return scopeError;
+
     const contract = await prisma.contract.findUnique({
       where: { id },
       include: {

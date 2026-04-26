@@ -1,4 +1,4 @@
-import { ApiUtils, requireAuth } from '@/lib/api-utils';
+import { ApiUtils, requireAuthWithScope, requireProfessionalInScope } from '@/lib/api-utils';
 import { getHolidaysForYear } from '@/lib/holidays';
 import prisma from '@/lib/prisma';
 import { appointmentSchema } from '@/lib/schemas';
@@ -8,8 +8,9 @@ import { appointmentSchema } from '@/lib/schemas';
  * Cria um agendamento manual (visita técnica ou teste SDAI).
  */
 export async function POST(request: Request) {
-  const authError = await requireAuth();
-  if (authError) return authError;
+  const result = await requireAuthWithScope();
+  if ('error' in result) return result.error;
+  const { auth } = result;
 
   try {
     const body = await request.json();
@@ -20,6 +21,8 @@ export async function POST(request: Request) {
     }
 
     const data = validation.data;
+    const scopeError = await requireProfessionalInScope(auth, data.professionalId);
+    if (scopeError) return scopeError;
 
     // Bloqueia agendamento em feriado
     const appointmentDate = new Date(data.date);
