@@ -64,6 +64,15 @@ const validScheduleBody = {
   observation: 'Check elevators',
 };
 
+const filteredUser = {
+  user: {
+    id: 'supervisor-1',
+    name: 'Supervisor',
+    role: 'Supervisor',
+    internalContactId: 'contact-1',
+  },
+};
+
 // ---------------------------------------------------------------------------
 // POST /api/schedule
 // ---------------------------------------------------------------------------
@@ -96,6 +105,22 @@ describe('POST /api/schedule', () => {
     expect(response.status).toBe(201);
     const body = await response.json();
     expect(body.type).toBe('VISITA_TECNICA');
+  });
+
+  it('returns 403 when filtered user schedules outside their scope', async () => {
+    mockGetServerSession.mockResolvedValueOnce(filteredUser);
+    prismaMock.professional.findMany.mockResolvedValue([{ id: 'other-professional' }] as any);
+
+    const req = new Request('http://localhost/api/schedule', {
+      method: 'POST',
+      body: JSON.stringify(validScheduleBody),
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    const response = await POST(req);
+
+    expect(response.status).toBe(403);
+    expect(prismaMock.appointment.create).not.toHaveBeenCalled();
   });
 
   it('defaults type to VISITA_TECNICA when not provided', async () => {
@@ -307,6 +332,21 @@ describe('DELETE /api/schedule/[id]', () => {
     });
   });
 
+  it('returns 403 when filtered user deletes outside their scope', async () => {
+    mockGetServerSession.mockResolvedValueOnce(filteredUser);
+    prismaMock.appointment.findUnique.mockResolvedValue(mockAppointment as any);
+    prismaMock.professional.findMany.mockResolvedValue([{ id: 'other-professional' }] as any);
+
+    const req = new Request(`http://localhost/api/schedule/${validId}`, {
+      method: 'DELETE',
+    });
+
+    const response = await DELETE(req, { params: Promise.resolve({ id: validId }) });
+
+    expect(response.status).toBe(403);
+    expect(prismaMock.appointment.delete).not.toHaveBeenCalled();
+  });
+
   it('returns 404 when appointment does not exist', async () => {
     prismaMock.appointment.findUnique.mockResolvedValue(null);
 
@@ -459,6 +499,23 @@ describe('PATCH /api/schedule/[id]', () => {
     expect(updateCall.data).toHaveProperty('observation', 'Only this');
     expect(updateCall.data).not.toHaveProperty('type');
     expect(updateCall.data).not.toHaveProperty('date');
+  });
+
+  it('returns 403 when filtered user patches outside their scope', async () => {
+    mockGetServerSession.mockResolvedValueOnce(filteredUser);
+    prismaMock.appointment.findUnique.mockResolvedValue(mockAppointment as any);
+    prismaMock.professional.findMany.mockResolvedValue([{ id: 'other-professional' }] as any);
+
+    const req = new Request(`http://localhost/api/schedule/${validId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ observation: 'Blocked' }),
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    const response = await PATCH(req, { params: Promise.resolve({ id: validId }) });
+
+    expect(response.status).toBe(403);
+    expect(prismaMock.appointment.update).not.toHaveBeenCalled();
   });
 
   it('returns 404 when appointment does not exist', async () => {

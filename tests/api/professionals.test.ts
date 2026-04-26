@@ -24,7 +24,10 @@ vi.mock('next-auth', () => ({
 }));
 vi.mock('@/lib/auth', () => ({ authOptions: {} }));
 
-import { DELETE as DELETE_PROFESSIONAL } from '@/app/api/professionals/[id]/route';
+import {
+  DELETE as DELETE_PROFESSIONAL,
+  PUT as PUT_PROFESSIONAL,
+} from '@/app/api/professionals/[id]/route';
 import { GET, POST } from '@/app/api/professionals/route';
 import prisma from '@/lib/prisma';
 
@@ -53,6 +56,15 @@ const validProfessionalBody = {
   name: 'Carlos Silva',
   email: 'carlos@compasss.com.br',
   phone: '(11) 91234-5678',
+};
+
+const filteredUser = {
+  user: {
+    id: 'supervisor-1',
+    name: 'Supervisor',
+    role: 'Supervisor',
+    internalContactId: 'contact-1',
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -136,6 +148,21 @@ describe('POST /api/professionals', () => {
     const body = await response.json();
     expect(body.name).toBe('Carlos Silva');
     expect(body.email).toBe('carlos@compasss.com.br');
+  });
+
+  it('returns 403 when filtered user tries to create a professional', async () => {
+    mockGetServerSession.mockResolvedValueOnce(filteredUser);
+
+    const req = new Request('http://localhost/api/professionals', {
+      method: 'POST',
+      body: JSON.stringify(validProfessionalBody),
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    const response = await POST(req);
+
+    expect(response.status).toBe(403);
+    expect(prismaMock.professional.create).not.toHaveBeenCalled();
   });
 
   it('stores a full email as-is without appending a domain', async () => {
@@ -305,6 +332,31 @@ describe('POST /api/professionals', () => {
     expect(response.status).toBe(500);
     const body = await response.json();
     expect(body).toHaveProperty('error');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// PUT /api/professionals/[id]
+// ---------------------------------------------------------------------------
+describe('PUT /api/professionals/[id]', () => {
+  const validProfessionalId = 'cabcdefghijklmnopqrstuvwx';
+
+  it('returns 403 when filtered user reassigns a professional to another supervisor', async () => {
+    mockGetServerSession.mockResolvedValueOnce(filteredUser);
+    prismaMock.professional.findMany.mockResolvedValue([{ id: validProfessionalId }] as any);
+
+    const req = new Request(`http://localhost/api/professionals/${validProfessionalId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ ...validProfessionalBody, supervisorId: 'other-contact' }),
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    const response = await PUT_PROFESSIONAL(req, {
+      params: Promise.resolve({ id: validProfessionalId }),
+    });
+
+    expect(response.status).toBe(403);
+    expect(prismaMock.professional.update).not.toHaveBeenCalled();
   });
 });
 
