@@ -1,11 +1,13 @@
 import type { Worksheet } from 'exceljs';
 
-import { ApiUtils, requireAuth } from '@/lib/api-utils';
+import { ApiUtils, rateLimitKeyFromSession, requireAuthWithScope } from '@/lib/api-utils';
 import { audit } from '@/lib/audit';
 import { parseSystemTypes } from '@/lib/formatting';
 import prisma from '@/lib/prisma';
+import { checkImportRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
+const MAX_IMPORT_ROWS = 500;
 
 function cellToString(value: unknown): string {
   if (value == null) return '';
@@ -60,8 +62,21 @@ const DAY_MAP: Record<string, number> = {
 };
 
 export async function POST(request: Request) {
-  const authError = await requireAuth();
-  if (authError) return authError;
+  const result = await requireAuthWithScope();
+  if ('error' in result) return result.error;
+  if (result.auth.scope === 'filtered') {
+    return ApiUtils.error('Apenas o coordenador pode importar planilhas', null, 403);
+  }
+
+  const rateKey = rateLimitKeyFromSession(result.session, request);
+  const allowed = await checkImportRateLimit(rateKey);
+  if (!allowed) {
+    return ApiUtils.error(
+      'Muitas importações em pouco tempo. Aguarde antes de tentar de novo.',
+      null,
+      429,
+    );
+  }
 
   try {
     const formData = await request.formData();
@@ -104,6 +119,13 @@ export async function POST(request: Request) {
 
     if (rows.length === 0) {
       return ApiUtils.error('Planilha vazia', null, 400);
+    }
+    if (rows.length > MAX_IMPORT_ROWS) {
+      return ApiUtils.error(
+        `Planilha muito grande. Máximo permitido: ${MAX_IMPORT_ROWS} linhas`,
+        null,
+        400,
+      );
     }
 
     // Cache de profissionais, clientes e supervisores
