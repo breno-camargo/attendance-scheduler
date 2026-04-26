@@ -1,4 +1,9 @@
-import { ApiUtils, rateLimitKeyFromSession, requireAuthSession } from '@/lib/api-utils';
+import {
+  ApiUtils,
+  rateLimitKeyFromSession,
+  requireAuthWithScope,
+  requireProfessionalInScope,
+} from '@/lib/api-utils';
 import { checkPreviewRateLimit } from '@/lib/rate-limit';
 import type { AppointmentType, GeneratedAppointment } from '@/lib/schedule-algorithm';
 import { isGenerationError, runScheduleGeneration } from '@/lib/schedule-service';
@@ -33,10 +38,11 @@ function summarize(appointments: GeneratedAppointment[]) {
  * algoritmo do /generate — serve pro usuário revisar antes de confirmar.
  */
 export async function POST(request: Request) {
-  const auth = await requireAuthSession();
-  if (auth.error) return auth.error;
+  const result = await requireAuthWithScope();
+  if ('error' in result) return result.error;
+  const { auth, session } = result;
 
-  const rateKey = rateLimitKeyFromSession(auth.session, request);
+  const rateKey = rateLimitKeyFromSession(session, request);
   const allowed = await checkPreviewRateLimit(rateKey);
   if (!allowed) {
     return ApiUtils.error(
@@ -54,6 +60,9 @@ export async function POST(request: Request) {
     }
 
     const { professionalId, year } = validation.data;
+    const scopeError = await requireProfessionalInScope(auth, professionalId);
+    if (scopeError) return scopeError;
+
     const generation = await runScheduleGeneration(professionalId, year);
     if (isGenerationError(generation)) {
       return ApiUtils.error(generation.message, null, 404);

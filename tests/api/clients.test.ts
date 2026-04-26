@@ -24,7 +24,7 @@ vi.mock('next-auth', () => ({
 }));
 vi.mock('@/lib/auth', () => ({ authOptions: {} }));
 
-import { DELETE as DELETE_CLIENT } from '@/app/api/clients/[id]/route';
+import { DELETE as DELETE_CLIENT, PUT as PUT_CLIENT } from '@/app/api/clients/[id]/route';
 import { GET, POST } from '@/app/api/clients/route';
 import prisma from '@/lib/prisma';
 
@@ -71,6 +71,15 @@ const validClientBody = {
   systemTypes: 'CFTV',
   preferredDays: 'Mon,Wed',
   // professionalId is optional — omit rather than pass null (schema rejects null)
+};
+
+const filteredUser = {
+  user: {
+    id: 'supervisor-1',
+    name: 'Supervisor',
+    role: 'Supervisor',
+    internalContactId: 'contact-1',
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -154,6 +163,25 @@ describe('POST /api/clients', () => {
     expect(response.status).toBe(201);
     const body = await response.json();
     expect(body.name).toBe('Shopping Central');
+  });
+
+  it('returns 403 when filtered user assigns a professional outside their scope', async () => {
+    mockGetServerSession.mockResolvedValueOnce(filteredUser);
+    prismaMock.professional.findMany.mockResolvedValue([{ id: 'other-professional' }] as any);
+
+    const req = new Request('http://localhost/api/clients', {
+      method: 'POST',
+      body: JSON.stringify({
+        ...validClientBody,
+        professionalId: 'clprof00000000000000000001',
+      }),
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    const response = await POST(req);
+
+    expect(response.status).toBe(403);
+    expect(prismaMock.client.create).not.toHaveBeenCalled();
   });
 
   it('capitalizes the client name before storing', async () => {
@@ -293,6 +321,30 @@ describe('POST /api/clients', () => {
 });
 
 // ---------------------------------------------------------------------------
+// PUT /api/clients/[id]
+// ---------------------------------------------------------------------------
+describe('PUT /api/clients/[id]', () => {
+  const validClientId = 'cabcdefghijklmnopqrstuvwx';
+
+  it('returns 403 when filtered user edits a client outside their scope', async () => {
+    mockGetServerSession.mockResolvedValueOnce(filteredUser);
+    prismaMock.professional.findMany.mockResolvedValue([{ id: 'other-professional' }] as any);
+    prismaMock.client.findFirst.mockResolvedValue(null);
+
+    const req = new Request(`http://localhost/api/clients/${validClientId}`, {
+      method: 'PUT',
+      body: JSON.stringify(validClientBody),
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    const response = await PUT_CLIENT(req, { params: Promise.resolve({ id: validClientId }) });
+
+    expect(response.status).toBe(403);
+    expect(prismaMock.client.update).not.toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
 // DELETE /api/clients/[id]
 // ---------------------------------------------------------------------------
 describe('DELETE /api/clients/[id]', () => {
@@ -320,6 +372,21 @@ describe('DELETE /api/clients/[id]', () => {
         entityLabel: existing.name,
       }),
     });
+  });
+
+  it('returns 403 when filtered user deletes a client outside their scope', async () => {
+    mockGetServerSession.mockResolvedValueOnce(filteredUser);
+    prismaMock.professional.findMany.mockResolvedValue([{ id: 'other-professional' }] as any);
+    prismaMock.client.findFirst.mockResolvedValue(null);
+
+    const req = new Request(`http://localhost/api/clients/${validClientId}`, {
+      method: 'DELETE',
+    });
+
+    const response = await DELETE_CLIENT(req, { params: Promise.resolve({ id: validClientId }) });
+
+    expect(response.status).toBe(403);
+    expect(prismaMock.client.delete).not.toHaveBeenCalled();
   });
 
   it('audit log failure does not fail client deletion', async () => {

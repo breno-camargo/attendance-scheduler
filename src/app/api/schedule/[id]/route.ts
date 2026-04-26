@@ -1,4 +1,4 @@
-import { ApiUtils, requireAuthSession } from '@/lib/api-utils';
+import { ApiUtils, requireAuthWithScope, requireProfessionalInScope } from '@/lib/api-utils';
 import { writeAuditLog } from '@/lib/audit-log';
 import { getHolidaysForYear } from '@/lib/holidays';
 import prisma from '@/lib/prisma';
@@ -10,8 +10,9 @@ import { appointmentPatchSchema } from '@/lib/schemas';
  */
 export async function DELETE(_request: Request, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
-  const auth = await requireAuthSession();
-  if (auth.error) return auth.error;
+  const result = await requireAuthWithScope();
+  if ('error' in result) return result.error;
+  const { auth, session } = result;
 
   try {
     const { id } = params;
@@ -25,9 +26,12 @@ export async function DELETE(_request: Request, props: { params: Promise<{ id: s
     if (!existing) {
       return ApiUtils.error('Agendamento não encontrado', null, 404);
     }
+    const scopeError = await requireProfessionalInScope(auth, existing.professionalId);
+    if (scopeError) return scopeError;
+
     await prisma.appointment.delete({ where: { id } });
     await writeAuditLog({
-      session: auth.session,
+      session,
       action: 'APPOINTMENT_DELETED',
       entityType: 'APPOINTMENT',
       entityId: existing.id,
@@ -52,8 +56,9 @@ export async function DELETE(_request: Request, props: { params: Promise<{ id: s
  */
 export async function PATCH(request: Request, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
-  const auth = await requireAuthSession();
-  if (auth.error) return auth.error;
+  const result = await requireAuthWithScope();
+  if ('error' in result) return result.error;
+  const { auth, session } = result;
 
   try {
     const { id } = params;
@@ -89,6 +94,9 @@ export async function PATCH(request: Request, props: { params: Promise<{ id: str
       return ApiUtils.error('Agendamento não encontrado', null, 404);
     }
 
+    const scopeError = await requireProfessionalInScope(auth, existing.professionalId);
+    if (scopeError) return scopeError;
+
     const updated = await prisma.appointment.update({
       where: { id },
       data: {
@@ -106,7 +114,7 @@ export async function PATCH(request: Request, props: { params: Promise<{ id: str
     const observationChanged = existing.observation !== updated.observation;
     if (dateChanged || typeChanged || observationChanged) {
       await writeAuditLog({
-        session: auth.session,
+        session,
         action: 'APPOINTMENT_UPDATED',
         entityType: 'APPOINTMENT',
         entityId: existing.id,

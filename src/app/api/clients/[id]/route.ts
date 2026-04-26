@@ -1,4 +1,9 @@
-import { ApiUtils, requireAuth, requireAuthSession } from '@/lib/api-utils';
+import {
+  ApiUtils,
+  requireAuthWithScope,
+  requireClientInScope,
+  requireProfessionalInScope,
+} from '@/lib/api-utils';
 import { writeAuditLog } from '@/lib/audit-log';
 import prisma from '@/lib/prisma';
 import { clientSchema } from '@/lib/schemas';
@@ -10,8 +15,9 @@ import { clientSchema } from '@/lib/schemas';
  */
 export async function PUT(request: Request, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
-  const authError = await requireAuth();
-  if (authError) return authError;
+  const result = await requireAuthWithScope();
+  if ('error' in result) return result.error;
+  const { auth } = result;
 
   try {
     const { id } = params;
@@ -26,6 +32,10 @@ export async function PUT(request: Request, props: { params: Promise<{ id: strin
     }
 
     const data = validation.data;
+    const clientScopeError = await requireClientInScope(auth, id);
+    if (clientScopeError) return clientScopeError;
+    const professionalScopeError = await requireProfessionalInScope(auth, data.professionalId);
+    if (professionalScopeError) return professionalScopeError;
 
     const client = await prisma.client.findUnique({
       where: { id },
@@ -88,14 +98,18 @@ export async function PUT(request: Request, props: { params: Promise<{ id: strin
  */
 export async function DELETE(_request: Request, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
-  const auth = await requireAuthSession();
-  if (auth.error) return auth.error;
+  const result = await requireAuthWithScope();
+  if ('error' in result) return result.error;
+  const { auth, session } = result;
 
   try {
     const { id } = params;
     if (!id || !/^c[a-z0-9]{24}$/.test(id)) {
       return ApiUtils.error('ID inválido', null, 400);
     }
+    const clientScopeError = await requireClientInScope(auth, id);
+    if (clientScopeError) return clientScopeError;
+
     const existing = await prisma.client.findUnique({
       where: { id },
       select: { id: true, name: true, contracts: { select: { id: true } } },
@@ -106,7 +120,7 @@ export async function DELETE(_request: Request, props: { params: Promise<{ id: s
 
     await prisma.client.delete({ where: { id } });
     await writeAuditLog({
-      session: auth.session,
+      session,
       action: 'CLIENT_DELETED',
       entityType: 'CLIENT',
       entityId: existing.id,

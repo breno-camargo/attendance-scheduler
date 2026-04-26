@@ -6,10 +6,22 @@ export async function proxy(request: NextRequest) {
   // Proteção CSRF: requests mutáveis devem vir do mesmo origin
   if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(request.method)) {
     const origin = request.headers.get('origin');
+    const referer = request.headers.get('referer');
     const host = request.headers.get('host');
-    if (origin && host) {
-      const originHost = new URL(origin).host;
-      if (originHost !== host) {
+    if (host) {
+      const source = origin || referer;
+      if (!source) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
+
+      let sourceHost: string;
+      try {
+        sourceHost = new URL(source).host;
+      } catch {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
+
+      if (sourceHost !== host) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
       }
     }

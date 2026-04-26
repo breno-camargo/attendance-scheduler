@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server';
 
-import { ApiUtils, requireAuth } from '@/lib/api-utils';
+import { ApiUtils, requireAuthWithScope, requireContractInScope } from '@/lib/api-utils';
 import prisma from '@/lib/prisma';
 import { contactsSchema } from '@/lib/schemas';
 
@@ -13,13 +13,17 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
-  const authError = await requireAuth();
-  if (authError) return authError;
+  const result = await requireAuthWithScope();
+  if ('error' in result) return result.error;
+  const { auth } = result;
 
   try {
     if (!params.id || !/^c[a-z0-9]{24}$/.test(params.id)) {
       return ApiUtils.error('ID inválido', null, 400);
     }
+    const scopeError = await requireContractInScope(auth, params.id);
+    if (scopeError) return scopeError;
+
     const contract = await prisma.contract.findUnique({
       where: { id: params.id },
       select: { contactsJson: true },
@@ -48,13 +52,17 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
  */
 export async function PATCH(req: NextRequest, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
-  const authError = await requireAuth();
-  if (authError) return authError;
+  const result = await requireAuthWithScope();
+  if ('error' in result) return result.error;
+  const { auth } = result;
 
   try {
     if (!params.id || !/^c[a-z0-9]{24}$/.test(params.id)) {
       return ApiUtils.error('ID inválido', null, 400);
     }
+    const scopeError = await requireContractInScope(auth, params.id);
+    if (scopeError) return scopeError;
+
     const body = await req.json();
 
     // Validação estrutural do JSON de contatos

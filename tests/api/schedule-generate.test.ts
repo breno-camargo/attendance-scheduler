@@ -56,6 +56,15 @@ interface ContractOverrides {
 
 const VALID_PROF_ID = 'cabcdefghijklmnopqrstuvwx';
 
+const filteredUser = {
+  user: {
+    id: 'supervisor-1',
+    name: 'Supervisor',
+    role: 'Supervisor',
+    internalContactId: 'contact-1',
+  },
+};
+
 function makeContract(idx: number, o: ContractOverrides = {}) {
   const id = o.id ?? `cccccccccccccccccccccc${String(idx).padStart(2, '0')}`;
   const clientId = o.clientId ?? `clclient0000000000000${String(idx).padStart(3, '0')}`;
@@ -169,6 +178,16 @@ describe('POST /api/schedule/generate — auth & validation', () => {
     );
     await runGenerate();
     expect(mockCheckGenerateRateLimit).toHaveBeenCalledWith('u-42');
+  });
+
+  it('retorna 403 quando usuario filtrado gera agenda fora do escopo', async () => {
+    mockGetServerSession.mockResolvedValueOnce(filteredUser);
+    prismaMock.professional.findMany.mockResolvedValue([{ id: 'other-professional' }] as any);
+
+    const { status } = await runGenerate();
+
+    expect(status).toBe(403);
+    expect(prismaMock.$transaction).not.toHaveBeenCalled();
   });
 
   it('retorna 400 quando professionalId está ausente', async () => {
@@ -669,6 +688,21 @@ describe('POST /api/schedule/generate — numeração', () => {
 // DELETE /api/schedule/generate — limpar agenda do ano
 // ---------------------------------------------------------------------------
 describe('DELETE /api/schedule/generate — audit', () => {
+  it('retorna 403 quando usuario filtrado limpa agenda fora do escopo', async () => {
+    mockGetServerSession.mockResolvedValueOnce(filteredUser);
+    prismaMock.professional.findMany.mockResolvedValue([{ id: 'other-professional' }] as any);
+
+    const req = new Request(
+      `http://localhost/api/schedule/generate?professionalId=${VALID_PROF_ID}&year=2027`,
+      { method: 'DELETE' },
+    );
+
+    const response = await DELETE(req);
+
+    expect(response.status).toBe(403);
+    expect(prismaMock.appointment.deleteMany).not.toHaveBeenCalled();
+  });
+
   it('limpa agenda do ano e grava SCHEDULE_CLEARED audit log', async () => {
     prismaMock.professional.findUnique.mockResolvedValue({
       id: VALID_PROF_ID,
