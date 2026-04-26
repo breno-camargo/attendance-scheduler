@@ -171,3 +171,24 @@ export async function checkPreviewRateLimit(key: string): Promise<boolean> {
   }
   return checkMemoryRateLimit(`preview:${key}`, PREVIEW_MAX_ATTEMPTS, PREVIEW_WINDOW_SECONDS);
 }
+
+// â”€â”€ /api/import â€” parse de Excel + escrita em lote â”€â”€
+const IMPORT_MAX_ATTEMPTS = isDev ? 20 : 5;
+const IMPORT_WINDOW_SECONDS = 60 * 60; // 1 hora
+
+const importRatelimit = redis
+  ? new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(IMPORT_MAX_ATTEMPTS, `${IMPORT_WINDOW_SECONDS} s`),
+      analytics: false,
+      prefix: 'compasss:import',
+    })
+  : null;
+
+export async function checkImportRateLimit(key: string): Promise<boolean> {
+  if (importRatelimit) {
+    const { success } = await importRatelimit.limit(key);
+    return success;
+  }
+  return checkMemoryRateLimit(`import:${key}`, IMPORT_MAX_ATTEMPTS, IMPORT_WINDOW_SECONDS);
+}
