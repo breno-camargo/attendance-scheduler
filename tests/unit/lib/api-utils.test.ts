@@ -18,7 +18,7 @@ vi.mock('@/lib/auth', () => ({
   authOptions: {},
 }));
 import { getServerSession } from 'next-auth';
-import { ApiUtils, requireAuth } from '@/lib/api-utils';
+import { ApiUtils, requireAuth, requireAuthWithScope } from '@/lib/api-utils';
 /* eslint-enable import/order */
 
 // ─────────────────────────────────────────────
@@ -359,5 +359,22 @@ describe('requireAuth', () => {
     vi.mocked(getServerSession).mockResolvedValue({ user: {} } as any);
     await requireAuth();
     expect(getServerSession).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('requireAuthWithScope', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('denies linked users with unknown roles by default', async () => {
+    vi.mocked(getServerSession).mockResolvedValue({
+      user: { role: 'Analista', internalContactId: 'contact-1' },
+    } as any);
+
+    const result = (await requireAuthWithScope()) as any;
+
+    expect(result.error.status).toBe(403);
+    expect(result.error.data.error).toBe('Sem permissao');
   });
 });
