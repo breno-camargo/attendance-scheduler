@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { Logo } from '@/components/ui/logo';
 import { clientsApi, holidaysApi, professionalsApi, staffApi, statsApi } from '@/lib/api-client';
@@ -34,11 +34,24 @@ const routeWarmers: Record<string, () => void> = {
   },
 };
 
+const navLinks = [
+  { name: 'Dashboard', href: '/' },
+  { name: 'Clientes', href: '/clients' },
+  { name: 'Técnicos', href: '/professionals' },
+  { name: 'Equipe', href: '/staff' },
+  { name: 'Calendário', href: '/calendar' },
+  { name: 'Feriados', href: '/holidays' },
+  { name: 'Importar', href: '/import' },
+];
+
 export default function Header() {
   const pathname = usePathname();
   const { data: session, status } = useSession();
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [menuOpen, setMenuOpen] = useState(false);
+  const [navIndicator, setNavIndicator] = useState({ left: 0, width: 0, visible: false });
+  const navRef = useRef<HTMLElement | null>(null);
+  const navLinkRefs = useRef<Array<HTMLAnchorElement | null>>([]);
 
   useEffect(() => {
     const saved = localStorage.getItem('compasss_theme') as 'dark' | 'light' | null;
@@ -62,6 +75,42 @@ export default function Header() {
       document.body.style.overflow = '';
     };
   }, [menuOpen]);
+
+  useEffect(() => {
+    const activeIndex = navLinks.findIndex((link) => link.href === pathname);
+    const activeLink = activeIndex >= 0 ? navLinkRefs.current[activeIndex] : null;
+    const nav = navRef.current;
+
+    if (!activeLink || !nav) {
+      requestAnimationFrame(() => {
+        setNavIndicator((current) => ({ ...current, visible: false }));
+      });
+      return;
+    }
+
+    const updateIndicator = () => {
+      const linkRect = activeLink.getBoundingClientRect();
+      const navRect = nav.getBoundingClientRect();
+
+      setNavIndicator({
+        left: linkRect.left - navRect.left,
+        width: linkRect.width,
+        visible: true,
+      });
+    };
+
+    updateIndicator();
+
+    const observer = new ResizeObserver(updateIndicator);
+    observer.observe(nav);
+    observer.observe(activeLink);
+    window.addEventListener('resize', updateIndicator);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', updateIndicator);
+    };
+  }, [pathname]);
 
   const toggleTheme = () => {
     const next = theme === 'dark' ? 'light' : 'dark';
@@ -130,16 +179,6 @@ export default function Header() {
 
   if (pathname.startsWith('/reports') || pathname === '/login') return null;
 
-  const navLinks = [
-    { name: 'Dashboard', href: '/' },
-    { name: 'Clientes', href: '/clients' },
-    { name: 'Técnicos', href: '/professionals' },
-    { name: 'Equipe', href: '/staff' },
-    { name: 'Calendário', href: '/calendar' },
-    { name: 'Feriados', href: '/holidays' },
-    { name: 'Importar', href: '/import' },
-  ];
-
   const themeTitle = theme === 'dark' ? 'Mudar para tema claro' : 'Mudar para tema escuro';
   const themeIcon = theme === 'dark' ? '☀️' : '🌙';
 
@@ -155,13 +194,16 @@ export default function Header() {
         </div>
 
         {/* Desktop nav */}
-        <nav className="desktop-nav">
-          {navLinks.map((link) => {
+        <nav className="desktop-nav" ref={navRef}>
+          {navLinks.map((link, index) => {
             const active = pathname === link.href;
             const warm = routeWarmers[link.href];
             return (
               <Link
                 key={link.href}
+                ref={(node) => {
+                  navLinkRefs.current[index] = node;
+                }}
                 href={link.href}
                 className="nav-link"
                 aria-current={active ? 'page' : undefined}
@@ -169,10 +211,18 @@ export default function Header() {
                 onFocus={warm}
               >
                 {link.name}
-                <span className="nav-link__underline" aria-hidden="true" />
               </Link>
             );
           })}
+          <span
+            className="desktop-nav__indicator"
+            style={{
+              opacity: navIndicator.visible ? 1 : 0,
+              transform: `translateX(${navIndicator.left}px)`,
+              width: `${navIndicator.width}px`,
+            }}
+            aria-hidden="true"
+          />
         </nav>
 
         {/* Desktop user area */}
