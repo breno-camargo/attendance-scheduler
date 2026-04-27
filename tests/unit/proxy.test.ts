@@ -10,11 +10,22 @@ vi.mock('next/server', () => ({
   NextResponse: {
     json: vi.fn((data: any, opts: any) => ({
       data,
+      headers: new Headers(),
       status: opts?.status || 200,
       type: 'json',
     })),
-    next: vi.fn(() => ({ status: 200, type: 'next' })),
-    redirect: vi.fn((url: URL) => ({ status: 307, type: 'redirect', url: url.toString() })),
+    next: vi.fn((opts?: any) => ({
+      headers: new Headers(),
+      requestHeaders: opts?.request?.headers,
+      status: 200,
+      type: 'next',
+    })),
+    redirect: vi.fn((url: URL) => ({
+      headers: new Headers(),
+      status: 307,
+      type: 'redirect',
+      url: url.toString(),
+    })),
   },
 }));
 
@@ -41,6 +52,7 @@ describe('proxy CSRF protection', () => {
     const response = await proxy(makeRequest({ host: 'app.example.com' }));
 
     expect(response.status).toBe(403);
+    expect(response.headers.get('Content-Security-Policy')).toContain("script-src 'self' 'nonce-");
     expect(mockGetToken).not.toHaveBeenCalled();
   });
 
@@ -53,6 +65,8 @@ describe('proxy CSRF protection', () => {
     );
 
     expect(response.type).toBe('next');
+    expect(response.headers.get('Content-Security-Policy')).toContain("'strict-dynamic'");
+    expect((response as any).requestHeaders.get('x-nonce')).toBeTruthy();
     expect(mockGetToken).toHaveBeenCalled();
   });
 
@@ -65,6 +79,7 @@ describe('proxy CSRF protection', () => {
     );
 
     expect(response.status).toBe(403);
+    expect(response.headers.get('Content-Security-Policy')).toContain("object-src 'none'");
     expect(mockGetToken).not.toHaveBeenCalled();
   });
 });
