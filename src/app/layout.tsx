@@ -5,6 +5,7 @@ import Script from 'next/script';
 
 import '@/styles/globals.css';
 import Header from '@/components/layout/Header';
+import PageTransition from '@/components/layout/PageTransition';
 import SessionTimeout from '@/components/layout/SessionTimeout';
 
 import Providers from './providers';
@@ -35,9 +36,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Providers>
           <Header />
           <SessionTimeout />
-          <main className="animate-fade-in" key="main-page-wrapper">
-            {children}
-          </main>
+          <PageTransition>{children}</PageTransition>
         </Providers>
         <Analytics />
       </body>
