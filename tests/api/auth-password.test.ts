@@ -122,7 +122,10 @@ describe('POST /api/auth/change-password', () => {
     expect(prismaMock.user.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'user-1' },
-        data: expect.objectContaining({ mustChangePassword: false }),
+        data: expect.objectContaining({
+          mustChangePassword: false,
+          passwordChangedAt: expect.any(Date),
+        }),
       }),
     );
   });
@@ -171,7 +174,11 @@ describe('POST /api/auth/reset-password', () => {
     expect(prismaMock.user.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({ resetToken: 'token-1' }),
-        data: expect.objectContaining({ resetToken: null, resetTokenExpiry: null }),
+        data: expect.objectContaining({
+          passwordChangedAt: expect.any(Date),
+          resetToken: null,
+          resetTokenExpiry: null,
+        }),
       }),
     );
   });

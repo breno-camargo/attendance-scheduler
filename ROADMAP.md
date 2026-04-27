@@ -97,6 +97,16 @@ Converter pra `ScheduleAllocator` class seria astronautismo arquitetural — pio
 
 ## 🟡 Média prioridade
 
+### Cache curto para validação de sessão
+
+**Contexto:** a revogação de sessões por `passwordChangedAt` consulta `User` no callback JWT para detectar senha trocada e usuário inativo.
+
+**Por que não agora:** para a escala interna atual, o custo é aceitável e a leitura por request mantém a revogação simples e previsível.
+
+**Quando revisitar:** se o volume de usuários/API crescer ou se o banco mostrar pressão por leituras repetidas de sessão. Mitigação sugerida: cache em memória por `userId` com TTL curto (10s-30s), preservando revogação em até poucos segundos.
+
+---
+
 ### 4. Vulnerabilities remanescentes do `npm audit`
 
 Após o upgrade Next 16 + nodemailer 8, restam **3 vulns moderate** todas encadeadas a outros itens:

@@ -131,6 +131,7 @@ model User {
   internalContactId  String?
   internalContact    InternalContact? @relation(fields: [internalContactId], references: [id])
   mustChangePassword Boolean          @default(true)
+  passwordChangedAt   DateTime?
   resetToken         String?
   resetTokenExpiry   DateTime?
   generationLogs     ScheduleGenerationLog[]

@@ -9,7 +9,7 @@ import { checkChangePasswordRateLimit } from '@/lib/rate-limit';
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
+  if (!session?.user?.id || session.user.sessionInvalidated) {
     return ApiUtils.error('Não autorizado', null, 401);
   }
 
@@ -57,7 +57,7 @@ export async function POST(request: Request) {
     const hash = await bcrypt.hash(newPassword, 10);
     await prisma.user.update({
       where: { id: session.user.id },
-      data: { password: hash, mustChangePassword: false },
+      data: { password: hash, mustChangePassword: false, passwordChangedAt: new Date() },
     });
 
     audit({ event: 'PASSWORD_CHANGED', userId: session.user.id });

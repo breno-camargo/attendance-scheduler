@@ -1,7 +1,9 @@
+import 'next-auth';
+import 'next-auth/jwt';
+
 declare module '*.css';
 
 // Augmenta o tipo Session do NextAuth pra incluir role e escopo
-import 'next-auth';
 declare module 'next-auth' {
   interface Session {
     user: {
@@ -12,6 +14,19 @@ declare module 'next-auth' {
       role?: string | null;
       internalContactId?: string | null;
       mustChangePassword?: boolean;
+      sessionInvalidated?: boolean;
     };
+  }
+}
+
+declare module 'next-auth/jwt' {
+  interface JWT {
+    userId?: string;
+    role?: string | null;
+    internalContactId?: string | null;
+    mustChangePassword?: boolean;
+    sessionStartedAt?: number;
+    passwordChangedAt?: number;
+    sessionInvalidated?: boolean;
   }
 }
