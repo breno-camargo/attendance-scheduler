@@ -1,4 +1,10 @@
-import { ApiUtils, requireAuthWithScope, requireProfessionalInScope } from '@/lib/api-utils';
+import {
+  ApiUtils,
+  requireAuthWithScope,
+  requireClientInScope,
+  requireContractInScope,
+  requireProfessionalInScope,
+} from '@/lib/api-utils';
 import { getHolidaysForYear } from '@/lib/holidays';
 import prisma from '@/lib/prisma';
 import { appointmentSchema } from '@/lib/schemas';
@@ -21,8 +27,33 @@ export async function POST(request: Request) {
     }
 
     const data = validation.data;
-    const scopeError = await requireProfessionalInScope(auth, data.professionalId);
-    if (scopeError) return scopeError;
+    const professionalScopeError = await requireProfessionalInScope(auth, data.professionalId);
+    if (professionalScopeError) return professionalScopeError;
+
+    const clientScopeError = await requireClientInScope(auth, data.clientId);
+    if (clientScopeError) return clientScopeError;
+
+    if (data.contractId) {
+      const contractScopeError = await requireContractInScope(auth, data.contractId);
+      if (contractScopeError) return contractScopeError;
+
+      const contract = await prisma.contract.findUnique({
+        where: { id: data.contractId },
+        select: { clientId: true, professionalId: true },
+      });
+      if (!contract) {
+        return ApiUtils.error('Contrato não encontrado', null, 404);
+      }
+      if (contract.clientId !== data.clientId) {
+        return ApiUtils.error('Contrato não pertence ao cliente informado', null, 400);
+      }
+      if (!contract.professionalId) {
+        return ApiUtils.error('Contrato sem técnico atribuído', null, 400);
+      }
+      if (contract.professionalId !== data.professionalId) {
+        return ApiUtils.error('Contrato não pertence ao técnico informado', null, 400);
+      }
+    }
 
     // Bloqueia agendamento em feriado
     const appointmentDate = new Date(data.date);

@@ -2,6 +2,12 @@ import { z } from 'zod';
 
 import { parseSystemTypes } from './formatting';
 
+const cuidSchema = z.string().regex(/^c[a-z0-9]{24}$/, 'ID inválido');
+const dateInputSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}(T.*)?$/, 'Data inválida')
+  .refine((v) => !isNaN(Date.parse(v)), 'Data inválida');
+
 // Esquema para Clientes (Prédios/Shoppings)
 export const clientSchema = z.object({
   name: z.string().min(2, 'Nome do cliente é obrigatório').max(200),
@@ -27,6 +33,8 @@ export const professionalSchema = z.object({
   name: z.string().min(2, 'Nome do profissional é obrigatório').max(200),
   email: z.string().min(1, 'E-mail é obrigatório').max(200).email('E-mail inválido'),
   phone: z.string().max(20).optional().or(z.literal('')),
+  supervisorId: cuidSchema.optional().nullable().or(z.literal('')),
+  contractIds: z.array(cuidSchema).max(100).optional(),
 });
 
 // Esquema para Equipe Interna
@@ -54,7 +62,7 @@ export const appointmentSchema = z.object({
 export const appointmentPatchSchema = z.object({
   type: z.enum(['VISITA_TECNICA', 'TESTE_SDAI']).optional(),
   observation: z.string().max(500).optional(),
-  date: z.string().optional(),
+  date: dateInputSchema.optional(),
 });
 
 // Esquema para Geração de Agenda

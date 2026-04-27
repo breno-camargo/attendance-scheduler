@@ -73,12 +73,12 @@ export async function POST(request: Request) {
         name: ApiUtils.capitalizeName(data.name),
         email: email,
         phone: data.phone || null,
-        supervisorId: body.supervisorId || null,
+        supervisorId: data.supervisorId || null,
       },
     });
 
     // Vincula contratos sem técnico se enviados
-    const contractIds = body.contractIds;
+    const contractIds = data.contractIds;
     if (Array.isArray(contractIds) && contractIds.length > 0) {
       await prisma.contract.updateMany({
         where: { id: { in: contractIds }, professionalId: null },
