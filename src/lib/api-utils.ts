@@ -6,7 +6,7 @@ import { capitalizeName, formatPhone, maskPII } from './formatting';
 
 export async function requireAuth() {
   const session = await getServerSession(authOptions);
-  if (!session) {
+  if (!session || session.user?.sessionInvalidated) {
     return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
   }
   return null;
@@ -19,7 +19,7 @@ export async function requireAuthSession(): Promise<
   { error: NextResponse; session: null } | { error: null; session: Session }
 > {
   const session = await getServerSession(authOptions);
-  if (!session) {
+  if (!session || session.user?.sessionInvalidated) {
     return {
       error: NextResponse.json({ error: 'Não autorizado' }, { status: 401 }),
       session: null,
@@ -49,7 +49,7 @@ export async function requireAuthWithScope(): Promise<
   { error: NextResponse } | { auth: AuthScope; session: Session }
 > {
   const session = await getServerSession(authOptions);
-  if (!session) {
+  if (!session || session.user?.sessionInvalidated) {
     return { error: NextResponse.json({ error: 'Não autorizado' }, { status: 401 }) };
   }
 

@@ -13,6 +13,11 @@ export default function SessionTimeout() {
   useEffect(() => {
     if (status !== 'authenticated' || !session) return;
 
+    if (session.user?.sessionInvalidated) {
+      signOut({ callbackUrl: '/login' });
+      return;
+    }
+
     const issued = (session as { expires?: string }).expires;
     if (!issued) return;
 

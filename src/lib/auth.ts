@@ -6,6 +6,9 @@ import { audit } from './audit';
 import prisma from './prisma';
 import { checkAccountRateLimit, checkLoginRateLimit, resetAccountRateLimit } from './rate-limit';
 
+let lastSessionValidationErrorLog = 0;
+const SESSION_VALIDATION_ERROR_LOG_INTERVAL_MS = 60 * 1000;
+
 // Auth simples com credentials porque é sistema interno — não precisa de
 // OAuth/Google. Só quem tem login acessa, e por enquanto é só o admin.
 // Se precisar de mais usuários, a tabela User já tá pronta.
@@ -70,6 +73,7 @@ export const authOptions: NextAuthOptions = {
           role: user.internalContact?.role || null,
           internalContactId: user.internalContactId || null,
           mustChangePassword: user.mustChangePassword,
+          passwordChangedAt: user.passwordChangedAt,
         };
       },
     }),
@@ -83,10 +87,50 @@ export const authOptions: NextAuthOptions = {
         token.mustChangePassword =
           (user as { mustChangePassword?: boolean }).mustChangePassword ?? false;
         token.userId = (user as { id: string }).id;
+        token.passwordChangedAt =
+          (user as { passwordChangedAt?: Date | null }).passwordChangedAt?.getTime() ?? 0;
+        token.sessionStartedAt = Date.now();
+        token.sessionInvalidated = false;
       }
       // Quando o frontend pede pra atualizar a sessão (após trocar senha)
       if (trigger === 'update') {
         token.mustChangePassword = false;
+        token.sessionStartedAt = Date.now();
+      }
+
+      if (token.userId) {
+        try {
+          const currentUser = await prisma.user.findUnique({
+            where: { id: token.userId },
+            select: { active: true, mustChangePassword: true, passwordChangedAt: true },
+          });
+
+          if (!currentUser?.active) {
+            token.sessionInvalidated = true;
+            return token;
+          }
+
+          const sessionStartedAt =
+            typeof token.sessionStartedAt === 'number'
+              ? token.sessionStartedAt
+              : typeof token.iat === 'number'
+                ? token.iat * 1000
+                : 0;
+          const passwordChangedAt = currentUser.passwordChangedAt?.getTime() ?? 0;
+
+          token.mustChangePassword = currentUser.mustChangePassword;
+          token.passwordChangedAt = passwordChangedAt;
+          token.sessionStartedAt = sessionStartedAt || Date.now();
+          token.sessionInvalidated =
+            passwordChangedAt > 0 && passwordChangedAt > token.sessionStartedAt;
+        } catch (error) {
+          const now = Date.now();
+          if (now - lastSessionValidationErrorLog > SESSION_VALIDATION_ERROR_LOG_INTERVAL_MS) {
+            lastSessionValidationErrorLog = now;
+            console.warn('[AUTH] Falha ao validar revogação de sessão por senha', error);
+          }
+          token.sessionInvalidated = false;
+        }
       }
       return token;
     },
@@ -98,6 +142,7 @@ export const authOptions: NextAuthOptions = {
         (session.user as { mustChangePassword?: boolean }).mustChangePassword =
           token.mustChangePassword as boolean;
         (session.user as { id?: string }).id = token.userId as string;
+        session.user.sessionInvalidated = Boolean(token.sessionInvalidated);
       }
       return session;
     },
