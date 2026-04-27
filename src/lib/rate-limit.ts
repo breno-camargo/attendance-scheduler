@@ -192,3 +192,27 @@ export async function checkImportRateLimit(key: string): Promise<boolean> {
   }
   return checkMemoryRateLimit(`import:${key}`, IMPORT_MAX_ATTEMPTS, IMPORT_WINDOW_SECONDS);
 }
+
+const CSP_REPORT_MAX_ATTEMPTS = isDev ? 1000 : 120;
+const CSP_REPORT_WINDOW_SECONDS = 60;
+
+const cspReportRatelimit = redis
+  ? new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(CSP_REPORT_MAX_ATTEMPTS, `${CSP_REPORT_WINDOW_SECONDS} s`),
+      analytics: false,
+      prefix: 'compasss:csp-report',
+    })
+  : null;
+
+export async function checkCspReportRateLimit(key: string): Promise<boolean> {
+  if (cspReportRatelimit) {
+    const { success } = await cspReportRatelimit.limit(key);
+    return success;
+  }
+  return checkMemoryRateLimit(
+    `csp-report:${key}`,
+    CSP_REPORT_MAX_ATTEMPTS,
+    CSP_REPORT_WINDOW_SECONDS,
+  );
+}
