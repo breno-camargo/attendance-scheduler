@@ -32,6 +32,7 @@
   --surface-subtle: rgba(255, 255, 255, 0.05);
   --primary-subtle: rgba(16, 185, 129, 0.1);
   --primary-border-subtle: rgba(16, 185, 129, 0.15);
+  --skeleton-shimmer: rgba(255, 255, 255, 0.14);
 
   /* Danger tokens */
   --danger: #f87171;
@@ -75,6 +76,7 @@
   --surface-subtle: rgba(241, 245, 249, 0.8);
   --primary-subtle: rgba(5, 150, 105, 0.1);
   --primary-border-subtle: rgba(5, 150, 105, 0.12);
+  --skeleton-shimmer: rgba(5, 150, 105, 0.16);
 
   /* Danger tokens — light overrides */
   --danger: #dc2626;
@@ -186,12 +188,14 @@ a {
   transition: var(--transition-smooth);
 }
 
-.glass-panel:hover {
-  border-color: var(--primary);
-  box-shadow:
-    0 12px 48px rgba(0, 0, 0, 0.2),
-    0 0 20px var(--primary-glow);
-  transform: translateY(-4px);
+@media (hover: hover) and (pointer: fine) {
+  .glass-panel:not(.modal-panel):not(.schedule-controls):not(.itinerary-panel):hover {
+    border-color: var(--primary);
+    box-shadow:
+      0 12px 48px rgba(0, 0, 0, 0.2),
+      0 0 20px var(--primary-glow);
+    transform: translateY(-4px);
+  }
 }
 
 .title {
@@ -361,6 +365,30 @@ textarea:focus {
   animation: fadeIn 0.4s var(--ease-out-expo) forwards;
 }
 
+@keyframes modalBackdropIn {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0);
+    -webkit-backdrop-filter: blur(0);
+  }
+  to {
+    opacity: 1;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+}
+
+@keyframes modalPanelIn {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 body::before {
   content: '';
   position: fixed;
@@ -399,6 +427,21 @@ body:has(.loading-indicator)::before {
   }
 }
 
+@keyframes skeletonShimmer {
+  from {
+    background-position: 120% 0;
+  }
+  to {
+    background-position: -120% 0;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* ── A11y utility: visually hidden but readable by screen readers ── */
 .sr-only {
   position: absolute;
@@ -414,9 +457,17 @@ body:has(.loading-indicator)::before {
 
 /* ── Skeleton loaders ──────────────────────────────────────── */
 .skeleton {
-  background: var(--primary-border-subtle);
+  background:
+    linear-gradient(
+      90deg,
+      transparent 0%,
+      var(--skeleton-shimmer) 45%,
+      transparent 90%
+    ),
+    var(--primary-border-subtle);
+  background-size: 220% 100%;
   border-radius: 4px;
-  animation: statPulse 1.4s ease-in-out infinite;
+  animation: skeletonShimmer 1.3s ease-in-out infinite;
 }
 
 .skeleton-bar {
@@ -770,6 +821,8 @@ li.client-card:hover {
   justify-content: center;
   padding: 1rem;
   backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  animation: modalBackdropIn 0.2s ease-out both;
 }
 
 .modal-panel {
@@ -781,6 +834,8 @@ li.client-card:hover {
   padding: 0;
   display: flex;
   flex-direction: column;
+  animation: modalPanelIn 0.26s var(--ease-out-expo) both;
+  transform-origin: center top;
 }
 
 .modal-panel--fixed-footer {
@@ -810,6 +865,35 @@ li.client-card:hover {
 
 .modal-close:hover {
   opacity: 1;
+  transform: scale(1.08);
+}
+
+.app-loading {
+  min-height: calc(100vh - var(--nav-height));
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  padding: 2rem;
+}
+
+.app-loading__spinner {
+  width: 50px;
+  height: 50px;
+  border: 3px solid var(--primary-border-subtle);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+  box-shadow: 0 0 24px var(--primary-glow);
+}
+
+.app-loading__text {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .modal-body {
@@ -1153,6 +1237,31 @@ select.form-input {
 }
 [data-theme='light'] .btn-icon-orange {
   color: #ea580c;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+
+  .glass-panel:hover,
+  .btn-primary:hover,
+  .btn-secondary:hover,
+  .btn-icon:hover,
+  li.client-card:hover,
+  .glass-card.hoverable:hover,
+  .theme-toggle:hover {
+    transform: none !important;
+  }
+
+  body::before {
+    display: none;
+  }
 }
 
 /* Edit button text that became orange-ish */
