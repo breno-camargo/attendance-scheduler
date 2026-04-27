@@ -216,3 +216,57 @@ export async function checkCspReportRateLimit(key: string): Promise<boolean> {
     CSP_REPORT_WINDOW_SECONDS,
   );
 }
+
+const RESET_PASSWORD_MAX_ATTEMPTS = isDev ? 50 : 5;
+const RESET_PASSWORD_WINDOW_SECONDS = 15 * 60;
+
+const resetPasswordRatelimit = redis
+  ? new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(
+        RESET_PASSWORD_MAX_ATTEMPTS,
+        `${RESET_PASSWORD_WINDOW_SECONDS} s`,
+      ),
+      analytics: false,
+      prefix: 'compasss:reset-password',
+    })
+  : null;
+
+export async function checkResetPasswordRateLimit(key: string): Promise<boolean> {
+  if (resetPasswordRatelimit) {
+    const { success } = await resetPasswordRatelimit.limit(key);
+    return success;
+  }
+  return checkMemoryRateLimit(
+    `reset-password:${key}`,
+    RESET_PASSWORD_MAX_ATTEMPTS,
+    RESET_PASSWORD_WINDOW_SECONDS,
+  );
+}
+
+const CHANGE_PASSWORD_MAX_ATTEMPTS = isDev ? 50 : 10;
+const CHANGE_PASSWORD_WINDOW_SECONDS = 15 * 60;
+
+const changePasswordRatelimit = redis
+  ? new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(
+        CHANGE_PASSWORD_MAX_ATTEMPTS,
+        `${CHANGE_PASSWORD_WINDOW_SECONDS} s`,
+      ),
+      analytics: false,
+      prefix: 'compasss:change-password',
+    })
+  : null;
+
+export async function checkChangePasswordRateLimit(key: string): Promise<boolean> {
+  if (changePasswordRatelimit) {
+    const { success } = await changePasswordRatelimit.limit(key);
+    return success;
+  }
+  return checkMemoryRateLimit(
+    `change-password:${key}`,
+    CHANGE_PASSWORD_MAX_ATTEMPTS,
+    CHANGE_PASSWORD_WINDOW_SECONDS,
+  );
+}
