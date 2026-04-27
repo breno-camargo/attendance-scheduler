@@ -1,6 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   async headers() {
+    const cspReportOnly =
+      "default-src 'self'; script-src 'self'; worker-src 'self'; style-src 'self' https://fonts.googleapis.com; style-src-elem 'self' https://fonts.googleapis.com; img-src 'self' data:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://vitals.vercel-insights.com; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; report-uri /api/csp-report;";
+
     return [
       {
         // Relatórios não podem ser cacheados pelo browser — dados mudam
@@ -48,6 +51,14 @@ const nextConfig = {
                 ? ''
                 : "default-src 'self'; script-src 'self' 'unsafe-inline'; worker-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;",
           },
+          ...(process.env.NODE_ENV === 'development'
+            ? []
+            : [
+                {
+                  key: 'Content-Security-Policy-Report-Only',
+                  value: cspReportOnly,
+                },
+              ]),
         ],
       },
     ];
