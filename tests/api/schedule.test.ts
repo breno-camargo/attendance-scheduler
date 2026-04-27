@@ -123,6 +123,84 @@ describe('POST /api/schedule', () => {
     expect(prismaMock.appointment.create).not.toHaveBeenCalled();
   });
 
+  it('returns 403 when filtered user schedules a client outside their scope', async () => {
+    mockGetServerSession.mockResolvedValueOnce(filteredUser);
+    prismaMock.professional.findMany.mockResolvedValue([
+      { id: validScheduleBody.professionalId },
+    ] as any);
+    prismaMock.client.findFirst.mockResolvedValue(null);
+
+    const req = new Request('http://localhost/api/schedule', {
+      method: 'POST',
+      body: JSON.stringify(validScheduleBody),
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    const response = await POST(req);
+
+    expect(response.status).toBe(403);
+    expect(prismaMock.client.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ id: validScheduleBody.clientId }),
+      }),
+    );
+    expect(prismaMock.appointment.create).not.toHaveBeenCalled();
+  });
+
+  it('returns 400 when contract does not belong to the informed client', async () => {
+    prismaMock.contract.findUnique.mockResolvedValue({
+      clientId: 'cbbbbbbbbbbbbbbbbbbbbbbbb',
+      professionalId: validScheduleBody.professionalId,
+    } as any);
+
+    const req = new Request('http://localhost/api/schedule', {
+      method: 'POST',
+      body: JSON.stringify({ ...validScheduleBody, contractId: 'ccontract0000000000000000' }),
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    const response = await POST(req);
+
+    expect(response.status).toBe(400);
+    expect(prismaMock.appointment.create).not.toHaveBeenCalled();
+  });
+
+  it('returns 400 when contract does not belong to the informed professional', async () => {
+    prismaMock.contract.findUnique.mockResolvedValue({
+      clientId: validScheduleBody.clientId,
+      professionalId: 'cbbbbbbbbbbbbbbbbbbbbbbbb',
+    } as any);
+
+    const req = new Request('http://localhost/api/schedule', {
+      method: 'POST',
+      body: JSON.stringify({ ...validScheduleBody, contractId: 'ccontract0000000000000000' }),
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    const response = await POST(req);
+
+    expect(response.status).toBe(400);
+    expect(prismaMock.appointment.create).not.toHaveBeenCalled();
+  });
+
+  it('returns 400 when contract has no professional assigned', async () => {
+    prismaMock.contract.findUnique.mockResolvedValue({
+      clientId: validScheduleBody.clientId,
+      professionalId: null,
+    } as any);
+
+    const req = new Request('http://localhost/api/schedule', {
+      method: 'POST',
+      body: JSON.stringify({ ...validScheduleBody, contractId: 'ccontract0000000000000000' }),
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    const response = await POST(req);
+
+    expect(response.status).toBe(400);
+    expect(prismaMock.appointment.create).not.toHaveBeenCalled();
+  });
+
   it('defaults type to VISITA_TECNICA when not provided', async () => {
     prismaMock.appointment.create.mockResolvedValue(mockAppointment as any);
 
@@ -480,6 +558,25 @@ describe('PATCH /api/schedule/[id]', () => {
     expect(updateCall.data.date).toBeInstanceOf(Date);
   });
 
+  it('allows patch date in YYYY-MM-DD format used by the calendar UI', async () => {
+    const updated = { ...mockAppointment, date: new Date('2024-08-20T00:00:00.000Z') };
+    prismaMock.appointment.findUnique.mockResolvedValue({
+      ...mockAppointment,
+      client: { name: 'Cliente Teste' },
+    } as any);
+    prismaMock.appointment.update.mockResolvedValue(updated as any);
+
+    const req = new Request(`http://localhost/api/schedule/${validId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ date: '2024-08-20' }),
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    const response = await PATCH(req, { params: Promise.resolve({ id: validId }) });
+
+    expect(response.status).toBe(200);
+  });
+
   it('only includes defined fields in the update payload', async () => {
     prismaMock.appointment.findUnique.mockResolvedValue({
       ...mockAppointment,
@@ -655,6 +752,34 @@ describe('PATCH /api/schedule/[id]', () => {
     expect(response.status).toBe(400);
     const body = await response.json();
     expect(body).toHaveProperty('error');
+  });
+
+  it('returns 400 when patch date is not parseable', async () => {
+    const req = new Request(`http://localhost/api/schedule/${validId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ date: 'not-a-date' }),
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    const response = await PATCH(req, { params: Promise.resolve({ id: validId }) });
+
+    expect(response.status).toBe(400);
+    expect(prismaMock.appointment.findUnique).not.toHaveBeenCalled();
+    expect(prismaMock.appointment.update).not.toHaveBeenCalled();
+  });
+
+  it('returns 400 when patch date is parseable but not an ISO-like date', async () => {
+    const req = new Request(`http://localhost/api/schedule/${validId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ date: '1' }),
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    const response = await PATCH(req, { params: Promise.resolve({ id: validId }) });
+
+    expect(response.status).toBe(400);
+    expect(prismaMock.appointment.findUnique).not.toHaveBeenCalled();
+    expect(prismaMock.appointment.update).not.toHaveBeenCalled();
   });
 
   it('returns 400 when observation exceeds 500 characters', async () => {

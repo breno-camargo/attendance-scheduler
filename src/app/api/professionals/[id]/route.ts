@@ -63,8 +63,8 @@ export async function PUT(request: Request, props: { params: Promise<{ id: strin
     const data = validation.data;
     if (
       auth.scope === 'filtered' &&
-      body.supervisorId !== undefined &&
-      body.supervisorId !== auth.internalContactId
+      data.supervisorId !== undefined &&
+      data.supervisorId !== auth.internalContactId
     ) {
       return ApiUtils.error('VocÃª nÃ£o tem permissÃ£o para reatribuir este tÃ©cnico', null, 403);
     }
@@ -79,7 +79,7 @@ export async function PUT(request: Request, props: { params: Promise<{ id: strin
         name: ApiUtils.capitalizeName(data.name),
         email,
         phone: data.phone || null,
-        supervisorId: body.supervisorId !== undefined ? body.supervisorId || null : undefined,
+        supervisorId: data.supervisorId !== undefined ? data.supervisorId || null : undefined,
       },
     });
 

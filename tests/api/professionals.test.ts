@@ -347,7 +347,7 @@ describe('PUT /api/professionals/[id]', () => {
 
     const req = new Request(`http://localhost/api/professionals/${validProfessionalId}`, {
       method: 'PUT',
-      body: JSON.stringify({ ...validProfessionalBody, supervisorId: 'other-contact' }),
+      body: JSON.stringify({ ...validProfessionalBody, supervisorId: 'cbbbbbbbbbbbbbbbbbbbbbbbb' }),
       headers: { 'Content-Type': 'application/json' },
     });
 
