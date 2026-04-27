@@ -564,6 +564,7 @@ body:has(.loading-indicator)::before {
 
 /* ── Header desktop layout ─────────────────────────────────── */
 .desktop-nav {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 2rem;
@@ -614,21 +615,18 @@ body:has(.loading-indicator)::before {
   font-weight: 700;
 }
 
-.nav-link__underline {
+.desktop-nav__indicator {
   position: absolute;
   bottom: -4px;
   left: 0;
   height: 2px;
   background: var(--primary);
   border-radius: 2px;
-  transition: var(--transition-smooth);
-  width: 0;
-  opacity: 0;
-}
-
-.nav-link[aria-current='page'] .nav-link__underline {
-  width: 100%;
-  opacity: 1;
+  pointer-events: none;
+  transition:
+    transform 0.32s var(--ease-out-expo),
+    width 0.32s var(--ease-out-expo),
+    opacity 0.2s var(--ease-out-expo);
 }
 
 /* ── Home page (dashboard) ─────────────────────────────────── */
