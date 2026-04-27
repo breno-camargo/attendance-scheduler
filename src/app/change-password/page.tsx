@@ -9,6 +9,7 @@ import { Logo } from '@/components/ui/logo';
 export default function ChangePasswordPage() {
   const router = useRouter();
   const { data: session, update } = useSession();
+  const [currentPassword, setCurrentPassword] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [error, setError] = useState('');
@@ -32,7 +33,7 @@ export default function ChangePasswordPage() {
       const res = await fetch('/api/auth/change-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ newPassword: password }),
+        body: JSON.stringify({ currentPassword, newPassword: password }),
       });
 
       const data = await res.json();
@@ -114,6 +115,21 @@ export default function ChangePasswordPage() {
           style={{ display: 'flex', flexDirection: 'column', gap: '1.4rem' }}
         >
           <div className="form-field">
+            <label className="form-label" htmlFor="current-password">
+              Senha Atual
+            </label>
+            <input
+              id="current-password"
+              className="form-input"
+              type="password"
+              placeholder="Digite sua senha atual"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              required
+              autoFocus
+            />
+          </div>
+          <div className="form-field">
             <label className="form-label" htmlFor="new-password">
               Nova Senha
             </label>
@@ -121,11 +137,10 @@ export default function ChangePasswordPage() {
               id="new-password"
               className="form-input"
               type="password"
-              placeholder="Mínimo 6 caracteres"
+              placeholder="Mínimo 8 caracteres"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              autoFocus
             />
           </div>
           <div className="form-field">

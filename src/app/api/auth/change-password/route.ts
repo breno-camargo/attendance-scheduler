@@ -5,6 +5,7 @@ import { ApiUtils } from '@/lib/api-utils';
 import { audit } from '@/lib/audit';
 import { authOptions } from '@/lib/auth';
 import prisma from '@/lib/prisma';
+import { checkChangePasswordRateLimit } from '@/lib/rate-limit';
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
@@ -13,9 +14,15 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { newPassword } = await request.json();
+    const allowed = await checkChangePasswordRateLimit(session.user.id);
+    if (!allowed) {
+      return ApiUtils.error('Muitas tentativas. Aguarde alguns minutos.', null, 429);
+    }
+
+    const { currentPassword, newPassword } = await request.json();
 
     if (
+      !currentPassword ||
       !newPassword ||
       newPassword.length < 8 ||
       !/[a-zA-Z]/.test(newPassword) ||
@@ -26,6 +33,25 @@ export async function POST(request: Request) {
         null,
         400,
       );
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { id: true, password: true },
+    });
+    if (!user) {
+      return ApiUtils.error('Não autorizado', null, 401);
+    }
+
+    const currentPasswordValid = await bcrypt.compare(currentPassword, user.password);
+    if (!currentPasswordValid) {
+      audit({ event: 'PASSWORD_CHANGE_FAILED', userId: session.user.id });
+      return ApiUtils.error('Senha atual incorreta', null, 401);
+    }
+
+    const samePassword = await bcrypt.compare(newPassword, user.password);
+    if (samePassword) {
+      return ApiUtils.error('A nova senha deve ser diferente da senha atual', null, 400);
     }
 
     const hash = await bcrypt.hash(newPassword, 10);
