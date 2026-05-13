@@ -2,6 +2,7 @@ import { ApiUtils, requireAuthWithScope, requireProfessionalInScope } from '@/li
 import { writeAuditLog } from '@/lib/audit-log';
 import { getHolidaysForYear } from '@/lib/holidays';
 import prisma from '@/lib/prisma';
+import { renumberContractVisits } from '@/lib/schedule-service';
 import { appointmentPatchSchema } from '@/lib/schemas';
 
 /**
@@ -44,6 +45,12 @@ export async function DELETE(_request: Request, props: { params: Promise<{ id: s
         type: existing.type,
       },
     });
+
+    // Renumera visitas restantes do contrato no mesmo ano — senão a observation
+    // grava stale (ex: deletar Jan-Abr deixa "Visita 05" como primeira em Maio no PDF).
+    if (existing.contractId && existing.type === 'VISITA_TECNICA') {
+      await renumberContractVisits(existing.contractId, existing.date.getUTCFullYear());
+    }
     return ApiUtils.success({ success: true });
   } catch (error: unknown) {
     return ApiUtils.error('Erro ao excluir agendamento', error);
@@ -137,31 +144,15 @@ export async function PATCH(request: Request, props: { params: Promise<{ id: str
       });
     }
 
-    // Após mover data, renumerar todas as visitas do mesmo contrato em ordem cronológica
+    // Após mover data, renumera o(s) ano(s) afetado(s). Se a data atravessou
+    // ano, ambos precisam ser renumerados (ano de origem perdeu uma visita,
+    // ano de destino ganhou uma).
     if (date && updated.contractId) {
-      const allVisits = await prisma.appointment.findMany({
-        where: {
-          contractId: updated.contractId,
-          type: 'VISITA_TECNICA',
-        },
-        orderBy: { date: 'asc' },
-        select: { id: true, observation: true },
-      });
-
-      const updates = allVisits
-        .map((v, i) => ({
-          id: v.id,
-          obs: `Visita ${(i + 1).toString().padStart(2, '0')}`,
-          old: v.observation,
-        }))
-        .filter((v) => v.obs !== v.old);
-
-      if (updates.length > 0) {
-        await prisma.$transaction(
-          updates.map((v) =>
-            prisma.appointment.update({ where: { id: v.id }, data: { observation: v.obs } }),
-          ),
-        );
+      const oldYear = existing.date.getUTCFullYear();
+      const newYear = updated.date.getUTCFullYear();
+      await renumberContractVisits(updated.contractId, newYear);
+      if (oldYear !== newYear) {
+        await renumberContractVisits(updated.contractId, oldYear);
       }
     }
 
