@@ -349,6 +349,71 @@ describe('POST /api/schedule', () => {
     const body = await response.json();
     expect(body).toHaveProperty('error');
   });
+
+  it('renumera visitas do contrato ao criar VISITA_TECNICA sem observation custom', async () => {
+    const contractId = 'clcontract000000000000001';
+    prismaMock.contract.findUnique.mockResolvedValue({
+      clientId: validScheduleBody.clientId,
+      professionalId: validScheduleBody.professionalId,
+    } as any);
+    prismaMock.appointment.create.mockResolvedValue({
+      ...mockAppointment,
+      contractId,
+      type: 'VISITA_TECNICA',
+      date: new Date('2024-06-15T10:00:00.000Z'),
+    } as any);
+    prismaMock.appointment.findMany.mockResolvedValue([] as any);
+
+    const { observation: _obs, ...bodyWithoutObs } = validScheduleBody;
+    const req = new Request('http://localhost/api/schedule', {
+      method: 'POST',
+      body: JSON.stringify({ ...bodyWithoutObs, contractId }),
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    await POST(req);
+
+    expect(prismaMock.appointment.findMany).toHaveBeenCalledWith({
+      where: {
+        contractId,
+        type: 'VISITA_TECNICA',
+        date: {
+          gte: new Date(Date.UTC(2024, 0, 1)),
+          lt: new Date(Date.UTC(2025, 0, 1)),
+        },
+      },
+      orderBy: { date: 'asc' },
+      select: { id: true, observation: true },
+    });
+  });
+
+  it('não renumera ao criar visita com observation customizada (respeita input)', async () => {
+    const contractId = 'clcontract000000000000001';
+    prismaMock.contract.findUnique.mockResolvedValue({
+      clientId: validScheduleBody.clientId,
+      professionalId: validScheduleBody.professionalId,
+    } as any);
+    prismaMock.appointment.create.mockResolvedValue({
+      ...mockAppointment,
+      contractId,
+      type: 'VISITA_TECNICA',
+      observation: 'Reunião especial',
+    } as any);
+
+    const req = new Request('http://localhost/api/schedule', {
+      method: 'POST',
+      body: JSON.stringify({
+        ...validScheduleBody,
+        contractId,
+        observation: 'Reunião especial',
+      }),
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    await POST(req);
+
+    expect(prismaMock.appointment.findMany).not.toHaveBeenCalled();
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -474,6 +539,79 @@ describe('DELETE /api/schedule/[id]', () => {
     expect(response.status).toBe(500);
     const body = await response.json();
     expect(body).toHaveProperty('error');
+  });
+
+  it('renumera visitas restantes do contrato no mesmo ano após deletar VISITA_TECNICA', async () => {
+    const contractId = 'clcontract000000000000001';
+    prismaMock.appointment.findUnique.mockResolvedValue({
+      ...mockAppointment,
+      contractId,
+      type: 'VISITA_TECNICA',
+      date: new Date('2026-05-12T00:00:00.000Z'),
+      client: { name: 'HL Faria Lima' },
+    } as any);
+    prismaMock.appointment.delete.mockResolvedValue(mockAppointment as any);
+    prismaMock.appointment.findMany.mockResolvedValue([
+      { id: 'apt1', observation: 'Visita 07' },
+      { id: 'apt2', observation: 'Visita 08' },
+    ] as any);
+
+    const req = new Request(`http://localhost/api/schedule/${validId}`, {
+      method: 'DELETE',
+    });
+
+    await DELETE(req, { params: Promise.resolve({ id: validId }) });
+
+    expect(prismaMock.appointment.findMany).toHaveBeenCalledWith({
+      where: {
+        contractId,
+        type: 'VISITA_TECNICA',
+        date: {
+          gte: new Date(Date.UTC(2026, 0, 1)),
+          lt: new Date(Date.UTC(2027, 0, 1)),
+        },
+      },
+      orderBy: { date: 'asc' },
+      select: { id: true, observation: true },
+    });
+    expect(prismaMock.$transaction).toHaveBeenCalledTimes(1);
+  });
+
+  it('não renumera ao deletar TESTE_SDAI (mantém observation original do teste)', async () => {
+    const contractId = 'clcontract000000000000001';
+    prismaMock.appointment.findUnique.mockResolvedValue({
+      ...mockAppointment,
+      contractId,
+      type: 'TESTE_SDAI',
+      client: { name: 'HL Faria Lima' },
+    } as any);
+    prismaMock.appointment.delete.mockResolvedValue(mockAppointment as any);
+
+    const req = new Request(`http://localhost/api/schedule/${validId}`, {
+      method: 'DELETE',
+    });
+
+    await DELETE(req, { params: Promise.resolve({ id: validId }) });
+
+    expect(prismaMock.appointment.findMany).not.toHaveBeenCalled();
+  });
+
+  it('não renumera ao deletar appointment sem contractId', async () => {
+    prismaMock.appointment.findUnique.mockResolvedValue({
+      ...mockAppointment,
+      contractId: null,
+      type: 'VISITA_TECNICA',
+      client: { name: 'Avulso' },
+    } as any);
+    prismaMock.appointment.delete.mockResolvedValue(mockAppointment as any);
+
+    const req = new Request(`http://localhost/api/schedule/${validId}`, {
+      method: 'DELETE',
+    });
+
+    await DELETE(req, { params: Promise.resolve({ id: validId }) });
+
+    expect(prismaMock.appointment.findMany).not.toHaveBeenCalled();
   });
 });
 

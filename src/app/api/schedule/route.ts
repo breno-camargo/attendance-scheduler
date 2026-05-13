@@ -7,6 +7,7 @@ import {
 } from '@/lib/api-utils';
 import { getHolidaysForYear } from '@/lib/holidays';
 import prisma from '@/lib/prisma';
+import { renumberContractVisits } from '@/lib/schedule-service';
 import { appointmentSchema } from '@/lib/schemas';
 
 /**
@@ -74,6 +75,13 @@ export async function POST(request: Request) {
         observation: data.observation || '',
       },
     });
+
+    // Renumera visitas do contrato no ano da inserção — a inserção pode cair
+    // no meio da sequência, e sem renumerar a observation default fica fora de
+    // ordem cronológica. Só roda se o usuário não passou observation custom.
+    if (appointment.contractId && appointment.type === 'VISITA_TECNICA' && !data.observation) {
+      await renumberContractVisits(appointment.contractId, appointment.date.getUTCFullYear());
+    }
 
     return ApiUtils.success(appointment, 201);
   } catch (error: unknown) {

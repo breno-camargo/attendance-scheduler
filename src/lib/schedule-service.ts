@@ -105,3 +105,46 @@ export function isGenerationError(
 ): result is ScheduleGenerationError {
   return 'code' in result;
 }
+
+/**
+ * Renumera as VISITA_TECNICA de um contrato dentro de um ano específico em ordem
+ * cronológica como "Visita NN". TESTE_SDAI fica intocado.
+ *
+ * O escopo é por ANO porque o PDF (`/reports/contract/[id]?year=N`) também filtra
+ * por ano — numeração global por contrato faria a primeira visita de um ano
+ * subsequente herdar o índice do ano anterior (ex: 2025 termina em 12 → 2026
+ * começa em Visita 13, e o PDF de 2026 mostra "Visita 13" como primeira).
+ *
+ * Idempotente: só atualiza linhas que estão fora do número correto.
+ */
+export async function renumberContractVisits(contractId: string, year: number): Promise<number> {
+  const yearStart = new Date(Date.UTC(year, 0, 1));
+  const yearEnd = new Date(Date.UTC(year + 1, 0, 1));
+
+  const visits = await prisma.appointment.findMany({
+    where: {
+      contractId,
+      type: 'VISITA_TECNICA',
+      date: { gte: yearStart, lt: yearEnd },
+    },
+    orderBy: { date: 'asc' },
+    select: { id: true, observation: true },
+  });
+
+  const updates = visits
+    .map((v, i) => ({
+      id: v.id,
+      obs: `Visita ${(i + 1).toString().padStart(2, '0')}`,
+      old: v.observation,
+    }))
+    .filter((v) => v.obs !== v.old);
+
+  if (updates.length === 0) return 0;
+
+  await prisma.$transaction(
+    updates.map((v) =>
+      prisma.appointment.update({ where: { id: v.id }, data: { observation: v.obs } }),
+    ),
+  );
+  return updates.length;
+}
