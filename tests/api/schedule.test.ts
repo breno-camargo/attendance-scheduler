@@ -953,4 +953,130 @@ describe('PATCH /api/schedule/[id]', () => {
     const body = await response.json();
     expect(body).toHaveProperty('error');
   });
+
+  it('VISITA→SDAI sem observation: reescreve para "Teste Geral SDAI (Trimestral)"', async () => {
+    const contractId = 'clcontract000000000000001';
+    const before = {
+      ...mockAppointment,
+      contractId,
+      type: 'VISITA_TECNICA',
+      observation: 'Visita 07',
+      date: new Date('2026-07-22T00:00:00.000Z'),
+      client: { name: 'Praça Pamplona' },
+    };
+    prismaMock.appointment.findUnique.mockResolvedValue(before as any);
+    prismaMock.appointment.update.mockResolvedValue({
+      ...before,
+      type: 'TESTE_SDAI',
+      observation: 'Teste Geral SDAI (Trimestral)',
+    } as any);
+    prismaMock.appointment.findMany.mockResolvedValue([] as any);
+
+    const req = new Request(`http://localhost/api/schedule/${validId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ type: 'TESTE_SDAI' }),
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    await PATCH(req, { params: Promise.resolve({ id: validId }) });
+
+    const updateCall = prismaMock.appointment.update.mock.calls[0][0] as any;
+    expect(updateCall.data.observation).toBe('Teste Geral SDAI (Trimestral)');
+    // Mudança de tipo também dispara renumeração (visita "sumiu" do count)
+    expect(prismaMock.appointment.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ contractId, type: 'VISITA_TECNICA' }),
+      }),
+    );
+  });
+
+  it('SDAI→VISITA sem observation: zera observation e renumeração dá "Visita NN"', async () => {
+    const contractId = 'clcontract000000000000001';
+    const before = {
+      ...mockAppointment,
+      contractId,
+      type: 'TESTE_SDAI',
+      observation: 'Teste Geral SDAI (Trimestral)',
+      date: new Date('2026-07-22T00:00:00.000Z'),
+      client: { name: 'Praça Pamplona' },
+    };
+    prismaMock.appointment.findUnique.mockResolvedValue(before as any);
+    prismaMock.appointment.update.mockResolvedValue({
+      ...before,
+      type: 'VISITA_TECNICA',
+      observation: '',
+    } as any);
+    prismaMock.appointment.findMany.mockResolvedValue([] as any);
+
+    const req = new Request(`http://localhost/api/schedule/${validId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ type: 'VISITA_TECNICA' }),
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    await PATCH(req, { params: Promise.resolve({ id: validId }) });
+
+    const updateCall = prismaMock.appointment.update.mock.calls[0][0] as any;
+    expect(updateCall.data.observation).toBe('');
+    expect(prismaMock.appointment.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ contractId, type: 'VISITA_TECNICA' }),
+      }),
+    );
+  });
+
+  it('mudança de tipo com observation custom no body: respeita o input', async () => {
+    const contractId = 'clcontract000000000000001';
+    const before = {
+      ...mockAppointment,
+      contractId,
+      type: 'VISITA_TECNICA',
+      observation: 'Visita 07',
+      date: new Date('2026-07-22T00:00:00.000Z'),
+      client: { name: 'Praça Pamplona' },
+    };
+    prismaMock.appointment.findUnique.mockResolvedValue(before as any);
+    prismaMock.appointment.update.mockResolvedValue({
+      ...before,
+      type: 'TESTE_SDAI',
+      observation: 'Reagendado',
+    } as any);
+    prismaMock.appointment.findMany.mockResolvedValue([] as any);
+
+    const req = new Request(`http://localhost/api/schedule/${validId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ type: 'TESTE_SDAI', observation: 'Reagendado' }),
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    await PATCH(req, { params: Promise.resolve({ id: validId }) });
+
+    const updateCall = prismaMock.appointment.update.mock.calls[0][0] as any;
+    expect(updateCall.data.observation).toBe('Reagendado');
+  });
+
+  it('PATCH só de observation (sem tipo) não dispara renumeração', async () => {
+    prismaMock.appointment.findUnique.mockResolvedValue({
+      ...mockAppointment,
+      contractId: 'clcontract000000000000001',
+      type: 'VISITA_TECNICA',
+      observation: 'Antiga',
+      client: { name: 'X' },
+    } as any);
+    prismaMock.appointment.update.mockResolvedValue({
+      ...mockAppointment,
+      contractId: 'clcontract000000000000001',
+      observation: 'Atualizada',
+    } as any);
+
+    const req = new Request(`http://localhost/api/schedule/${validId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ observation: 'Atualizada' }),
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    await PATCH(req, { params: Promise.resolve({ id: validId }) });
+
+    expect(prismaMock.appointment.findMany).not.toHaveBeenCalled();
+  });
 });

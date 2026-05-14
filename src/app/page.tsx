@@ -6,20 +6,12 @@ import { useEffect, useState } from 'react';
 import { Modal } from '@/components/ui/modal';
 import { statsApi } from '@/lib/api-client';
 
-interface ContractDetail {
-  id: string;
-  clientName: string;
-  professionalName: string | null;
-  systemTypes: string | null;
-  hasSchedule: boolean;
-}
-
 interface Stats {
   clients: number;
   professionals: number;
   totalContracts: number;
   contractsWithSchedule: number;
-  contractsDetail: ContractDetail[];
+  pendingTechs: string[];
 }
 
 function StatBadge({
@@ -52,15 +44,7 @@ export default function Home() {
   }, []);
 
   const loading = stats === null;
-  const pendingTechs = stats?.contractsDetail
-    ? Array.from(
-        new Set(
-          stats.contractsDetail
-            .filter((c) => !c.hasSchedule)
-            .map((c) => c.professionalName ?? 'Sem técnico'),
-        ),
-      ).sort()
-    : [];
+  const pendingTechs = stats?.pendingTechs ?? [];
 
   return (
     <div className="home-main">

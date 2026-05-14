@@ -315,12 +315,6 @@ export const statsApi = {
       professionals: number;
       totalContracts: number;
       contractsWithSchedule: number;
-      contractsDetail: {
-        id: string;
-        clientName: string;
-        professionalName: string | null;
-        systemTypes: string | null;
-        hasSchedule: boolean;
-      }[];
+      pendingTechs: string[];
     }>('/api/stats', { tags: ['stats'], ttl: STATS_TTL_MS }),
 };

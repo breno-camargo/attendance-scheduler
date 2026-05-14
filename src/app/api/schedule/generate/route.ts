@@ -171,12 +171,23 @@ export async function GET(request: Request) {
     if (isNaN(year) || year < 2020 || year > 2100) {
       return ApiUtils.error('Ano inválido', null, 400);
     }
+    // Select explícito em vez de include — devolve só o que o calendário consome
+    // (ver Appointment em src/types/index.ts). Antes vinha createdAt/updatedAt,
+    // duration, clientId/professionalId redundantes etc. — overfetch sem uso.
     const appointments = await prisma.appointment.findMany({
       where: {
         professionalId,
         date: { gte: new Date(Date.UTC(year, 0, 1)), lt: new Date(Date.UTC(year + 1, 0, 1)) },
       },
-      include: { client: { select: { id: true, name: true } } },
+      select: {
+        id: true,
+        date: true,
+        type: true,
+        contractId: true,
+        observation: true,
+        status: true,
+        client: { select: { id: true, name: true } },
+      },
       orderBy: { date: 'asc' },
     });
 
