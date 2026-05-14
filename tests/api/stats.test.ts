@@ -47,52 +47,17 @@ describe('GET /api/stats', () => {
     expect(body).toHaveProperty('error');
   });
 
-  it('returns correct counts for clients, professionals, contracts and schedules', async () => {
+  it('returns correct counts and aggregates pendingTechs server-side', async () => {
     prismaMock.client.count.mockResolvedValue(5);
     prismaMock.professional.count.mockResolvedValue(3);
     prismaMock.contract.findMany.mockResolvedValue([
-      {
-        id: 'c1',
-        systemTypes: 'SDAI,CFTV',
-        client: { name: 'Client 1' },
-        professional: { name: 'Tec A' },
-      },
-      {
-        id: 'c2',
-        systemTypes: 'CFTV',
-        client: { name: 'Client 2' },
-        professional: { name: 'Tec B' },
-      },
-      {
-        id: 'c3',
-        systemTypes: null,
-        client: { name: 'Client 3' },
-        professional: null,
-      },
-      {
-        id: 'c4',
-        systemTypes: null,
-        client: { name: 'Client 4' },
-        professional: null,
-      },
-      {
-        id: 'c5',
-        systemTypes: null,
-        client: { name: 'Client 5' },
-        professional: null,
-      },
-      {
-        id: 'c6',
-        systemTypes: null,
-        client: { name: 'Client 6' },
-        professional: null,
-      },
-      {
-        id: 'c7',
-        systemTypes: null,
-        client: { name: 'Client 7' },
-        professional: null,
-      },
+      { id: 'c1', professional: { name: 'Tec A' } },
+      { id: 'c2', professional: { name: 'Tec B' } },
+      { id: 'c3', professional: { name: 'Tec C' } },
+      { id: 'c4', professional: { name: 'Tec A' } },
+      { id: 'c5', professional: null },
+      { id: 'c6', professional: { name: 'Tec C' } },
+      { id: 'c7', professional: { name: 'Tec B' } },
     ] as any);
     prismaMock.appointment.findMany.mockResolvedValue([
       { contractId: 'c1' },
@@ -109,12 +74,25 @@ describe('GET /api/stats', () => {
       totalContracts: 7,
       contractsWithSchedule: 2,
     });
-    expect(body.contractsDetail).toHaveLength(7);
-    expect(body.contractsDetail[0]).toMatchObject({
-      id: 'c1',
-      clientName: 'Client 1',
-      professionalName: 'Tec A',
-      hasSchedule: true,
+    // Pendentes: c3 (Tec C), c4 (Tec A), c5 (sem técnico), c6 (Tec C), c7 (Tec B).
+    // Dedup + sort.
+    expect(body.pendingTechs).toEqual(['Sem técnico', 'Tec A', 'Tec B', 'Tec C']);
+    // Garantia explícita: shape antiga não vaza mais.
+    expect(body).not.toHaveProperty('contractsDetail');
+  });
+
+  it('não seleciona client.name nem systemTypes na query de contratos', async () => {
+    prismaMock.client.count.mockResolvedValue(0);
+    prismaMock.professional.count.mockResolvedValue(0);
+    prismaMock.contract.findMany.mockResolvedValue([]);
+    prismaMock.appointment.findMany.mockResolvedValue([]);
+
+    await GET();
+
+    const findManyCall = prismaMock.contract.findMany.mock.calls[0][0] as any;
+    expect(findManyCall.select).toEqual({
+      id: true,
+      professional: { select: { name: true } },
     });
   });
 
@@ -133,7 +111,7 @@ describe('GET /api/stats', () => {
       professionals: 0,
       totalContracts: 0,
       contractsWithSchedule: 0,
-      contractsDetail: [],
+      pendingTechs: [],
     });
   });
 

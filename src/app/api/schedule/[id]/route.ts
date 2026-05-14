@@ -104,11 +104,22 @@ export async function PATCH(request: Request, props: { params: Promise<{ id: str
     const scopeError = await requireProfessionalInScope(auth, existing.professionalId);
     if (scopeError) return scopeError;
 
+    // Quando troca o tipo sem mandar observation custom, reescreve sozinho:
+    // VISITA→SDAI vira "Teste Geral SDAI (Trimestral)" (padrão da geração).
+    // SDAI→VISITA vira string vazia agora e a renumeração logo abaixo escreve
+    // "Visita NN" na posição cronológica correta. Sem isso, a observation antiga
+    // fica stale (ex: "Visita 58" num appointment que virou teste).
+    let computedObservation = observation;
+    const typeChanging = type !== undefined && type !== existing.type;
+    if (typeChanging && observation === undefined) {
+      computedObservation = type === 'TESTE_SDAI' ? 'Teste Geral SDAI (Trimestral)' : '';
+    }
+
     const updated = await prisma.appointment.update({
       where: { id },
       data: {
         ...(type !== undefined && { type }),
-        ...(observation !== undefined && { observation }),
+        ...(computedObservation !== undefined && { observation: computedObservation }),
         ...(date !== undefined && { date: new Date(date) }),
       },
     });
@@ -144,15 +155,16 @@ export async function PATCH(request: Request, props: { params: Promise<{ id: str
       });
     }
 
-    // Após mover data, renumera o(s) ano(s) afetado(s). Se a data atravessou
-    // ano, ambos precisam ser renumerados (ano de origem perdeu uma visita,
-    // ano de destino ganhou uma).
-    if (date && updated.contractId) {
+    // Renumera o(s) ano(s) afetado(s) quando:
+    //  - Data muda (visita entra/sai de um ano) → renumera novo e antigo se atravessou
+    //  - Tipo muda (VISITA vira SDAI ou vice-versa, o que altera a contagem) → renumera o ano
+    // Renumeração é year-scoped pra bater com o filtro do PDF.
+    if (updated.contractId && (date || typeChanging)) {
       const oldYear = existing.date.getUTCFullYear();
       const newYear = updated.date.getUTCFullYear();
-      await renumberContractVisits(updated.contractId, newYear);
-      if (oldYear !== newYear) {
-        await renumberContractVisits(updated.contractId, oldYear);
+      const yearsToRenumber = new Set<number>([oldYear, newYear]);
+      for (const year of yearsToRenumber) {
+        await renumberContractVisits(updated.contractId, year);
       }
     }
 
