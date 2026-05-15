@@ -125,14 +125,25 @@ export default async function ContractReportPage(props: {
     return row;
   });
 
-  // Escalação: sempre auto-preenche pelos contatos internos
-  const escalationContacts = (defaultContactsData.escalation || []).map((row: ReportContact) => {
-    if (!row.name && row.role) {
-      const match = internalStaff.find((s) => matchRole(s.role, row.role));
-      if (match) return { ...row, name: match.name, phone: match.phone, email: match.email };
-    }
-    return row;
-  });
+  // Escalação: auto-preenche pelos contatos internos. Quando há múltiplos
+  // InternalContact com o mesmo role (ex: dois "Diretor"), expande numa linha
+  // por contato — o rowspan na renderização agrupa todos sob o mesmo "Contato".
+  // Linhas extras ficam com `contact` vazio pra a normalização do rowspan
+  // herdar o valor da primeira (convenção do ReportContactTables).
+  const escalationContacts = (defaultContactsData.escalation || []).flatMap(
+    (row: ReportContact) => {
+      if (row.name || !row.role) return [row];
+      const matches = internalStaff.filter((s) => matchRole(s.role, row.role));
+      if (matches.length === 0) return [row];
+      return matches.map((m, i) => ({
+        ...row,
+        contact: i === 0 ? row.contact : '',
+        name: m.name,
+        phone: m.phone ?? '',
+        email: m.email ?? '',
+      }));
+    },
+  );
 
   const contactsData = {
     maintenance: maintenanceContacts,
