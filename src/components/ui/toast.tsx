@@ -55,7 +55,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               display: 'flex',
               flexDirection: 'column',
               gap: '0.5rem',
-              zIndex: 10000,
+              // Acima de .modal-backdrop (99999) — toast precisa cobrir modais
+              // abertos pra erro de validação ser visível ao salvar.
+              zIndex: 100000,
               pointerEvents: 'none',
             }}
           >
