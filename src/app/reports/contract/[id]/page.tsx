@@ -116,21 +116,25 @@ export default async function ContractReportPage(props: {
     return a === b || a.startsWith(b.slice(0, -1)) || b.startsWith(a.slice(0, -1));
   };
 
-  // Manutenção: SEMPRE recalcula pelo supervisor do técnico
-  const maintenanceContacts = (defaultContactsData.maintenance || []).map((row: ReportContact) => {
-    if (!row.name && row.role) {
-      const match = internalStaff.find((s) => matchRole(s.role, row.role));
-      if (match) return { ...row, name: match.name, phone: match.phone, email: match.email };
-    }
-    return row;
-  });
+  // Manutenção: SEMPRE recalcula pelo supervisor do técnico.
+  // Filtra cargos que não possuem nenhum InternalContact cadastrado
+  // (ex: Coordenador excluído → não aparece linha em branco no PDF).
+  const maintenanceContacts = (defaultContactsData.maintenance || [])
+    .map((row: ReportContact) => {
+      if (!row.name && row.role) {
+        const match = internalStaff.find((s) => matchRole(s.role, row.role));
+        if (match) return { ...row, name: match.name, phone: match.phone, email: match.email };
+      }
+      return row;
+    })
+    .filter((row) => row.name);
 
   // Escalação: auto-preenche pelos contatos internos. Quando há múltiplos
   // InternalContact com o mesmo role (ex: dois "Diretor"), expande numa linha
   // por contato — o rowspan na renderização agrupa todos sob o mesmo "Contato".
   // Linhas extras ficam com `contact` vazio pra a normalização do rowspan
   // herdar o valor da primeira (convenção do ReportContactTables).
-  const escalationContacts = (defaultContactsData.escalation || []).flatMap(
+  const escalationExpanded = (defaultContactsData.escalation || []).flatMap(
     (row: ReportContact) => {
       if (row.name || !row.role) return [row];
       const matches = internalStaff.filter((s) => matchRole(s.role, row.role));
@@ -144,6 +148,19 @@ export default async function ContractReportPage(props: {
       }));
     },
   );
+
+  // Normaliza os labels de `contact` ANTES de filtrar — cada linha herda o
+  // grupo da linha anterior quando `contact` está vazio. Sem isso, ao remover
+  // a linha-pai (ex: Comercial Obras/Peças), a próxima (Comercial Serviços)
+  // perdia o label "Setor Comercial".
+  const escalationNormalized = escalationExpanded.map((row, idx) => {
+    if (row.contact || idx === 0) return row;
+    let prev = idx - 1;
+    while (prev >= 0 && !escalationExpanded[prev].contact) prev--;
+    return prev >= 0 ? { ...row, contact: escalationExpanded[prev].contact } : row;
+  });
+
+  const escalationContacts = escalationNormalized.filter((row) => row.name);
 
   const contactsData = {
     maintenance: maintenanceContacts,
