@@ -378,7 +378,7 @@ Depois desse checklist fechar limpo, o próximo bloco bom é **monitoramento lev
 
 ## 📞 Contatos críticos
 
-- **Dev principal:** Breno Camargo — email: breno.hsc75@gmail.com / tel: (11)99012-7316
+- **Dev principal:** Breno Camargo — contato: consultar o canal interno da equipe
 - **Admin secundário:** _criar segunda conta admin no banco e guardar credenciais em cofre_
 - **Supabase support:** [supabase.com/dashboard](https://supabase.com/dashboard) → Help (resposta em até 48h no plano free)
 - **Vercel support:** [vercel.com/help](https://vercel.com/help)
