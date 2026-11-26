@@ -28,6 +28,8 @@ export default function ContractFormModal({
   professionals,
 }: ContractFormModalProps) {
   const { showToast } = useToast();
+  const contract = initialData?.contracts?.[0];
+  const initialPhone = formatPhone(initialData?.phone || '');
   const formId = 'contract-form';
   const monthNames = [
     'Jan',
@@ -56,34 +58,39 @@ export default function ContractFormModal({
   const [preferredDays, setPreferredDays] = useState<number[]>([]);
   const [saving, setSaving] = useState(false);
   const [newSystem, setNewSystem] = useState('');
+  const isMonthly = frequency === 'MONTHLY';
+  const period =
+    frequency === 'BIMONTHLY'
+      ? 2
+      : frequency === 'QUARTERLY'
+        ? 3
+        : frequency === 'SEMIANNUAL'
+          ? 6
+          : frequency === 'ANNUAL'
+            ? 12
+            : 1;
+  const firstMonth = targetMonths.length > 0 ? Math.min(...targetMonths) : null;
 
   useEffect(() => {
     if (isOpen) {
-      if (editingId && initialData) {
-        setName(initialData.name || '');
-        setPhone(formatPhone(initialData.phone || ''));
-        const contract = initialData.contracts?.[0];
-        if (contract) {
-          setVisitsPerMonth(contract.visitsPerMonth?.toString() || '2');
-          setFrequency(contract.frequency || 'MONTHLY');
-          setProfessionalId(contract.professionalId || '');
-          const savedSystems = parseSystemTypes(contract.systemTypes);
-          setSelectedSystems(savedSystems);
-          const currentAvailable = [...DEFAULT_SYSTEMS];
-          savedSystems.forEach((s) => {
-            if (!currentAvailable.includes(s)) currentAvailable.push(s);
-          });
-          setAvailableSystems(currentAvailable);
-          setTargetMonths(
-            contract.targetMonths ? contract.targetMonths.split(',').map(Number) : [],
-          );
-          setPreferredDays(
-            contract.preferredDays ? contract.preferredDays.split(',').map(Number) : [],
-          );
-        }
+      setName(initialData?.name || '');
+      setPhone(initialPhone);
+      if (contract) {
+        setVisitsPerMonth(contract.visitsPerMonth?.toString() || '2');
+        setFrequency(contract.frequency || 'MONTHLY');
+        setProfessionalId(contract.professionalId || '');
+        const savedSystems = parseSystemTypes(contract.systemTypes);
+        setSelectedSystems(savedSystems);
+        setAvailableSystems([...new Set([...DEFAULT_SYSTEMS, ...savedSystems])]);
+        setTargetMonths(
+          contract.frequency !== 'MONTHLY' && contract.targetMonths
+            ? contract.targetMonths.split(',').map(Number)
+            : [],
+        );
+        setPreferredDays(
+          contract.preferredDays ? contract.preferredDays.split(',').map(Number) : [],
+        );
       } else {
-        setName('');
-        setPhone('');
         setVisitsPerMonth('2');
         setFrequency('MONTHLY');
         setTargetMonths([]);
@@ -93,30 +100,17 @@ export default function ContractFormModal({
         setPreferredDays([]);
       }
     }
-  }, [isOpen, editingId, initialData, professionals]);
+  }, [isOpen, initialData, initialPhone, contract, professionals]);
 
   const toggleTargetMonth = (m: number) => {
     if (targetMonths.includes(m)) {
       setTargetMonths(targetMonths.filter((prev) => prev !== m));
-    } else {
-      if (frequency === 'MONTHLY') {
-        setTargetMonths([...targetMonths, m]);
-      } else {
-        const period =
-          frequency === 'BIMONTHLY'
-            ? 2
-            : frequency === 'QUARTERLY'
-              ? 3
-              : frequency === 'SEMIANNUAL'
-                ? 6
-                : 12;
-        const newMonths = [...targetMonths];
-        for (let i = m; i < 12; i += period) {
-          if (!newMonths.includes(i)) newMonths.push(i);
-        }
-        setTargetMonths(newMonths.sort((a, b) => a - b));
-      }
+      return;
     }
+
+    const newMonths = new Set(targetMonths);
+    for (let i = m; i < 12; i += period) newMonths.add(i);
+    setTargetMonths([...newMonths].sort((a, b) => a - b));
   };
 
   const toggleSystem = (sys: string) => {
@@ -158,7 +152,7 @@ export default function ContractFormModal({
       phone,
       visitsPerMonth,
       frequency,
-      targetMonths: targetMonths.join(','),
+      targetMonths: isMonthly ? '' : targetMonths.join(','),
       professionalId,
       systemTypes: selectedSystems.join(','),
       preferredDays: preferredDays.join(','),
@@ -281,7 +275,7 @@ export default function ContractFormModal({
               <option value="ANNUAL">Anual</option>
             </select>
           </div>
-          {frequency === 'MONTHLY' && (
+          {isMonthly && (
             <div className="form-field" style={{ flex: 1 }}>
               <label htmlFor="contract-visits" className="form-label">
                 Visitas/Mês
@@ -319,64 +313,53 @@ export default function ContractFormModal({
           </div>
         </div>
 
-        <div className="form-field">
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: '0.5rem',
-            }}
-          >
-            <label className="form-label" style={{ margin: 0 }}>
-              Estratégia Mensal (Meses de Visita)
-            </label>
-            {targetMonths.length > 0 && (
-              <button
-                type="button"
-                onClick={() => setTargetMonths([])}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  color: 'var(--danger, #f87171)',
-                  fontSize: '0.75rem',
-                  cursor: 'pointer',
-                }}
-              >
-                Limpar
-              </button>
-            )}
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '4px' }}>
-            {monthNames.map((m, i) => {
-              const period =
-                frequency === 'BIMONTHLY'
-                  ? 2
-                  : frequency === 'QUARTERLY'
-                    ? 3
-                    : frequency === 'SEMIANNUAL'
-                      ? 6
-                      : frequency === 'ANNUAL'
-                        ? 12
-                        : 1;
-              const firstMonth = targetMonths.length > 0 ? Math.min(...targetMonths) : null;
-              const isAllowed = firstMonth === null || (i - firstMonth) % period === 0;
-              const isSelected = targetMonths.includes(i);
-              const isDisabled = !isAllowed && frequency !== 'MONTHLY';
-              return (
+        {!isMonthly && (
+          <div className="form-field" role="group" aria-labelledby="contract-visit-months">
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '0.5rem',
+              }}
+            >
+              <span id="contract-visit-months" className="form-label" style={{ margin: 0 }}>
+                Meses de visita
+              </span>
+              {targetMonths.length > 0 && (
                 <button
-                  key={m}
                   type="button"
-                  disabled={isDisabled}
-                  onClick={() => toggleTargetMonth(i)}
-                  style={toggleBtnStyle(isSelected, isDisabled)}
+                  onClick={() => setTargetMonths([])}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    color: 'var(--danger, #f87171)',
+                    fontSize: '0.75rem',
+                    cursor: 'pointer',
+                  }}
                 >
-                  {m}
+                  Limpar
                 </button>
-              );
-            })}
-          </div>
-          {frequency !== 'MONTHLY' && (
+              )}
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '4px' }}>
+              {monthNames.map((m, i) => {
+                const isSelected = targetMonths.includes(i);
+                const isDisabled = firstMonth !== null && (i - firstMonth) % period !== 0;
+                return (
+                  <button
+                    key={m}
+                    type="button"
+                    disabled={isDisabled}
+                    aria-pressed={isSelected}
+                    onClick={() => toggleTargetMonth(i)}
+                    style={toggleBtnStyle(isSelected, isDisabled)}
+                  >
+                    {m}
+                  </button>
+                );
+              })}
+            </div>
             <div
               style={{
                 padding: '8px 12px',
@@ -390,8 +373,8 @@ export default function ContractFormModal({
                 ⚠️ Modo Baixa Frequência — testes SDAI devem ser inseridos manualmente.
               </p>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         <div
           style={{

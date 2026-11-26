@@ -236,8 +236,8 @@ export default async function ContractReportPage(props: {
   // Decide entre layout de coluna única ou dupla
   const isSingleColumn = filteredAppointments.length <= 16;
   const totalRows = isSingleColumn
-    ? Math.max(5, filteredAppointments.length)
-    : Math.min(54, Math.max(5, Math.ceil(filteredAppointments.length / 2)));
+    ? filteredAppointments.length
+    : Math.min(54, Math.ceil(filteredAppointments.length / 2));
 
   const tableRows: TableRow[] = [];
   const getRowData = (apt: ReturnType<typeof getAppointment>, defaultNum: number): RowData => {
@@ -556,6 +556,11 @@ export default async function ContractReportPage(props: {
                         </tr>
                       </thead>
                       <tbody>
+                        {tableRows.length === 0 && (
+                          <tr>
+                            <td colSpan={2}>Nenhuma visita agendada</td>
+                          </tr>
+                        )}
                         {tableRows.map((row, idx) => {
                           const isT1 = row.item1.isTeste;
                           const isT2 = row.item2?.isTeste;
