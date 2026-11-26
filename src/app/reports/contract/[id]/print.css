@@ -25,7 +25,6 @@ main {
 /* ─── Container A4 ───────────────────────────────────────────── */
 .report-container {
   width: 210mm;
-  /* min-height removido para evitar páginas em branco extras */
   background: white;
   margin: 20px auto;
   position: relative;
@@ -45,26 +44,27 @@ main {
   body {
     margin: 0;
     padding: 0;
-    width: 210mm;
     background: white !important;
+  }
+  body {
+    min-height: 0;
+    overflow: visible;
   }
   .no-print {
     display: none !important;
   }
+  main.page-transition {
+    padding: 0 !important;
+    animation: none;
+  }
   .report-container {
     margin: 0;
     box-shadow: none;
-    width: 210mm;
-    height: 296mm;
-    min-height: auto;
+    width: 100%;
     padding: 0 6mm 3mm;
-    overflow: hidden;
   }
-  /* Força tudo em 1 página */
-  table,
-  .month-card,
-  .contact-table {
-    page-break-inside: avoid;
+  .month-card {
+    break-inside: avoid;
   }
   /* Comprime elementos pra caber em 1 página */
   .calendar-grid {
@@ -141,15 +141,10 @@ main {
   display: none;
 }
 @media print {
-  .abstract-shape {
-    left: 0;
-  }
   /* Na impressão, mostra o shape do thead (repete em cada página) */
   .thead-shape {
     display: block;
-    position: absolute;
-    top: 0;
-    left: -8mm;
+    left: 0;
   }
   /* Esconde o shape principal (coberto pelo thead) */
   .report-container > .abstract-shape {
@@ -271,6 +266,40 @@ main {
 }
 
 /* ─── Badges de Sistemas ─────────────────────────────────────── */
+.report-systems-label {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  background: black;
+  color: white;
+  font-weight: 900;
+  font-size: 0.45rem;
+  padding: 4px;
+  text-align: center;
+  border-radius: 2px;
+}
+
+.report-systems-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  /* Reserva duas linhas para a faixa vertical não esticar uma única linha. */
+  grid-template-rows: repeat(2, 1fr);
+  gap: 4px;
+  flex: 1;
+}
+
+.report-systems-grid[data-system-count='1'] {
+  grid-template-rows: 1fr 2fr 1fr;
+  row-gap: 2px;
+}
+
+.report-systems-grid[data-system-count='1'] > .badge-system {
+  grid-row: 2;
+}
+
+.report-systems-grid[data-system-count='2'] {
+  grid-auto-flow: column;
+}
+
 .badge-system {
   display: flex;
   flex-direction: row;
@@ -332,10 +361,13 @@ main {
 
 /* ─── Badge do nome do contrato (header) ────────────────────── */
 .contract-name-badge {
-  background: #1a1a1a !important;
-  color: white !important;
-  -webkit-print-color-adjust: exact !important;
-  print-color-adjust: exact !important;
+  background: #1a1a1a;
+  color: white;
+  padding: 7px 18px;
+  border-radius: 25px;
+  font-size: 0.6rem;
+  font-weight: 800;
+  white-space: nowrap;
 }
 
 /* ─── Legenda ────────────────────────────────────────────────── */

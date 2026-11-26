@@ -11,16 +11,19 @@ import SchedulePreviewModal from '@/components/calendar/SchedulePreviewModal';
 import { useConfirm } from '@/components/ui/confirm-modal';
 import { useToast } from '@/components/ui/toast';
 import { professionalsApi, holidaysApi, clientsApi, scheduleApi } from '@/lib/api-client';
+import { parseSystemTypes } from '@/lib/formatting';
 import type { Appointment, Professional, Client, SchedulePreviewData } from '@/types';
 
 export default function CalendarPage() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [loadedScheduleKey, setLoadedScheduleKey] = useState('');
   const [professionalId, setProfessionalId] = useState('');
   const [professionals, setProfessionals] = useState<Professional[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingPreview, setLoadingPreview] = useState(false);
   const [loadingGenerate, setLoadingGenerate] = useState(false);
   const [preview, setPreview] = useState<SchedulePreviewData | null>(null);
+  const [reportsOpen, setReportsOpen] = useState(false);
   const [selectedApt, setSelectedApt] = useState<Appointment | null>(null);
   const [newDate, setNewDate] = useState('');
   const [filterContractId, setFilterContractId] = useState<string | null>(null);
@@ -61,6 +64,28 @@ export default function CalendarPage() {
     return clients.filter((c) => c.contracts?.some((ct) => contractIds.has(ct.id)));
   }, [clients, appointments]);
 
+  const scheduleKey = `${professionalId}:${year}`;
+  const reports = useMemo(() => {
+    if (loadedScheduleKey !== scheduleKey) return [];
+
+    const reportsByContract = new Map<string, { href: string; label: string }>();
+    for (const appointment of appointments) {
+      const id = appointment.contractId;
+      if (!id || reportsByContract.has(id)) continue;
+
+      const client = linkedClients.find((candidate) => candidate.id === appointment.client?.id);
+      const systems = parseSystemTypes(
+        client?.contracts?.find((contract) => contract.id === id)?.systemTypes,
+      );
+      const clientName = appointment.client?.name || client?.name || 'Relatório de contrato';
+      reportsByContract.set(id, {
+        href: `/reports/contract/${id}?year=${year}`,
+        label: systems.length ? `${clientName} (${systems.join(', ')})` : clientName,
+      });
+    }
+    return [...reportsByContract.values()];
+  }, [appointments, linkedClients, loadedScheduleKey, scheduleKey, year]);
+
   useEffect(() => {
     const init = async () => {
       const [profsRes, clientsRes] = await Promise.all([
@@ -93,11 +118,16 @@ export default function CalendarPage() {
         scheduleApi.listByYear(professionalId, year),
         fetchHolidays(),
       ]);
-      if (aptsRes.ok) setAppointments(aptsRes.data ?? []);
+      if (aptsRes.ok) {
+        const loadedAppointments = aptsRes.data ?? [];
+        setAppointments(loadedAppointments);
+        setLoadedScheduleKey(scheduleKey);
+        return loadedAppointments;
+      }
     } catch {
       showToast('Erro ao carregar agendamentos', 'error');
     }
-  }, [professionalId, year, yearInitialized, fetchHolidays, showToast]);
+  }, [professionalId, year, yearInitialized, scheduleKey, fetchHolidays, showToast]);
 
   // Consulta os anos que o técnico tem agenda. Usado na primeira carga, ao trocar
   // de técnico e após operações destrutivas (clear/generate) pra manter o aviso
@@ -133,12 +163,12 @@ export default function CalendarPage() {
 
   // Lock body scroll when any modal is open
   useEffect(() => {
-    const anyOpen = isManualModalOpen || !!selectedApt || !!preview;
+    const anyOpen = isManualModalOpen || !!selectedApt || !!preview || reportsOpen;
     document.body.style.overflow = anyOpen ? 'hidden' : '';
     return () => {
       document.body.style.overflow = '';
     };
-  }, [isManualModalOpen, selectedApt, preview]);
+  }, [isManualModalOpen, selectedApt, preview, reportsOpen]);
 
   // Fluxo: preview → modal com resumo/aviso → confirmar → generate.
   // O modal de preview é o único ponto de confirmação; mostra o impacto antes
@@ -164,8 +194,15 @@ export default function CalendarPage() {
     try {
       const res = await scheduleApi.generate(professionalId, year);
       if (res.ok && res.data) {
-        await Promise.all([fetchAppointments(), refreshExistingYears(professionalId)]);
+        const [generatedAppointments] = await Promise.all([
+          fetchAppointments(),
+          refreshExistingYears(professionalId),
+        ]);
+        const generatedContracts = new Set(
+          generatedAppointments?.flatMap(({ contractId }) => (contractId ? [contractId] : [])),
+        );
         setPreview(null);
+        setReportsOpen(generatedContracts.size > 1);
         showToast(
           `${res.data.contractCount} agendas criadas: ${res.data.count} atendimentos agendados`,
         );
@@ -503,7 +540,9 @@ export default function CalendarPage() {
           appointments={appointments}
           onGenerate={openPreview}
           onClear={handleClearSchedule}
-          contractIds={linkedClients.flatMap((c) => (c.contracts || []).map((ct) => ct.id))}
+          reports={reports}
+          reportsOpen={reportsOpen}
+          setReportsOpen={setReportsOpen}
         />
 
         <CalendarGrid

@@ -11,12 +11,14 @@ interface ReportContactTablesProps {
   maintenance: ReportContact[];
   escalation: ReportContact[];
   professional: { name?: string | null; phone?: string | null; email?: string | null } | null;
+  technicianIsSupervisor: boolean;
 }
 
 export default function ReportContactTables({
   maintenance,
   escalation,
   professional,
+  technicianIsSupervisor,
 }: ReportContactTablesProps) {
   // Linhas com contact vazio herdam o contact da linha anterior — convenção
   // do template pra agrupar via rowspan (ex: Comercial Serviços herda
@@ -84,7 +86,11 @@ export default function ReportContactTables({
             >
               CompaSSS
             </td>
-            <td>Técnico de Sistemas (Fixo)</td>
+            <td>
+              {technicianIsSupervisor
+                ? 'Técnico de Sistemas e Supervisor'
+                : 'Técnico de Sistemas (Fixo)'}
+            </td>
             <td style={{ fontWeight: 800 }}>{professional?.name || '-'}</td>
             <td>{professional?.phone || '-'}</td>
             <td style={{ fontSize: '0.45rem' }}>{professional?.email || '-'}</td>
