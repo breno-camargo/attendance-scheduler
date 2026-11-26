@@ -301,12 +301,13 @@ export default function ClientTable({ clients, onEdit, onDelete }: ClientTablePr
                   .map((d: string) => DAY_NAMES[parseInt(d) - 1])
                   .join(', ')
               : null;
-            const targetMonths = contract?.targetMonths
-              ? contract.targetMonths
-                  .split(',')
-                  .map((m: string) => MONTH_NAMES[parseInt(m)])
-                  .join(', ')
-              : null;
+            const targetMonths =
+              contract?.frequency !== 'MONTHLY' && contract?.targetMonths
+                ? contract.targetMonths
+                    .split(',')
+                    .map((m: string) => MONTH_NAMES[parseInt(m)])
+                    .join(', ')
+                : null;
 
             return (
               <li
