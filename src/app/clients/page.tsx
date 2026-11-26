@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import ClientTable from '@/components/clients/ClientTable';
 import ContractFormModal from '@/components/clients/ContractFormModal';
@@ -18,6 +18,7 @@ export default function ClientsPage() {
   // Loading só da primeira carga — refreshes após mutation mostram dados
   // anteriores sem flash de skeleton (o cache costuma já resolver).
   const [initialLoading, setInitialLoading] = useState(true);
+  const latestLoad = useRef(0);
 
   // Estados dos Modais
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -26,15 +27,20 @@ export default function ClientsPage() {
 
   // Carregamento Inicial
   const carregarDados = useCallback(async () => {
+    const load = ++latestLoad.current;
     try {
       const [resC, resP] = await Promise.all([clientsApi.list(), professionalsApi.list()]);
+      if (load !== latestLoad.current) return;
 
       if (resC.data) setClients(resC.data);
       if (resP.data) setProfessionals(resP.data);
+      if (!resC.ok || !resP.ok) {
+        showToast(resC.error || resP.error || 'Erro ao carregar dados', 'error');
+      }
     } catch {
-      showToast('Erro ao carregar dados', 'error');
+      if (load === latestLoad.current) showToast('Erro ao carregar dados', 'error');
     } finally {
-      setInitialLoading(false);
+      if (load === latestLoad.current) setInitialLoading(false);
     }
   }, [showToast]);
 
@@ -71,8 +77,11 @@ export default function ClientsPage() {
     if (!ok) return;
     const res = await clientsApi.delete(id);
     if (res.ok) {
-      carregarDados();
+      setClients((current) => current.filter((client) => client.id !== id));
+      await carregarDados();
       showToast('Cliente excluído com sucesso');
+    } else {
+      showToast(res.error || 'Erro ao excluir cliente', 'error');
     }
   };
 
@@ -130,8 +139,15 @@ export default function ClientsPage() {
       <ContractFormModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onSuccess={() => {
-          carregarDados();
+        onSuccess={(savedClient) => {
+          if (savedClient) {
+            setClients((current) =>
+              current.map((client) =>
+                client.id === savedClient.id ? { ...client, name: savedClient.name } : client,
+              ),
+            );
+          }
+          void carregarDados();
           showToast('Contrato salvo com sucesso');
         }}
         editingId={editingId}

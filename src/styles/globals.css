@@ -1090,6 +1090,30 @@ select.form-input {
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
 }
 
+.itinerary-card {
+  background: var(--surface-input);
+  border: 1px solid transparent;
+  transition: var(--transition-smooth);
+}
+
+[data-theme='light'] .itinerary-card {
+  background: var(--background);
+  border-color: var(--primary-border-subtle);
+}
+
+@media (hover: hover) {
+  .itinerary-card:hover {
+    background: rgba(16, 185, 129, 0.05);
+    border-color: var(--border);
+    transform: translateX(8px);
+  }
+
+  [data-theme='light'] .itinerary-card:hover {
+    background: var(--primary-subtle);
+    border-color: var(--border);
+  }
+}
+
 /* ══════════════════════════════════════════════════════════════
    LIGHT MODE — Overrides for remaining hardcoded inline styles
    (New code should use CSS variables/classes above instead)

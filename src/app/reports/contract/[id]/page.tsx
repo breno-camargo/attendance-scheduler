@@ -33,6 +33,10 @@ interface TableRow {
   item2?: RowData;
 }
 
+function normalizeContactName(name: string) {
+  return name.normalize('NFD').replace(/\p{M}/gu, '').trim().replace(/\s+/g, ' ').toLowerCase();
+}
+
 export default async function ContractReportPage(props: {
   params: Promise<{ id: string }>;
   searchParams: Promise<{ year?: string }>;
@@ -52,18 +56,14 @@ export default async function ContractReportPage(props: {
   });
 
   if (!contract) return notFound();
+  const { professional } = contract;
   const internalStaff = await prisma.internalContact.findMany();
 
   // Monta cadeia de contatos baseada no escopo do técnico:
   // Se o supervisor é o Líder → mostra Líder + Coordenador (sem Supervisor)
   // Se o supervisor é o Supervisor → mostra Supervisor + Coordenador (sem Líder)
   // Se não tem supervisor → mostra os 3
-  // Busca o supervisor do técnico diretamente (caso o include não traga nested)
-  const profSupervisorId = (contract.professional as { supervisorId?: string } | null)
-    ?.supervisorId;
-  const supervisorContact = profSupervisorId
-    ? internalStaff.find((s) => s.id === profSupervisorId)
-    : null;
+  const supervisorContact = professional?.supervisor;
   const supervisorRole = (supervisorContact?.role || '').toLowerCase();
   const isLiderScope = supervisorRole.includes('líder') || supervisorRole.includes('lider');
   const isSupervisorScope = supervisorRole.includes('supervisor');
@@ -122,12 +122,26 @@ export default async function ContractReportPage(props: {
   const maintenanceContacts = (defaultContactsData.maintenance || [])
     .map((row: ReportContact) => {
       if (!row.name && row.role) {
-        const match = internalStaff.find((s) => matchRole(s.role, row.role));
+        const match =
+          row.role === 'Supervisor' && isSupervisorScope
+            ? supervisorContact
+            : internalStaff.find((s) => matchRole(s.role, row.role));
         if (match) return { ...row, name: match.name, phone: match.phone, email: match.email };
       }
       return row;
     })
     .filter((row) => row.name);
+
+  const reportSupervisor = maintenanceContacts.find((row) => row.role === 'Supervisor');
+  const technicianName = normalizeContactName(professional?.name ?? '');
+  const supervisorEmail = reportSupervisor?.email?.trim().toLowerCase();
+  const duplicateSupervisor =
+    professional &&
+    reportSupervisor &&
+    ((supervisorEmail && supervisorEmail === professional.email.trim().toLowerCase()) ||
+      (technicianName && technicianName === normalizeContactName(reportSupervisor.name)))
+      ? reportSupervisor
+      : null;
 
   // Escalação: auto-preenche pelos contatos internos. Quando há múltiplos
   // InternalContact com o mesmo role (ex: dois "Diretor"), expande numa linha
@@ -163,7 +177,7 @@ export default async function ContractReportPage(props: {
   const escalationContacts = escalationNormalized.filter((row) => row.name);
 
   const contactsData = {
-    maintenance: maintenanceContacts,
+    maintenance: maintenanceContacts.filter((row) => row !== duplicateSupervisor),
     escalation: escalationContacts,
   };
 
@@ -282,6 +296,7 @@ export default async function ContractReportPage(props: {
       SAP: '/icons/sap.jpg',
       CFTV: '/icons/cftv.jpg',
       SAI: '/icons/sai.jpg',
+      INTERFONIA: '/icons/interfonia.png',
     };
     const iconSrc = iconMap[skey];
 
@@ -332,7 +347,7 @@ export default async function ContractReportPage(props: {
             height: '100%',
             objectFit: 'cover',
             objectPosition: 'center',
-            transform: 'scale(1.25)',
+            transform: skey === 'INTERFONIA' ? 'scale(0.8)' : 'scale(1.25)',
           }}
         />
       </div>
@@ -413,20 +428,7 @@ export default async function ContractReportPage(props: {
                     >
                       Agenda de Atendimento Técnico {year}
                     </span>
-                    <div
-                      className="contract-name-badge"
-                      style={{
-                        background: '#1a1a1a',
-                        color: 'white',
-                        padding: '7px 18px',
-                        borderRadius: '25px',
-                        fontSize: '0.6rem',
-                        fontWeight: 800,
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      {contract.client.name}
-                    </div>
+                    <div className="contract-name-badge">{contract.client.name}</div>
                   </div>
                 </div>
 
@@ -503,31 +505,9 @@ export default async function ContractReportPage(props: {
                       </div>
 
                       <div style={{ display: 'flex', gap: '6px' }}>
-                        <div
-                          style={{
-                            writingMode: 'vertical-rl',
-                            transform: 'rotate(180deg)',
-                            background: 'black',
-                            color: 'white',
-                            fontWeight: 900,
-                            fontSize: '0.45rem',
-                            padding: '4px',
-                            textAlign: 'center',
-                            borderRadius: '2px',
-                          }}
-                        >
-                          SISTEMAS MANTIDOS
-                        </div>
-                        {/* Grade dos badges: 2 colunas */}
-                        <div
-                          style={{
-                            display: 'grid',
-                            gridTemplateColumns: '1fr 1fr',
-                            gap: '4px',
-                            flex: 1,
-                          }}
-                        >
-                          {(systems.length > 0 ? systems : ['SDAI']).map((s: string) => {
+                        <div className="report-systems-label">SISTEMAS MANTIDOS</div>
+                        <div className="report-systems-grid" data-system-count={systems.length}>
+                          {systems.map((s) => {
                             const key = s.trim().toUpperCase();
                             const badge = badgeMap[key] ?? 'badge-default';
                             const label = systemNames[key] ?? s.trim();
@@ -630,7 +610,13 @@ export default async function ContractReportPage(props: {
                 <ReportContactTables
                   maintenance={contactsData.maintenance}
                   escalation={contactsData.escalation}
-                  professional={contract.professional}
+                  professional={
+                    professional && {
+                      ...professional,
+                      phone: professional.phone || duplicateSupervisor?.phone,
+                    }
+                  }
+                  technicianIsSupervisor={duplicateSupervisor !== null}
                 />
               </td>
             </tr>

@@ -109,7 +109,7 @@ async function cachedGet<T>(url: string, opts: CacheOptions): Promise<ApiResult<
   const ttl = opts.ttl ?? DEFAULT_TTL_MS;
   const versionAtStart = cacheVersion;
   const runFetch = async (): Promise<ApiResult<T>> => {
-    const result = await apiFetch<T>(url);
+    const result = await apiFetch<T>(url, { cache: 'no-store' });
     // Só grava se nenhuma invalidação aconteceu durante o await — senão,
     // esse GET iniciou contra dados pré-mutation e o resultado está stale.
     if (result.ok && cacheVersion === versionAtStart) {

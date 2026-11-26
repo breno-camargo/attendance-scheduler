@@ -1,6 +1,14 @@
 'use client';
 
+import { useCallback, useState } from 'react';
+
+import { Modal } from '@/components/ui/modal';
 import type { Appointment, Professional } from '@/types';
+
+interface ScheduleReport {
+  href: string;
+  label: string;
+}
 
 interface ScheduleControlsProps {
   professionals: Professional[];
@@ -11,7 +19,9 @@ interface ScheduleControlsProps {
   appointments: Appointment[];
   onGenerate: () => void;
   onClear: () => void;
-  contractIds: string[];
+  reports: ScheduleReport[];
+  reportsOpen: boolean;
+  setReportsOpen: (open: boolean) => void;
 }
 
 export default function ScheduleControls({
@@ -23,8 +33,33 @@ export default function ScheduleControls({
   appointments,
   onGenerate,
   onClear,
-  contractIds,
+  reports,
+  reportsOpen,
+  setReportsOpen,
 }: ScheduleControlsProps) {
+  const [blockedReports, setBlockedReports] = useState<ScheduleReport[] | null>(null);
+  const visibleReports = blockedReports ?? reports;
+
+  const closeReports = useCallback(() => {
+    setBlockedReports(null);
+    setReportsOpen(false);
+  }, [setReportsOpen]);
+
+  const openReports = (reportsToOpen: ScheduleReport[]) => {
+    const blocked = reportsToOpen.filter(({ href }) => {
+      const tab = window.open(href, '_blank');
+      if (!tab) return true;
+      tab.opener = null;
+      return false;
+    });
+    if (blocked.length === 0) {
+      closeReports();
+    } else {
+      setBlockedReports(blocked);
+      setReportsOpen(true);
+    }
+  };
+
   const generateDisabled = loading || loadingPreview || !professionalId;
   const generateLabel = loadingPreview
     ? '⌛ Carregando prévia...'
@@ -98,18 +133,11 @@ export default function ScheduleControls({
           </button>
           <button
             onClick={() => {
-              contractIds.forEach((id) => {
-                const a = document.createElement('a');
-                a.href = `/reports/contract/${id}`;
-                a.target = '_blank';
-                a.rel = 'noopener';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-              });
+              if (reports.length > 1) setReportsOpen(true);
+              else openReports(reports);
             }}
             className="btn-secondary"
-            disabled={contractIds.length === 0}
+            disabled={generateDisabled || reports.length === 0}
             style={{
               background: 'rgba(16, 185, 129, 0.08)',
               color: '#34d399',
@@ -124,7 +152,7 @@ export default function ScheduleControls({
               flex: 1,
             }}
           >
-            🖨️ {contractIds.length} PDF{contractIds.length !== 1 ? 's' : ''}
+            🖨️ {reports.length} PDF{reports.length !== 1 ? 's' : ''}
           </button>
           <button
             onClick={onClear}
@@ -142,6 +170,31 @@ export default function ScheduleControls({
           </button>
         </div>
       </div>
+      <Modal
+        isOpen={reportsOpen && visibleReports.length > 0}
+        onClose={closeReports}
+        title={blockedReports ? 'Relatórios bloqueados' : 'Relatórios da agenda'}
+        footer={
+          <button className="btn-primary" onClick={() => openReports(visibleReports)}>
+            {blockedReports ? 'Tentar abrir novamente' : 'Abrir todos'}
+          </button>
+        }
+      >
+        <p>
+          {blockedReports
+            ? 'Permita pop-ups para este site na barra de endereços ou abra os PDFs pelos links abaixo.'
+            : 'Abra todos os PDFs em novas abas ou escolha um relatório da lista.'}
+        </p>
+        <ul style={{ paddingInlineStart: '1.25rem', marginTop: '1rem' }}>
+          {visibleReports.map(({ href, label }) => (
+            <li key={href} style={{ marginBottom: '0.5rem' }}>
+              <a href={href} target="_blank" rel="noopener noreferrer">
+                {label}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </Modal>
     </div>
   );
 }

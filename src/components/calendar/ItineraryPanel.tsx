@@ -137,30 +137,17 @@ export default function ItineraryPanel({
             return (
               <li
                 key={a.id}
-                className="animate-fade-in"
+                className="itinerary-card animate-fade-in"
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: '1.2rem',
                   padding: '1.2rem',
                   borderRadius: '12px',
-                  background: 'rgba(255,255,255,0.02)',
-                  border: '1px solid transparent',
-                  transition: 'var(--transition-smooth)',
                   animationDelay: `${i * 0.03}s`,
                   cursor: 'pointer',
                 }}
                 onClick={() => onDayClick(new Date(a.date).toISOString().split('T')[0])}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'rgba(16, 185, 129, 0.05)';
-                  e.currentTarget.style.borderColor = 'var(--border)';
-                  e.currentTarget.style.transform = 'translateX(8px)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.02)';
-                  e.currentTarget.style.borderColor = 'transparent';
-                  e.currentTarget.style.transform = 'translateX(0)';
-                }}
               >
                 <div
                   style={{
@@ -200,7 +187,7 @@ export default function ItineraryPanel({
                     style={{
                       fontSize: '1.1rem',
                       display: 'block',
-                      color: 'white',
+                      color: 'var(--foreground)',
                     }}
                   >
                     {a.client?.name}

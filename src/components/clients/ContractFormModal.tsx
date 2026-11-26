@@ -4,13 +4,14 @@ import { useState, useEffect } from 'react';
 
 import { Modal } from '@/components/ui/modal';
 import { useToast } from '@/components/ui/toast';
+import { clientsApi } from '@/lib/api-client';
 import { capitalizeName, formatPhone, parseSystemTypes } from '@/lib/formatting';
 import type { Client, Professional } from '@/types';
 
 interface ContractFormModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (savedClient: Pick<Client, 'id' | 'name'> | null) => void;
   editingId: string | null;
   initialData?: Client | null;
   professionals: Professional[];
@@ -163,18 +164,14 @@ export default function ContractFormModal({
       preferredDays: preferredDays.join(','),
     };
     try {
-      const url = editingId ? `/api/clients/${editingId}` : '/api/clients';
-      const res = await fetch(url, {
-        method: editingId ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
+      const res = editingId
+        ? await clientsApi.update(editingId, payload)
+        : await clientsApi.create(payload);
       if (res.ok) {
-        onSuccess();
+        onSuccess(res.data);
         onClose();
       } else {
-        const err = await res.json();
-        showToast(`Erro ao salvar: ${err.details || err.error || 'Falha no servidor'}`, 'error');
+        showToast(`Erro ao salvar: ${res.error || 'Falha no servidor'}`, 'error');
       }
     } catch {
       showToast('Erro de conexão com o servidor.', 'error');
