@@ -30,6 +30,7 @@ import { GET } from '@/app/api/stats/route';
 import prisma from '@/lib/prisma';
 
 const prismaMock = prisma as unknown as ReturnType<typeof mockDeep<PrismaClient>>;
+const statsRequest = new Request('http://localhost/api/stats?year=2027');
 
 beforeEach(() => {
   mockReset(prismaMock);
@@ -40,7 +41,7 @@ describe('GET /api/stats', () => {
   it('returns 401 when unauthenticated', async () => {
     mockGetServerSession.mockResolvedValueOnce(null);
 
-    const response = await GET();
+    const response = await GET(statsRequest);
 
     expect(response.status).toBe(401);
     const body = await response.json();
@@ -64,7 +65,7 @@ describe('GET /api/stats', () => {
       { contractId: 'c2' },
     ] as any);
 
-    const response = await GET();
+    const response = await GET(statsRequest);
 
     expect(response.status).toBe(200);
     const body = await response.json();
@@ -77,6 +78,14 @@ describe('GET /api/stats', () => {
     // Pendentes: c3 (Tec C), c4 (Tec A), c5 (sem técnico), c6 (Tec C), c7 (Tec B).
     // Dedup + sort.
     expect(body.pendingTechs).toEqual(['Sem técnico', 'Tec A', 'Tec B', 'Tec C']);
+    expect(prismaMock.appointment.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          date: { gte: new Date('2027-01-01'), lt: new Date('2028-01-01') },
+          status: { not: 'CANCELLED' },
+        }),
+      }),
+    );
     // Garantia explícita: shape antiga não vaza mais.
     expect(body).not.toHaveProperty('contractsDetail');
   });
@@ -87,7 +96,7 @@ describe('GET /api/stats', () => {
     prismaMock.contract.findMany.mockResolvedValue([]);
     prismaMock.appointment.findMany.mockResolvedValue([]);
 
-    await GET();
+    await GET(statsRequest);
 
     const findManyCall = prismaMock.contract.findMany.mock.calls[0][0] as any;
     expect(findManyCall.select).toEqual({
@@ -102,7 +111,7 @@ describe('GET /api/stats', () => {
     prismaMock.contract.findMany.mockResolvedValue([]);
     prismaMock.appointment.findMany.mockResolvedValue([]);
 
-    const response = await GET();
+    const response = await GET(statsRequest);
 
     expect(response.status).toBe(200);
     const body = await response.json();
@@ -121,7 +130,7 @@ describe('GET /api/stats', () => {
     prismaMock.contract.findMany.mockResolvedValue([]);
     prismaMock.appointment.findMany.mockResolvedValue([]);
 
-    const response = await GET();
+    const response = await GET(statsRequest);
 
     expect(response.status).toBe(500);
     const body = await response.json();
@@ -134,7 +143,7 @@ describe('GET /api/stats', () => {
     prismaMock.contract.findMany.mockResolvedValue([]);
     prismaMock.appointment.findMany.mockRejectedValue(new Error('findMany failure'));
 
-    const response = await GET();
+    const response = await GET(statsRequest);
 
     expect(response.status).toBe(500);
     const body = await response.json();

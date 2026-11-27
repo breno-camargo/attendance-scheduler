@@ -1,5 +1,7 @@
 import { ApiUtils, getScopedProfessionalIds, requireAuthWithScope } from '@/lib/api-utils';
 import prisma from '@/lib/prisma';
+import { annualScheduleWhere } from '@/lib/schedule-year';
+import { scheduleYearSchema } from '@/lib/schemas';
 
 export const dynamic = 'force-dynamic';
 
@@ -7,21 +9,22 @@ export const dynamic = 'force-dynamic';
  * GET /api/stats
  * Retorna contagens agregadas para o dashboard (com escopo por usuário).
  */
-export async function GET() {
+export async function GET(request: Request) {
   const result = await requireAuthWithScope();
   if ('error' in result) return result.error;
   const { auth } = result;
 
   try {
+    const year = scheduleYearSchema.safeParse(
+      new URL(request.url).searchParams.get('year') ?? new Date().getFullYear(),
+    );
+    if (!year.success) return ApiUtils.error('Ano inválido', null, 400);
+
     const profIds = await getScopedProfessionalIds(auth);
     const profFilter = profIds ? { id: { in: profIds } } : undefined;
     const clientFilter = profIds
       ? { contracts: { some: { professionalId: { in: profIds } } } }
       : undefined;
-    const aptFilter = profIds
-      ? { professionalId: { in: profIds }, status: 'SCHEDULED' as const }
-      : { status: 'SCHEDULED' as const };
-
     const contractFilter = profIds ? { professionalId: { in: profIds } } : undefined;
 
     const [clients, professionals, allContracts, scheduledContractIds] = await Promise.all([
@@ -39,26 +42,29 @@ export async function GET() {
       }),
       prisma.appointment
         .findMany({
-          where: { ...aptFilter, contractId: { not: null } },
+          where: {
+            ...annualScheduleWhere(year.data),
+            contractId: { not: null },
+            contract: contractFilter,
+          },
           distinct: ['contractId'],
           select: { contractId: true },
         })
         .then((rows) => new Set(rows.map((r) => r.contractId))),
     ]);
 
+    const pendingContracts = allContracts.filter(
+      (contract) => !scheduledContractIds.has(contract.id),
+    );
     const pendingTechs = Array.from(
-      new Set(
-        allContracts
-          .filter((c) => !scheduledContractIds.has(c.id))
-          .map((c) => c.professional?.name ?? 'Sem técnico'),
-      ),
+      new Set(pendingContracts.map((c) => c.professional?.name ?? 'Sem técnico')),
     ).sort();
 
     return ApiUtils.success({
       clients,
       professionals,
       totalContracts: allContracts.length,
-      contractsWithSchedule: scheduledContractIds.size,
+      contractsWithSchedule: allContracts.length - pendingContracts.length,
       pendingTechs,
     });
   } catch (error: unknown) {

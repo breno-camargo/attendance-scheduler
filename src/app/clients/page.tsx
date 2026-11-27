@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import ClientTable from '@/components/clients/ClientTable';
 import ContractFormModal from '@/components/clients/ContractFormModal';
 import { useConfirm } from '@/components/ui/confirm-modal';
+import ScheduleYearSelect from '@/components/ui/schedule-year-select';
 import { useToast } from '@/components/ui/toast';
 import { clientsApi, professionalsApi } from '@/lib/api-client';
 import type { Client, Professional } from '@/types';
@@ -15,6 +16,8 @@ export default function ClientsPage() {
   // Estados de Dados da API
   const [clients, setClients] = useState<Client[]>([]);
   const [professionals, setProfessionals] = useState<Professional[]>([]);
+  const [year, setYear] = useState(() => new Date().getFullYear());
+  const [loadedYear, setLoadedYear] = useState<number | null>(null);
   // Loading só da primeira carga — refreshes após mutation mostram dados
   // anteriores sem flash de skeleton (o cache costuma já resolver).
   const [initialLoading, setInitialLoading] = useState(true);
@@ -29,10 +32,13 @@ export default function ClientsPage() {
   const carregarDados = useCallback(async () => {
     const load = ++latestLoad.current;
     try {
-      const [resC, resP] = await Promise.all([clientsApi.list(), professionalsApi.list()]);
+      const [resC, resP] = await Promise.all([clientsApi.list(year), professionalsApi.list()]);
       if (load !== latestLoad.current) return;
 
-      if (resC.data) setClients(resC.data);
+      if (resC.data) {
+        setClients(resC.data);
+        setLoadedYear(year);
+      }
       if (resP.data) setProfessionals(resP.data);
       if (!resC.ok || !resP.ok) {
         showToast(resC.error || resP.error || 'Erro ao carregar dados', 'error');
@@ -42,7 +48,7 @@ export default function ClientsPage() {
     } finally {
       if (load === latestLoad.current) setInitialLoading(false);
     }
-  }, [showToast]);
+  }, [showToast, year]);
 
   useEffect(() => {
     carregarDados();
@@ -114,6 +120,17 @@ export default function ClientsPage() {
         </button>
       </div>
 
+      <div style={{ marginBottom: '1rem' }}>
+        <ScheduleYearSelect
+          year={year}
+          onChange={(nextYear) => {
+            if (nextYear === year) return;
+            latestLoad.current++;
+            setYear(nextYear);
+          }}
+        />
+      </div>
+
       {/* Tabela de Clientes */}
       {initialLoading ? (
         <div
@@ -132,7 +149,13 @@ export default function ClientsPage() {
           ))}
         </div>
       ) : (
-        <ClientTable clients={clients} onEdit={handleEdit} onDelete={handleDelete} />
+        <ClientTable
+          clients={clients}
+          professionals={professionals}
+          scheduleUnavailable={loadedYear !== year}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+        />
       )}
 
       {/* Modal de Formulário (Novo/Editar) */}

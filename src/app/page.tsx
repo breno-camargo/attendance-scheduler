@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 import { Modal } from '@/components/ui/modal';
+import ScheduleYearSelect from '@/components/ui/schedule-year-select';
 import { statsApi } from '@/lib/api-client';
 
 interface Stats {
@@ -35,15 +36,23 @@ function StatBadge({
 
 export default function Home() {
   const [stats, setStats] = useState<Stats | null>(null);
+  const [year, setYear] = useState(() => new Date().getFullYear());
+  const [statsFailed, setStatsFailed] = useState(false);
   const [showContracts, setShowContracts] = useState(false);
 
   useEffect(() => {
-    statsApi.get().then(({ data }) => {
+    let active = true;
+    statsApi.get(year).then(({ data }) => {
+      if (!active) return;
       if (data) setStats(data);
+      else setStatsFailed(true);
     });
-  }, []);
+    return () => {
+      active = false;
+    };
+  }, [year]);
 
-  const loading = stats === null;
+  const loading = stats === null && !statsFailed;
   const pendingTechs = stats?.pendingTechs ?? [];
 
   return (
@@ -54,6 +63,17 @@ export default function Home() {
           Gerencie técnicos, visualize contratos e otimize o cronograma de visitas de forma
           automatizada.
         </p>
+        <ScheduleYearSelect
+          year={year}
+          onChange={(nextYear) => {
+            if (nextYear === year) return;
+            setStats(null);
+            setStatsFailed(false);
+            setShowContracts(false);
+            setYear(nextYear);
+          }}
+        />
+        {statsFailed && <p role="alert">Não foi possível carregar os indicadores.</p>}
         <div className="stat-row">
           <StatBadge value={stats?.clients ?? null} label="Clientes" loading={loading} />
           <StatBadge value={stats?.professionals ?? null} label="Técnicos" loading={loading} />
@@ -70,7 +90,7 @@ export default function Home() {
               />
             </button>
           ) : (
-            <StatBadge value={null} label="Agendas geradas" loading />
+            <StatBadge value={null} label="Agendas geradas" loading={loading} />
           )}
         </div>
       </header>
@@ -125,11 +145,11 @@ export default function Home() {
       <Modal
         isOpen={showContracts}
         onClose={() => setShowContracts(false)}
-        title="Técnicos sem agenda"
+        title={`Técnicos com contratos sem agenda em ${year}`}
         maxWidth="400px"
       >
         {pendingTechs.length === 0 ? (
-          <p className="pending-tech-empty">Todos os técnicos possuem agenda gerada.</p>
+          <p className="pending-tech-empty">Nenhum contrato sem agenda neste ano.</p>
         ) : (
           <ul className="pending-tech-list">
             {pendingTechs.map((name) => (

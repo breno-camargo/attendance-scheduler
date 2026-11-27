@@ -16,7 +16,7 @@ const routeWarmers: Record<string, () => void> = {
     void statsApi.get();
   },
   '/clients': () => {
-    void clientsApi.list();
+    void clientsApi.list(new Date().getFullYear());
     void professionalsApi.list();
   },
   '/professionals': () => {
