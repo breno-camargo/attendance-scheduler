@@ -1,8 +1,10 @@
 import Image from 'next/image';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 
 import PrintTrigger from '@/components/reports/PrintTrigger';
 import ReportContactTables from '@/components/reports/ReportContactTables';
+import { professionalScopeWhere, requireAuthWithScope } from '@/lib/api-utils';
+import { MAINT_ROLES } from '@/lib/constants';
 import { parseSystemTypes } from '@/lib/formatting';
 import { getHolidaysForYear } from '@/lib/holidays';
 import prisma from '@/lib/prisma';
@@ -13,15 +15,6 @@ import './print.css';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-interface ReportContact {
-  action?: string;
-  contact?: string;
-  role: string;
-  name: string;
-  phone: string;
-  email: string;
-}
-
 interface RowData {
   date: string;
   obs: string;
@@ -31,6 +24,67 @@ interface RowData {
 interface TableRow {
   item1: RowData;
   item2?: RowData;
+}
+
+const VISITS_PER_PAGE = 120;
+
+function renderVisitsTable(tableRows: TableRow[], isSingleColumn: boolean) {
+  return (
+    <table className="visits-table">
+      <thead>
+        <tr>
+          <th style={{ width: isSingleColumn ? '40%' : '20%' }}>Data</th>
+          <th style={{ width: isSingleColumn ? '60%' : '30%' }}>Observação</th>
+          {!isSingleColumn && (
+            <>
+              <th style={{ width: '20%' }}>Data</th>
+              <th style={{ width: '30%' }}>Observação</th>
+            </>
+          )}
+        </tr>
+      </thead>
+      <tbody>
+        {tableRows.length === 0 && (
+          <tr>
+            <td colSpan={2}>Nenhuma visita agendada</td>
+          </tr>
+        )}
+        {tableRows.map((row, idx) => {
+          const isT1 = row.item1.isTeste;
+          const isT2 = row.item2?.isTeste;
+
+          return (
+            <tr key={idx}>
+              <td>
+                {isT1 ? <span style={{ color: '#ef4444' }}>{row.item1.date}</span> : row.item1.date}
+              </td>
+              <td>
+                {isT1 ? <span style={{ color: '#ef4444' }}>{row.item1.obs}</span> : row.item1.obs}
+              </td>
+              {!isSingleColumn && (
+                <>
+                  <td>
+                    {isT2 ? (
+                      <span style={{ color: '#ef4444' }}>{row.item2?.date || '-'}</span>
+                    ) : (
+                      row.item2?.date || '-'
+                    )}
+                  </td>
+                  <td>
+                    {isT2 ? (
+                      <span style={{ color: '#ef4444' }}>{row.item2?.obs || '-'}</span>
+                    ) : (
+                      row.item2?.obs || '-'
+                    )}
+                  </td>
+                </>
+              )}
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  );
 }
 
 function normalizeContactName(name: string) {
@@ -45,12 +99,21 @@ export default async function ContractReportPage(props: {
   const params = await props.params;
   const yearParam = searchParams.year ? parseInt(searchParams.year) : null;
 
-  // Busca o contrato com ORM padrão
+  const result = await requireAuthWithScope();
+  if ('error' in result) {
+    if (result.error.status === 401) redirect('/login');
+    return notFound();
+  }
+  const { auth } = result;
+
   const contract = await prisma.contract.findUnique({
-    where: { id: params.id },
+    where: {
+      id: params.id,
+      professional: professionalScopeWhere(auth),
+    },
     include: {
       client: true,
-      professional: { include: { supervisor: true } },
+      professional: { include: { supervisor: { include: { supervisor: true } } } },
       appointments: { orderBy: { date: 'asc' } },
     },
   });
@@ -59,54 +122,26 @@ export default async function ContractReportPage(props: {
   const { professional } = contract;
   const internalStaff = await prisma.internalContact.findMany();
 
-  // Monta cadeia de contatos baseada no escopo do técnico:
-  // Se o supervisor é o Líder → mostra Líder + Coordenador (sem Supervisor)
-  // Se o supervisor é o Supervisor → mostra Supervisor + Coordenador (sem Líder)
-  // Se não tem supervisor → mostra os 3
-  const supervisorContact = professional?.supervisor;
-  const supervisorRole = (supervisorContact?.role || '').toLowerCase();
-  const isLiderScope = supervisorRole.includes('líder') || supervisorRole.includes('lider');
-  const isSupervisorScope = supervisorRole.includes('supervisor');
+  const technicianName = normalizeContactName(professional?.name ?? '');
+  const technicianEmail = professional?.email.trim().toLowerCase();
+  const isTechnician = (contact: { name: string; email: string | null }) =>
+    (technicianEmail && technicianEmail === contact.email?.trim().toLowerCase()) ||
+    (technicianName && technicianName === normalizeContactName(contact.name));
 
-  const maintenanceDefaults: ReportContact[] = [];
-  let contactNum = 2;
-  if (!isSupervisorScope) {
-    maintenanceDefaults.push({
-      action: `${contactNum}° Contato`,
-      role: 'Técnico de Sistemas (Líder)',
-      name: '',
-      phone: '',
-      email: '',
-    });
-    contactNum++;
-  }
-  if (!isLiderScope) {
-    maintenanceDefaults.push({
-      action: `${contactNum}° Contato`,
-      role: 'Supervisor',
-      name: '',
-      phone: '',
-      email: '',
-    });
-    contactNum++;
-  }
-  maintenanceDefaults.push({
-    action: `${contactNum}° Contato`,
-    role: 'Coordenador',
-    name: '',
-    phone: '',
-    email: '',
-  });
-
-  const defaultContactsData = {
-    maintenance: maintenanceDefaults,
-    escalation: [
-      { contact: 'Setor Comercial', role: 'Comercial Obras/Peças', name: '', phone: '', email: '' },
-      { contact: '', role: 'Comercial Serviços', name: '', phone: '', email: '' },
-      { contact: 'Manutenção Sistemas', role: 'Gerente', name: '', phone: '', email: '' },
-      { contact: 'Operação de Segurança', role: 'Diretor', name: '', phone: '', email: '' },
-    ],
-  };
+  const directContact = professional?.supervisor;
+  // Quando o líder é o técnico fixo, sua equipe fornece o próximo contato.
+  const supervisorContact =
+    directContact?.supervisor &&
+    normalizeContactName(directContact.role ?? '').includes('lider') &&
+    isTechnician(directContact)
+      ? directContact.supervisor
+      : directContact;
+  const supervisorRole = normalizeContactName(supervisorContact?.role ?? '');
+  const linkedRole = supervisorRole.includes('supervisor')
+    ? 'Supervisor'
+    : supervisorRole.includes('lider')
+      ? 'Técnico de Sistemas (Líder)'
+      : null;
 
   // Match flexível de cargo (ignora plurais, acentos parciais)
   const matchRole = (staffRole: string | null, targetRole: string) => {
@@ -116,70 +151,41 @@ export default async function ContractReportPage(props: {
     return a === b || a.startsWith(b.slice(0, -1)) || b.startsWith(a.slice(0, -1));
   };
 
-  // Manutenção: SEMPRE recalcula pelo supervisor do técnico.
-  // Filtra cargos que não possuem nenhum InternalContact cadastrado
-  // (ex: Coordenador excluído → não aparece linha em branco no PDF).
-  const maintenanceContacts = (defaultContactsData.maintenance || [])
-    .map((row: ReportContact) => {
-      if (!row.name && row.role) {
-        const match =
-          row.role === 'Supervisor' && isSupervisorScope
-            ? supervisorContact
-            : internalStaff.find((s) => matchRole(s.role, row.role));
-        if (match) return { ...row, name: match.name, phone: match.phone, email: match.email };
-      }
-      return row;
-    })
-    .filter((row) => row.name);
+  // O vínculo identifica quem acompanha o técnico mesmo quando o cargo é compartilhado.
+  const maintenanceContacts = (
+    supervisorContact && linkedRole
+      ? [{ ...supervisorContact, role: linkedRole }]
+      : MAINT_ROLES.flatMap((role) => {
+          const matches = internalStaff.filter(
+            (member) => member.name.trim() && matchRole(member.role, role),
+          );
+          if (matches.length > 1) return [];
+          const [contact] = matches;
+          return contact ? [{ ...contact, role }] : [];
+        })
+  ).filter((row) => row.name.trim());
 
-  const reportSupervisor = maintenanceContacts.find((row) => row.role === 'Supervisor');
-  const technicianName = normalizeContactName(professional?.name ?? '');
-  const supervisorEmail = reportSupervisor?.email?.trim().toLowerCase();
-  const duplicateSupervisor =
-    professional &&
-    reportSupervisor &&
-    ((supervisorEmail && supervisorEmail === professional.email.trim().toLowerCase()) ||
-      (technicianName && technicianName === normalizeContactName(reportSupervisor.name)))
-      ? reportSupervisor
-      : null;
-
-  // Escalação: auto-preenche pelos contatos internos. Quando há múltiplos
-  // InternalContact com o mesmo role (ex: dois "Diretor"), expande numa linha
-  // por contato — o rowspan na renderização agrupa todos sob o mesmo "Contato".
-  // Linhas extras ficam com `contact` vazio pra a normalização do rowspan
-  // herdar o valor da primeira (convenção do ReportContactTables).
-  const escalationExpanded = (defaultContactsData.escalation || []).flatMap(
-    (row: ReportContact) => {
-      if (row.name || !row.role) return [row];
-      const matches = internalStaff.filter((s) => matchRole(s.role, row.role));
-      if (matches.length === 0) return [row];
-      return matches.map((m, i) => ({
-        ...row,
-        contact: i === 0 ? row.contact : '',
-        name: m.name,
-        phone: m.phone ?? '',
-        email: m.email ?? '',
-      }));
-    },
+  const duplicateContact = maintenanceContacts.find(
+    (row) => row.role !== 'Coordenador' && isTechnician(row),
   );
+  const technicianRole =
+    duplicateContact?.role === 'Supervisor'
+      ? 'Técnico de Sistemas e Supervisor'
+      : duplicateContact
+        ? 'Técnico de Sistemas e Líder de Equipe'
+        : undefined;
 
-  // Normaliza os labels de `contact` ANTES de filtrar — cada linha herda o
-  // grupo da linha anterior quando `contact` está vazio. Sem isso, ao remover
-  // a linha-pai (ex: Comercial Obras/Peças), a próxima (Comercial Serviços)
-  // perdia o label "Setor Comercial".
-  const escalationNormalized = escalationExpanded.map((row, idx) => {
-    if (row.contact || idx === 0) return row;
-    let prev = idx - 1;
-    while (prev >= 0 && !escalationExpanded[prev].contact) prev--;
-    return prev >= 0 ? { ...row, contact: escalationExpanded[prev].contact } : row;
-  });
-
-  const escalationContacts = escalationNormalized.filter((row) => row.name);
-
-  const contactsData = {
-    maintenance: maintenanceContacts.filter((row) => row !== duplicateSupervisor),
-    escalation: escalationContacts,
-  };
+  const escalationRoles = [
+    { contact: 'Setor Comercial', role: 'Comercial Obras/Peças' },
+    { contact: 'Setor Comercial', role: 'Comercial Serviços' },
+    { contact: 'Manutenção Sistemas', role: 'Gerente' },
+    { contact: 'Operação de Segurança', role: 'Diretor' },
+  ];
+  const escalationContacts = escalationRoles.flatMap((group) =>
+    internalStaff
+      .filter((member) => member.name.trim() && matchRole(member.role, group.role))
+      .map((member) => ({ ...member, ...group })),
+  );
 
   // Determina o ano: usa query param ?year=, senão pega o ano mais recente dos agendamentos.
   const appointmentYears = Array.from(
@@ -233,13 +239,6 @@ export default async function ContractReportPage(props: {
   const parsedSystems = parseSystemTypes(contract.systemTypes);
   const systems = parsedSystems.length > 0 ? parsedSystems : ['SDAI'];
 
-  // Decide entre layout de coluna única ou dupla
-  const isSingleColumn = filteredAppointments.length <= 16;
-  const totalRows = isSingleColumn
-    ? filteredAppointments.length
-    : Math.min(54, Math.ceil(filteredAppointments.length / 2));
-
-  const tableRows: TableRow[] = [];
   const getRowData = (apt: ReturnType<typeof getAppointment>, defaultNum: number): RowData => {
     if (!apt) return { date: '-', obs: '-', isTeste: false };
 
@@ -260,16 +259,24 @@ export default async function ContractReportPage(props: {
     return { date: dt, obs, isTeste };
   };
 
-  for (let i = 0; i < totalRows; i++) {
-    if (isSingleColumn) {
-      tableRows.push({ item1: getRowData(filteredAppointments[i], i + 1) });
-    } else {
-      tableRows.push({
-        item1: getRowData(filteredAppointments[i], i + 1),
-        item2: getRowData(filteredAppointments[i + totalRows], i + 1 + totalRows),
-      });
-    }
-  }
+  const totalVisitPages = Math.max(1, Math.ceil(filteredAppointments.length / VISITS_PER_PAGE));
+  const [firstVisitPage, ...continuationPages] = Array.from(
+    { length: totalVisitPages },
+    (_, pageIndex) => {
+      const offset = pageIndex * VISITS_PER_PAGE;
+      const appointments = filteredAppointments.slice(offset, offset + VISITS_PER_PAGE);
+      const isSingleColumn = appointments.length <= 16;
+      const totalRows = isSingleColumn ? appointments.length : Math.ceil(appointments.length / 2);
+      const tableRows = Array.from({ length: totalRows }, (_, i) => ({
+        item1: getRowData(appointments[i], offset + i + 1),
+        item2: isSingleColumn
+          ? undefined
+          : getRowData(appointments[i + totalRows], offset + i + totalRows + 1),
+      }));
+      return { offset, isSingleColumn, tableRows };
+    },
+  );
+  const { isSingleColumn, tableRows } = firstVisitPage;
 
   // Mapeamentos de sistemas
   const badgeMap: Record<string, string> = {
@@ -542,92 +549,36 @@ export default async function ContractReportPage(props: {
                       alignSelf: 'flex-start',
                     }}
                   >
-                    <table className="visits-table">
-                      <thead>
-                        <tr>
-                          <th style={{ width: isSingleColumn ? '40%' : '20%' }}>Data</th>
-                          <th style={{ width: isSingleColumn ? '60%' : '30%' }}>Observação</th>
-                          {!isSingleColumn && (
-                            <>
-                              <th style={{ width: '20%' }}>Data</th>
-                              <th style={{ width: '30%' }}>Observação</th>
-                            </>
-                          )}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {tableRows.length === 0 && (
-                          <tr>
-                            <td colSpan={2}>Nenhuma visita agendada</td>
-                          </tr>
-                        )}
-                        {tableRows.map((row, idx) => {
-                          const isT1 = row.item1.isTeste;
-                          const isT2 = row.item2?.isTeste;
-
-                          return (
-                            <tr key={idx}>
-                              <td>
-                                {isT1 ? (
-                                  <span style={{ color: '#ef4444' }}>{row.item1.date}</span>
-                                ) : (
-                                  row.item1.date
-                                )}
-                              </td>
-                              <td>
-                                {isT1 ? (
-                                  <span style={{ color: '#ef4444' }}>{row.item1.obs}</span>
-                                ) : (
-                                  row.item1.obs
-                                )}
-                              </td>
-                              {!isSingleColumn && (
-                                <>
-                                  <td>
-                                    {isT2 ? (
-                                      <span style={{ color: '#ef4444' }}>
-                                        {row.item2?.date || '-'}
-                                      </span>
-                                    ) : (
-                                      row.item2?.date || '-'
-                                    )}
-                                  </td>
-                                  <td>
-                                    {isT2 ? (
-                                      <span style={{ color: '#ef4444' }}>
-                                        {row.item2?.obs || '-'}
-                                      </span>
-                                    ) : (
-                                      row.item2?.obs || '-'
-                                    )}
-                                  </td>
-                                </>
-                              )}
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
+                    {renderVisitsTable(tableRows, isSingleColumn)}
                   </div>
                 </div>
 
                 {/* RODAPÉ: Lista de Contatos completa (2 seções) */}
                 <ReportContactTables
-                  maintenance={contactsData.maintenance}
-                  escalation={contactsData.escalation}
+                  maintenance={maintenanceContacts.filter((row) => row !== duplicateContact)}
+                  escalation={escalationContacts}
                   professional={
                     professional && {
                       ...professional,
-                      phone: professional.phone || duplicateSupervisor?.phone,
+                      phone: professional.phone || duplicateContact?.phone,
                     }
                   }
-                  technicianIsSupervisor={duplicateSupervisor !== null}
+                  technicianRole={technicianRole}
                 />
               </td>
             </tr>
           </tbody>
         </table>
       </div>
+      {continuationPages.map((page) => (
+        <section key={page.offset} className="report-container report-visits-continuation">
+          <h2>Continuação das visitas</h2>
+          <p>
+            {contract.client.name} · {year}
+          </p>
+          {renderVisitsTable(page.tableRows, page.isSingleColumn)}
+        </section>
+      ))}
     </>
   );
 }

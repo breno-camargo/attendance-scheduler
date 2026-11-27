@@ -39,7 +39,9 @@ export default function ProfessionalsPage() {
       if (staffRes.data) {
         const supRoles = ['técnico de sistemas (líder)', 'supervisor'];
         setSupervisors(
-          staffRes.data.filter((s) => supRoles.includes((s.role || '').toLowerCase())),
+          staffRes.data
+            .filter((s) => supRoles.includes((s.role || '').toLowerCase()))
+            .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR')),
         );
       }
       if (clientsRes.data) {

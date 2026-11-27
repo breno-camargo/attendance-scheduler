@@ -51,6 +51,7 @@ const mockContact = {
   role: 'Supervisor',
   phone: '(11) 91234-5678',
   email: 'maria@compasss.com.br',
+  supervisorId: null,
   createdAt: new Date('2024-01-01'),
   updatedAt: new Date('2024-01-01'),
 };
@@ -114,6 +115,51 @@ describe('GET /api/internal-contacts', () => {
 // POST /api/internal-contacts
 // ---------------------------------------------------------------------------
 describe('POST /api/internal-contacts', () => {
+  it('creates a technical leader linked to an existing supervisor', async () => {
+    const leader = {
+      ...mockContact,
+      id: 'c000000000000000000000001',
+      name: 'Líder Teste',
+      role: 'Técnico de Sistemas (Líder)',
+      supervisorId: validId,
+    };
+    prismaMock.internalContact.findUnique.mockResolvedValue(mockContact);
+    prismaMock.internalContact.create.mockResolvedValue(leader);
+    const response = await POST(
+      new Request('http://localhost/api/internal-contacts', {
+        method: 'POST',
+        body: JSON.stringify({ name: leader.name, role: leader.role, supervisorId: validId }),
+      }),
+    );
+
+    expect(response.status).toBe(201);
+    expect(prismaMock.internalContact.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ role: leader.role, supervisorId: validId }),
+      }),
+    );
+    expect(prismaMock.internalContact.findFirst).not.toHaveBeenCalled();
+  });
+
+  it('rejects linking a leader to a contact outside the supervisor role', async () => {
+    prismaMock.internalContact.findUnique.mockResolvedValue({
+      ...mockContact,
+      role: 'Coordenador',
+    });
+    const response = await POST(
+      new Request('http://localhost/api/internal-contacts', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: 'Líder Teste',
+          role: 'Técnico de Sistemas (Líder)',
+          supervisorId: validId,
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    expect(prismaMock.internalContact.create).not.toHaveBeenCalled();
+  });
   it('returns 401 when unauthenticated', async () => {
     mockGetServerSession.mockResolvedValueOnce(null);
 
@@ -167,24 +213,23 @@ describe('POST /api/internal-contacts', () => {
     expect(body.name).toBe('Maria de Oliveira');
   });
 
-  it('returns 400 when a UNIQUE_ROLES role (Supervisor) is already taken', async () => {
-    prismaMock.internalContact.findFirst.mockResolvedValue({
-      ...mockContact,
-      id: 'cdifferentid0000000000001',
-      name: 'Ana Silva',
-    } as any);
+  it('creates another supervisor when the team already has one', async () => {
+    prismaMock.internalContact.findFirst.mockResolvedValue(mockContact);
+    const newSupervisor = { ...mockContact, id: 'cdifferentid0000000000001', name: 'Ana Silva' };
+    prismaMock.internalContact.create.mockResolvedValue(newSupervisor);
 
     const req = new Request('http://localhost/api/internal-contacts', {
       method: 'POST',
-      body: JSON.stringify({ ...validContactBody, role: 'Supervisor' }),
+      body: JSON.stringify({ ...validContactBody, name: newSupervisor.name }),
       headers: { 'Content-Type': 'application/json' },
     });
 
     const response = await POST(req);
 
-    expect(response.status).toBe(400);
+    expect(response.status).toBe(201);
     const body = await response.json();
-    expect(body.error).toContain('Supervisor');
+    expect(body).toMatchObject({ name: newSupervisor.name, role: 'Supervisor' });
+    expect(prismaMock.internalContact.findFirst).not.toHaveBeenCalled();
   });
 
   it('returns 400 when the Gerente role is already taken and error names the holder', async () => {
@@ -302,9 +347,12 @@ describe('PUT /api/internal-contacts/[id]', () => {
     expect(response.status).toBe(401);
   });
 
-  it('updates a contact and returns 200', async () => {
-    prismaMock.internalContact.findFirst.mockResolvedValue(null);
-    prismaMock.internalContact.update.mockResolvedValue(mockContact as any);
+  it('allows updating a contact to Supervisor when the team already has one', async () => {
+    prismaMock.internalContact.findFirst.mockResolvedValue({
+      ...mockContact,
+      id: 'cdifferentid0000000000099',
+    });
+    prismaMock.internalContact.update.mockResolvedValue(mockContact);
 
     const req = new Request(`http://localhost/api/internal-contacts/${validId}`, {
       method: 'PUT',
@@ -316,7 +364,8 @@ describe('PUT /api/internal-contacts/[id]', () => {
 
     expect(response.status).toBe(200);
     const body = await response.json();
-    expect(body.name).toBe('Maria Oliveira');
+    expect(body).toMatchObject({ name: 'Maria Oliveira', role: 'Supervisor' });
+    expect(prismaMock.internalContact.findFirst).not.toHaveBeenCalled();
   });
 
   it('capitalizes the name when updating', async () => {
@@ -344,12 +393,13 @@ describe('PUT /api/internal-contacts/[id]', () => {
     prismaMock.internalContact.findFirst.mockResolvedValue({
       ...mockContact,
       id: 'cdifferentid0000000000099',
-      name: 'Outro Supervisor',
+      name: 'Outro Gerente',
+      role: 'Gerente',
     } as any);
 
     const req = new Request(`http://localhost/api/internal-contacts/${validId}`, {
       method: 'PUT',
-      body: JSON.stringify({ ...validContactBody, role: 'Supervisor' }),
+      body: JSON.stringify({ ...validContactBody, role: 'Gerente' }),
       headers: { 'Content-Type': 'application/json' },
     });
 
@@ -357,18 +407,18 @@ describe('PUT /api/internal-contacts/[id]', () => {
 
     expect(response.status).toBe(400);
     const body = await response.json();
-    expect(body.error).toContain('Supervisor');
+    expect(body.error).toContain('Gerente');
   });
 
   it('allows updating own unique role (self excluded from conflict check)', async () => {
-    // findFirst returns null because the only Supervisor IS this contact
+    // findFirst returns null because the only Gerente IS this contact
     // (excluded by `id: { not: params.id }`)
     prismaMock.internalContact.findFirst.mockResolvedValue(null);
     prismaMock.internalContact.update.mockResolvedValue(mockContact as any);
 
     const req = new Request(`http://localhost/api/internal-contacts/${validId}`, {
       method: 'PUT',
-      body: JSON.stringify({ ...validContactBody, role: 'Supervisor' }),
+      body: JSON.stringify({ ...validContactBody, role: 'Gerente' }),
       headers: { 'Content-Type': 'application/json' },
     });
 

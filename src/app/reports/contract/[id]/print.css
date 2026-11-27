@@ -34,6 +34,19 @@ main {
   overflow: visible;
 }
 
+.report-visits-continuation {
+  padding-top: 6mm;
+}
+
+.report-visits-continuation h2 {
+  font-size: 1rem;
+}
+
+.report-visits-continuation p {
+  font-size: 0.75rem;
+  margin: 2px 0 12px;
+}
+
 /* ─── Impressão ──────────────────────────────────────────────── */
 @media print {
   @page {
@@ -62,6 +75,10 @@ main {
     box-shadow: none;
     width: 100%;
     padding: 0 6mm 3mm;
+  }
+  .report-visits-continuation {
+    break-before: page;
+    padding-top: 6mm;
   }
   .month-card {
     break-inside: avoid;

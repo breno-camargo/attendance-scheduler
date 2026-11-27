@@ -1,15 +1,11 @@
 export const EMAIL_DOMAIN = process.env.NEXT_PUBLIC_EMAIL_DOMAIN || 'compasss.com.br';
+export const TECHNICAL_LEADER_ROLE = 'Técnico de Sistemas (Líder)';
 
 /** Cargos que devem ser únicos (1 pessoa por cargo) */
-export const UNIQUE_ROLES: string[] = [
-  'Técnico de Sistemas (Líder)',
-  'Supervisor',
-  'Gerente',
-  'Coordenador',
-];
+export const UNIQUE_ROLES: string[] = ['Gerente', 'Coordenador'];
 
 /** Cargos da seção de Manutenção */
-export const MAINT_ROLES: string[] = ['Técnico de Sistemas (Líder)', 'Supervisor', 'Coordenador'];
+export const MAINT_ROLES: string[] = [TECHNICAL_LEADER_ROLE, 'Supervisor', 'Coordenador'];
 
 /** Mapeamento de nomes legados → nome canônico */
 const LEGACY_ROLES: Record<string, string> = {

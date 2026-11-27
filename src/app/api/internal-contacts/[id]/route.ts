@@ -1,7 +1,8 @@
 import { ApiUtils, requireAuthWithScope } from '@/lib/api-utils';
-import { UNIQUE_ROLES } from '@/lib/constants';
+import { migrateRole, TECHNICAL_LEADER_ROLE, UNIQUE_ROLES } from '@/lib/constants';
 import prisma from '@/lib/prisma';
 import { internalContactSchema } from '@/lib/schemas';
+import { TeamHierarchyError, validateTeamSupervisor } from '@/lib/team-hierarchy';
 
 /**
  * GET /api/internal-contacts/[id]
@@ -46,35 +47,59 @@ export async function PUT(request: Request, props: { params: Promise<{ id: strin
     }
 
     const data = validation.data;
+    const role =
+      result.auth.scope === 'all' && data.role !== undefined ? migrateRole(data.role) : undefined;
 
     // Transaction para garantir atomicidade na validação de cargo único
-    const contact = await prisma.$transaction(async (tx) => {
-      if (data.role && UNIQUE_ROLES.includes(data.role)) {
-        const existing = await tx.internalContact.findFirst({
-          where: {
-            role: data.role,
-            id: { not: params.id },
+    const contact = await prisma.$transaction(
+      async (tx) => {
+        if (result.auth.scope === 'all') {
+          await validateTeamSupervisor(tx, role ?? '', data.supervisorId, params.id);
+          if (
+            role !== undefined &&
+            role !== 'Supervisor' &&
+            (await tx.internalContact.count({ where: { supervisorId: params.id } })) > 0
+          ) {
+            throw new TeamHierarchyError(
+              'Reatribua os líderes antes de alterar o cargo deste supervisor.',
+            );
+          }
+        }
+        if (role && UNIQUE_ROLES.includes(role)) {
+          const existing = await tx.internalContact.findFirst({
+            where: {
+              role,
+              id: { not: params.id },
+            },
+          });
+          if (existing) {
+            throw new Error(
+              `UNIQUE_ROLE:O cargo de '${data.role}' já está ocupado por ${existing.name}.`,
+            );
+          }
+        }
+
+        return tx.internalContact.update({
+          where: { id: params.id },
+          data: {
+            name: ApiUtils.capitalizeName(data.name),
+            role: role === '' ? null : role,
+            supervisorId:
+              role !== undefined && role !== TECHNICAL_LEADER_ROLE
+                ? null
+                : result.auth.scope === 'all' && data.supervisorId !== undefined
+                  ? data.supervisorId || null
+                  : undefined,
+            phone: data.phone || null,
+            email: data.email || null,
           },
         });
-        if (existing) {
-          throw new Error(
-            `UNIQUE_ROLE:O cargo de '${data.role}' já está ocupado por ${existing.name}.`,
-          );
-        }
-      }
-
-      return tx.internalContact.update({
-        where: { id: params.id },
-        data: {
-          name: ApiUtils.capitalizeName(data.name),
-          role: data.role || null,
-          phone: data.phone || null,
-          email: data.email || null,
-        },
-      });
-    });
+      },
+      { isolationLevel: 'Serializable' },
+    );
     return ApiUtils.success(contact);
   } catch (error: unknown) {
+    if (error instanceof TeamHierarchyError) return ApiUtils.error(error.message, null, 400);
     const msg = error instanceof Error ? error.message : '';
     if (msg.startsWith('UNIQUE_ROLE:')) {
       return ApiUtils.error(msg.replace('UNIQUE_ROLE:', ''), null, 400);

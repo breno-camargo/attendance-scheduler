@@ -113,12 +113,16 @@ model InternalContact {
   role           String?
   phone          String?
   email          String?
+  supervisorId   String?
+  supervisor     InternalContact?  @relation("TeamSupervisor", fields: [supervisorId], references: [id], onDelete: SetNull)
+  teamLeaders    InternalContact[] @relation("TeamSupervisor")
   professionals  Professional[]
   users          User[]
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
 
   @@index([role])
+  @@index([supervisorId])
 }
 
 /// Usuário do sistema com senha hash (bcrypt).
