@@ -72,15 +72,15 @@ export const appointmentPatchSchema = z.object({
   date: dateInputSchema.optional(),
 });
 
+export const scheduleYearSchema = z
+  .number()
+  .or(z.string().transform((value) => Number(value)))
+  .pipe(z.number().int().min(2020).max(2100));
+
 // Esquema para Geração de Agenda
 export const generateScheduleSchema = z.object({
   professionalId: z.string().regex(/^c[a-z0-9]{24}$/, 'ID de profissional inválido'),
-  year: z
-    .number()
-    .or(z.string().transform((v) => Number(v)))
-    .pipe(z.number().int().min(2020).max(2100))
-    .optional()
-    .default(new Date().getFullYear()),
+  year: scheduleYearSchema.default(() => new Date().getFullYear()),
 });
 
 // Esquema para Feriados

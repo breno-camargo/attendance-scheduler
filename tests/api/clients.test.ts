@@ -119,6 +119,32 @@ describe('GET /api/clients', () => {
     expect(body).toEqual([]);
   });
 
+  it('counts only active visits in the selected year and contracts in the supervisor scope', async () => {
+    mockGetServerSession.mockResolvedValueOnce(filteredUser);
+    const professionalId = 'professional-1';
+    prismaMock.professional.findMany.mockResolvedValue([{ id: professionalId }] as any);
+    prismaMock.client.findMany.mockResolvedValue([]);
+
+    const response = await GET(new Request('http://localhost/api/clients?year=2027'));
+
+    expect(response.status).toBe(200);
+    expect(prismaMock.client.findMany.mock.calls[0]?.[0]?.include?.contracts).toMatchObject({
+      where: { professionalId: { in: [professionalId] } },
+      include: {
+        _count: {
+          select: {
+            appointments: {
+              where: {
+                date: { gte: new Date('2027-01-01'), lt: new Date('2028-01-01') },
+                status: { not: 'CANCELLED' },
+              },
+            },
+          },
+        },
+      },
+    });
+  });
+
   it('returns 500 when Prisma throws', async () => {
     prismaMock.client.findMany.mockRejectedValue(new Error('DB error'));
 

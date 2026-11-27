@@ -649,6 +649,7 @@ body:has(.loading-indicator)::before {
   display: flex;
   gap: 1rem;
   flex-wrap: wrap;
+  margin-block-start: 1.25rem;
 }
 
 .stat-badge {

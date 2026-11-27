@@ -5,10 +5,12 @@ import { useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { GlassCard } from '@/components/ui/glass-card';
 import { parseSystemTypes } from '@/lib/formatting';
-import type { Client } from '@/types';
+import type { Client, Professional } from '@/types';
 
 interface ClientTableProps {
   clients: Client[];
+  professionals: Professional[];
+  scheduleUnavailable: boolean;
   onEdit: (client: Client) => void;
   onDelete: (id: string, name: string) => void;
 }
@@ -97,9 +99,33 @@ function SystemBadge({ system }: { system: string }) {
   );
 }
 
-export default function ClientTable({ clients, onEdit, onDelete }: ClientTableProps) {
+export default function ClientTable({
+  clients,
+  professionals,
+  scheduleUnavailable,
+  onEdit,
+  onDelete,
+}: ClientTableProps) {
   const [search, setSearch] = useState('');
   const [techFilter, setTechFilter] = useState('');
+  const [teamFilter, setTeamFilter] = useState('');
+  const [scheduleFilter, setScheduleFilter] = useState('');
+
+  const teams = useMemo(
+    () =>
+      Array.from(
+        new Map(
+          professionals.flatMap(({ supervisor }) =>
+            supervisor ? [[supervisor.id, supervisor.name] as const] : [],
+          ),
+        ).entries(),
+      ).sort((a, b) => a[1].localeCompare(b[1], 'pt-BR')),
+    [professionals],
+  );
+  const teamByTech = useMemo(
+    () => new Map(professionals.map(({ id, supervisorId }) => [id, supervisorId])),
+    [professionals],
+  );
 
   // Técnicos únicos vinculados a contratos
   const techs = useMemo(
@@ -119,11 +145,16 @@ export default function ClientTable({ clients, onEdit, onDelete }: ClientTablePr
     const searchLower = search.toLowerCase();
     return clients.filter((c) => {
       const matchesSearch = c.name.toLowerCase().includes(searchLower);
-      const matchesTech =
-        !techFilter || c.contracts?.some((ct) => ct.professionalId === techFilter);
-      return matchesSearch && matchesTech;
+      const contract = c.contracts?.[0];
+      const matchesTech = !techFilter || contract?.professionalId === techFilter;
+      const matchesTeam =
+        !teamFilter || teamByTech.get(contract?.professionalId ?? '') === teamFilter;
+      const hasSchedule = (contract?._count?.appointments ?? 0) > 0;
+      const matchesSchedule =
+        scheduleUnavailable || !scheduleFilter || hasSchedule === (scheduleFilter === 'scheduled');
+      return matchesSearch && matchesTech && matchesTeam && matchesSchedule;
     });
-  }, [clients, search, techFilter]);
+  }, [clients, search, techFilter, teamFilter, teamByTech, scheduleFilter, scheduleUnavailable]);
 
   const totalContracts = clients.reduce((sum, c) => sum + (c.contracts?.length || 0), 0);
   const filteredContracts = filtered.reduce((sum, c) => sum + (c.contracts?.length || 0), 0);
@@ -140,7 +171,9 @@ export default function ClientTable({ clients, onEdit, onDelete }: ClientTablePr
       >
         <h2 style={{ margin: 0 }}>Contratos Vigentes</h2>
         <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>
-          {search || techFilter ? `${filteredContracts} de ${totalContracts}` : totalContracts}{' '}
+          {search || techFilter || teamFilter || scheduleFilter
+            ? `${filteredContracts} de ${totalContracts}`
+            : totalContracts}{' '}
           contrato
           {totalContracts !== 1 ? 's' : ''}
         </span>
@@ -262,6 +295,34 @@ export default function ClientTable({ clients, onEdit, onDelete }: ClientTablePr
             </svg>
           </div>
         )}
+        {teams.length > 1 && (
+          <select
+            aria-label="Equipe"
+            className="form-input"
+            style={{ flex: '0 1 220px' }}
+            value={teamFilter}
+            onChange={(event) => setTeamFilter(event.target.value)}
+          >
+            <option value="">Todas as equipes</option>
+            {teams.map(([id, name]) => (
+              <option key={id} value={id}>
+                {name}
+              </option>
+            ))}
+          </select>
+        )}
+        <select
+          aria-label="Situação da agenda"
+          className="form-input"
+          style={{ flex: '0 1 175px' }}
+          value={scheduleFilter}
+          onChange={(event) => setScheduleFilter(event.target.value)}
+          disabled={scheduleUnavailable}
+        >
+          <option value="">Todas as situações</option>
+          <option value="pending">Sem agenda</option>
+          <option value="scheduled">Com agenda</option>
+        </select>
       </div>
 
       {clients.length === 0 ? (
@@ -272,10 +333,7 @@ export default function ClientTable({ clients, onEdit, onDelete }: ClientTablePr
       ) : filtered.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
           <div style={{ fontSize: '2rem', marginBottom: '0.75rem' }}>🔍</div>
-          <p>
-            Nenhum cliente encontrado para{' '}
-            <strong style={{ color: 'var(--foreground)' }}>&quot;{search}&quot;</strong>.
-          </p>
+          <p>Nenhum contrato encontrado com os filtros selecionados.</p>
         </div>
       ) : (
         <ul
@@ -360,7 +418,7 @@ export default function ClientTable({ clients, onEdit, onDelete }: ClientTablePr
                       >
                         {c.name}
                       </strong>
-                      {!hasSchedule && (
+                      {!scheduleUnavailable && !hasSchedule && (
                         <span
                           style={{
                             fontSize: '0.65rem',

@@ -192,7 +192,10 @@ function del<T = void>(url: string): Promise<ApiResult<T>> {
 // - delete cascata contratos e appointments
 // - create não toca schedule mas mantemos a tag por consistência/safety
 export const clientsApi = {
-  list: () => cachedGet<Client[]>('/api/clients', { tags: ['clients'] }),
+  list: (year?: number) =>
+    cachedGet<Client[]>(year === undefined ? '/api/clients' : `/api/clients?year=${year}`, {
+      tags: year === undefined ? ['clients'] : ['clients', 'schedule'],
+    }),
   create: (data: Record<string, unknown>) =>
     withInvalidation(() => post<Client>('/api/clients', data), ['clients', 'stats', 'schedule']),
   update: (id: string, data: Record<string, unknown>) =>
@@ -316,12 +319,12 @@ export const contactsApi = {
 };
 
 export const statsApi = {
-  get: () =>
+  get: (year = new Date().getFullYear()) =>
     cachedGet<{
       clients: number;
       professionals: number;
       totalContracts: number;
       contractsWithSchedule: number;
       pendingTechs: string[];
-    }>('/api/stats', { tags: ['stats'], ttl: STATS_TTL_MS }),
+    }>(`/api/stats?year=${year}`, { tags: ['stats'], ttl: STATS_TTL_MS }),
 };

@@ -8,7 +8,8 @@ import {
 } from '@/lib/api-utils';
 import prisma from '@/lib/prisma';
 import { checkApiRateLimit } from '@/lib/rate-limit';
-import { clientSchema } from '@/lib/schemas';
+import { annualScheduleWhere } from '@/lib/schedule-year';
+import { clientSchema, scheduleYearSchema } from '@/lib/schemas';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,15 +27,26 @@ export async function GET(request: Request) {
     return ApiUtils.error('Muitas requisições. Tente novamente em alguns minutos.', null, 429);
 
   try {
+    const year = scheduleYearSchema
+      .optional()
+      .safeParse(new URL(request.url).searchParams.get('year') ?? undefined);
+    if (!year.success) return ApiUtils.error('Ano inválido', null, 400);
+
     const { skip, take } = parsePagination(request.url);
     const profIds = await getScopedProfessionalIds(auth);
+    const contractScope = profIds ? { professionalId: { in: profIds } } : undefined;
     const clients = await prisma.client.findMany({
-      where: profIds ? { contracts: { some: { professionalId: { in: profIds } } } } : undefined,
+      where: contractScope ? { contracts: { some: contractScope } } : undefined,
       include: {
         contracts: {
+          where: contractScope,
           include: {
             professional: { select: { id: true, name: true, email: true, phone: true } },
-            _count: { select: { appointments: true } },
+            _count: {
+              select: {
+                appointments: year.data ? { where: annualScheduleWhere(year.data) } : true,
+              },
+            },
           },
         },
       },
