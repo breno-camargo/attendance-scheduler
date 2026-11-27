@@ -86,12 +86,7 @@ export async function getScopedProfessionalIds(auth: AuthScope): Promise<string[
 export function professionalScopeWhere(auth: AuthScope): Prisma.ProfessionalWhereInput | undefined {
   if (auth.scope === 'all') return undefined;
 
-  return {
-    OR: [
-      { supervisorId: auth.internalContactId },
-      { supervisor: { supervisorId: auth.internalContactId } },
-    ],
-  };
+  return { supervisorId: auth.internalContactId };
 }
 
 export async function requireProfessionalInScope(

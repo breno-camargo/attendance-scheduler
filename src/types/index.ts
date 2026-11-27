@@ -94,7 +94,6 @@ export interface InternalContact {
   role: string;
   email: string | null;
   phone: string | null;
-  supervisorId?: string | null;
 }
 
 /** Contato editável dentro de uma lista de contatos de contrato */
