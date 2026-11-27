@@ -27,9 +27,9 @@ import {
 /* eslint-enable import/order */
 
 describe('professionalScopeWhere', () => {
-  it('includes technicians assigned directly and through a team leader', () => {
+  it('limits a team lead to technicians assigned directly', () => {
     expect(professionalScopeWhere({ scope: 'filtered', internalContactId: 'supervisor' })).toEqual({
-      OR: [{ supervisorId: 'supervisor' }, { supervisor: { supervisorId: 'supervisor' } }],
+      supervisorId: 'supervisor',
     });
   });
 });

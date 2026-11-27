@@ -59,14 +59,12 @@ function StaffItem({
   onEdit,
   onDelete,
   canEdit,
-  supervisorName,
 }: {
   s: StaffMember;
   index: number;
   onEdit: (s: StaffMember) => void;
   onDelete: (id: string, name: string) => void;
   canEdit: boolean;
-  supervisorName?: string;
 }) {
   const initials = s.name
     .trim()
@@ -136,7 +134,6 @@ function StaffItem({
                 {s.name}
               </strong>
               <Badge variant="primary">{s.role}</Badge>
-              {supervisorName && <Badge variant="outline">Equipe de {supervisorName}</Badge>}
             </div>
             <div
               className="info-row-mobile"
@@ -212,7 +209,6 @@ export default function StaffPage() {
   const myContactId = session?.user?.internalContactId;
   const [name, setName] = useState('');
   const [role, setRole] = useState('');
-  const [supervisorId, setSupervisorId] = useState('');
   const [emailPrefix, setEmailPrefix] = useState('');
   const [phone, setPhone] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -242,7 +238,6 @@ export default function StaffPage() {
   const resetForm = () => {
     setName('');
     setRole('');
-    setSupervisorId('');
     setEmailPrefix('');
     setPhone('');
     setEditingId(null);
@@ -265,10 +260,7 @@ export default function StaffPage() {
       name,
       email: fullEmail,
       phone,
-      ...(isAdmin && {
-        role,
-        supervisorId: role === TECHNICAL_LEADER_ROLE ? supervisorId || null : null,
-      }),
+      ...(isAdmin && { role }),
     };
 
     try {
@@ -297,7 +289,6 @@ export default function StaffPage() {
     setEditingId(full.id);
     setName(full.name);
     setRole(migrateRole(full.role || ''));
-    setSupervisorId(full.supervisorId || '');
     setEmailPrefix(full.email?.split('@')[0] || '');
     setPhone(formatPhone(full.phone || ''));
     setIsModalOpen(true);
@@ -322,9 +313,6 @@ export default function StaffPage() {
   const escGroup = staff
     .filter((s) => !MAINT_ROLES.includes(s.role))
     .sort((a, b) => getRank(a.role) - getRank(b.role));
-  const supervisors = staff
-    .filter((member) => member.role === 'Supervisor' && member.id !== editingId)
-    .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
 
   return (
     <div style={{ padding: '4rem 2rem', maxWidth: '1000px', margin: '0 auto' }}>
@@ -399,10 +387,7 @@ export default function StaffPage() {
               id="staff-role"
               className="form-input"
               value={role}
-              onChange={(e) => {
-                setRole(e.target.value);
-                if (e.target.value !== TECHNICAL_LEADER_ROLE) setSupervisorId('');
-              }}
+              onChange={(e) => setRole(e.target.value)}
               disabled={!isAdmin}
               required
               style={{ cursor: 'pointer' }}
@@ -420,27 +405,6 @@ export default function StaffPage() {
               <option value="Outros">Outros</option>
             </select>
           </div>
-          {role === TECHNICAL_LEADER_ROLE && (
-            <div className="form-field">
-              <label htmlFor="staff-supervisor" className="form-label">
-                Supervisor da equipe
-              </label>
-              <select
-                id="staff-supervisor"
-                className="form-input"
-                value={supervisorId}
-                onChange={(e) => setSupervisorId(e.target.value)}
-                disabled={!isAdmin}
-              >
-                <option value="">Sem supervisor vinculado</option>
-                {supervisors.map((member) => (
-                  <option key={member.id} value={member.id}>
-                    {member.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
           <div className="form-field">
             <label htmlFor="staff-email" className="form-label">
               E-mail (Opcional)
@@ -491,7 +455,6 @@ export default function StaffPage() {
                   onEdit={handleEdit}
                   onDelete={handleDelete}
                   canEdit={isAdmin || s.id === myContactId}
-                  supervisorName={staff.find((member) => member.id === s.supervisorId)?.name}
                 />
               ))}
             </ul>

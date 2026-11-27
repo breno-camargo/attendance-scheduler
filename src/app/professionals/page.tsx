@@ -222,7 +222,7 @@ export default function ProfessionalsPage() {
           {supervisors.length > 0 && (
             <div className="form-field">
               <label htmlFor="prof-supervisor" className="form-label">
-                Escopo / Responde a
+                Responsável direto
               </label>
               <select
                 id="prof-supervisor"
@@ -231,7 +231,7 @@ export default function ProfessionalsPage() {
                 onChange={(e) => setSupervisorId(e.target.value)}
                 style={{ cursor: 'pointer' }}
               >
-                <option value="">Sem supervisor direto</option>
+                <option value="">Sem responsável direto</option>
                 {supervisors.map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.name} — {s.role}

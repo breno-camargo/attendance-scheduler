@@ -1,8 +1,7 @@
 import { ApiUtils, requireAuthWithScope } from '@/lib/api-utils';
-import { migrateRole, TECHNICAL_LEADER_ROLE, UNIQUE_ROLES } from '@/lib/constants';
+import { migrateRole, UNIQUE_ROLES } from '@/lib/constants';
 import prisma from '@/lib/prisma';
 import { internalContactSchema } from '@/lib/schemas';
-import { TeamHierarchyError, validateTeamSupervisor } from '@/lib/team-hierarchy';
 
 /**
  * GET /api/internal-contacts/[id]
@@ -53,18 +52,6 @@ export async function PUT(request: Request, props: { params: Promise<{ id: strin
     // Transaction para garantir atomicidade na validação de cargo único
     const contact = await prisma.$transaction(
       async (tx) => {
-        if (result.auth.scope === 'all') {
-          await validateTeamSupervisor(tx, role ?? '', data.supervisorId, params.id);
-          if (
-            role !== undefined &&
-            role !== 'Supervisor' &&
-            (await tx.internalContact.count({ where: { supervisorId: params.id } })) > 0
-          ) {
-            throw new TeamHierarchyError(
-              'Reatribua os líderes antes de alterar o cargo deste supervisor.',
-            );
-          }
-        }
         if (role && UNIQUE_ROLES.includes(role)) {
           const existing = await tx.internalContact.findFirst({
             where: {
@@ -84,12 +71,6 @@ export async function PUT(request: Request, props: { params: Promise<{ id: strin
           data: {
             name: ApiUtils.capitalizeName(data.name),
             role: role === '' ? null : role,
-            supervisorId:
-              role !== undefined && role !== TECHNICAL_LEADER_ROLE
-                ? null
-                : result.auth.scope === 'all' && data.supervisorId !== undefined
-                  ? data.supervisorId || null
-                  : undefined,
             phone: data.phone || null,
             email: data.email || null,
           },
@@ -99,7 +80,6 @@ export async function PUT(request: Request, props: { params: Promise<{ id: strin
     );
     return ApiUtils.success(contact);
   } catch (error: unknown) {
-    if (error instanceof TeamHierarchyError) return ApiUtils.error(error.message, null, 400);
     const msg = error instanceof Error ? error.message : '';
     if (msg.startsWith('UNIQUE_ROLE:')) {
       return ApiUtils.error(msg.replace('UNIQUE_ROLE:', ''), null, 400);

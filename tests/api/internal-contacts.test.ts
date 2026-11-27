@@ -115,15 +115,13 @@ describe('GET /api/internal-contacts', () => {
 // POST /api/internal-contacts
 // ---------------------------------------------------------------------------
 describe('POST /api/internal-contacts', () => {
-  it('creates a technical leader linked to an existing supervisor', async () => {
+  it('creates an independent technical lead when a legacy request includes a supervisor', async () => {
     const leader = {
       ...mockContact,
       id: 'c000000000000000000000001',
       name: 'Líder Teste',
       role: 'Técnico de Sistemas (Líder)',
-      supervisorId: validId,
     };
-    prismaMock.internalContact.findUnique.mockResolvedValue(mockContact);
     prismaMock.internalContact.create.mockResolvedValue(leader);
     const response = await POST(
       new Request('http://localhost/api/internal-contacts', {
@@ -135,30 +133,13 @@ describe('POST /api/internal-contacts', () => {
     expect(response.status).toBe(201);
     expect(prismaMock.internalContact.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({ role: leader.role, supervisorId: validId }),
+        data: expect.objectContaining({ role: leader.role }),
       }),
     );
-    expect(prismaMock.internalContact.findFirst).not.toHaveBeenCalled();
-  });
-
-  it('rejects linking a leader to a contact outside the supervisor role', async () => {
-    prismaMock.internalContact.findUnique.mockResolvedValue({
-      ...mockContact,
-      role: 'Coordenador',
-    });
-    const response = await POST(
-      new Request('http://localhost/api/internal-contacts', {
-        method: 'POST',
-        body: JSON.stringify({
-          name: 'Líder Teste',
-          role: 'Técnico de Sistemas (Líder)',
-          supervisorId: validId,
-        }),
-      }),
+    expect(prismaMock.internalContact.create.mock.calls[0]?.[0].data).not.toHaveProperty(
+      'supervisorId',
     );
-
-    expect(response.status).toBe(400);
-    expect(prismaMock.internalContact.create).not.toHaveBeenCalled();
+    expect(prismaMock.internalContact.findUnique).not.toHaveBeenCalled();
   });
   it('returns 401 when unauthenticated', async () => {
     mockGetServerSession.mockResolvedValueOnce(null);

@@ -4,7 +4,7 @@ import { notFound, redirect } from 'next/navigation';
 import PrintTrigger from '@/components/reports/PrintTrigger';
 import ReportContactTables from '@/components/reports/ReportContactTables';
 import { professionalScopeWhere, requireAuthWithScope } from '@/lib/api-utils';
-import { MAINT_ROLES } from '@/lib/constants';
+import { TECHNICAL_LEADER_ROLE } from '@/lib/constants';
 import { parseSystemTypes } from '@/lib/formatting';
 import { getHolidaysForYear } from '@/lib/holidays';
 import prisma from '@/lib/prisma';
@@ -113,7 +113,7 @@ export default async function ContractReportPage(props: {
     },
     include: {
       client: true,
-      professional: { include: { supervisor: { include: { supervisor: true } } } },
+      professional: { include: { supervisor: true } },
       appointments: { orderBy: { date: 'asc' } },
     },
   });
@@ -128,19 +128,12 @@ export default async function ContractReportPage(props: {
     (technicianEmail && technicianEmail === contact.email?.trim().toLowerCase()) ||
     (technicianName && technicianName === normalizeContactName(contact.name));
 
-  const directContact = professional?.supervisor;
-  // Quando o líder é o técnico fixo, sua equipe fornece o próximo contato.
-  const supervisorContact =
-    directContact?.supervisor &&
-    normalizeContactName(directContact.role ?? '').includes('lider') &&
-    isTechnician(directContact)
-      ? directContact.supervisor
-      : directContact;
+  const supervisorContact = professional?.supervisor;
   const supervisorRole = normalizeContactName(supervisorContact?.role ?? '');
   const linkedRole = supervisorRole.includes('supervisor')
     ? 'Supervisor'
     : supervisorRole.includes('lider')
-      ? 'Técnico de Sistemas (Líder)'
+      ? TECHNICAL_LEADER_ROLE
       : null;
 
   // Match flexível de cargo (ignora plurais, acentos parciais)
@@ -151,23 +144,12 @@ export default async function ContractReportPage(props: {
     return a === b || a.startsWith(b.slice(0, -1)) || b.startsWith(a.slice(0, -1));
   };
 
-  // O vínculo identifica quem acompanha o técnico mesmo quando o cargo é compartilhado.
-  const maintenanceContacts = (
-    supervisorContact && linkedRole
+  const maintenanceContacts =
+    supervisorContact?.name.trim() && linkedRole
       ? [{ ...supervisorContact, role: linkedRole }]
-      : MAINT_ROLES.flatMap((role) => {
-          const matches = internalStaff.filter(
-            (member) => member.name.trim() && matchRole(member.role, role),
-          );
-          if (matches.length > 1) return [];
-          const [contact] = matches;
-          return contact ? [{ ...contact, role }] : [];
-        })
-  ).filter((row) => row.name.trim());
+      : [];
 
-  const duplicateContact = maintenanceContacts.find(
-    (row) => row.role !== 'Coordenador' && isTechnician(row),
-  );
+  const duplicateContact = maintenanceContacts.find((row) => isTechnician(row));
   const technicianRole =
     duplicateContact?.role === 'Supervisor'
       ? 'Técnico de Sistemas e Supervisor'
