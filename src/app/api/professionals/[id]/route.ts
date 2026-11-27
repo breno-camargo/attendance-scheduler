@@ -61,12 +61,19 @@ export async function PUT(request: Request, props: { params: Promise<{ id: strin
     }
 
     const data = validation.data;
-    if (
-      auth.scope === 'filtered' &&
-      data.supervisorId !== undefined &&
-      data.supervisorId !== auth.internalContactId
-    ) {
-      return ApiUtils.error('VocÃª nÃ£o tem permissÃ£o para reatribuir este tÃ©cnico', null, 403);
+    if (auth.scope === 'filtered' && data.supervisorId !== undefined) {
+      const { supervisorId } = data;
+      if (supervisorId !== auth.internalContactId) {
+        const teamLeader = supervisorId
+          ? await prisma.internalContact.findFirst({
+              where: { id: supervisorId, supervisorId: auth.internalContactId },
+              select: { id: true },
+            })
+          : null;
+        if (!teamLeader) {
+          return ApiUtils.error('Escolha um responsável da sua equipe', null, 403);
+        }
+      }
     }
 
     const email = data.email.includes('@')

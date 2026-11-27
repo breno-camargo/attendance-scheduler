@@ -18,8 +18,21 @@ vi.mock('@/lib/auth', () => ({
   authOptions: {},
 }));
 import { getServerSession } from 'next-auth';
-import { ApiUtils, requireAuth, requireAuthWithScope } from '@/lib/api-utils';
+import {
+  ApiUtils,
+  professionalScopeWhere,
+  requireAuth,
+  requireAuthWithScope,
+} from '@/lib/api-utils';
 /* eslint-enable import/order */
+
+describe('professionalScopeWhere', () => {
+  it('includes technicians assigned directly and through a team leader', () => {
+    expect(professionalScopeWhere({ scope: 'filtered', internalContactId: 'supervisor' })).toEqual({
+      OR: [{ supervisorId: 'supervisor' }, { supervisor: { supervisorId: 'supervisor' } }],
+    });
+  });
+});
 
 // ─────────────────────────────────────────────
 // capitalizeName

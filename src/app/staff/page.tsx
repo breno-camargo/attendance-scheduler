@@ -8,7 +8,13 @@ import { GlassCard } from '@/components/ui/glass-card';
 import { Modal } from '@/components/ui/modal';
 import { useToast } from '@/components/ui/toast';
 import { staffApi } from '@/lib/api-client';
-import { EMAIL_DOMAIN, UNIQUE_ROLES, MAINT_ROLES, migrateRole } from '@/lib/constants';
+import {
+  EMAIL_DOMAIN,
+  MAINT_ROLES,
+  migrateRole,
+  TECHNICAL_LEADER_ROLE,
+  UNIQUE_ROLES,
+} from '@/lib/constants';
 import { formatPhone } from '@/lib/formatting';
 import type { InternalContact } from '@/types';
 
@@ -53,12 +59,14 @@ function StaffItem({
   onEdit,
   onDelete,
   canEdit,
+  supervisorName,
 }: {
   s: StaffMember;
   index: number;
   onEdit: (s: StaffMember) => void;
   onDelete: (id: string, name: string) => void;
   canEdit: boolean;
+  supervisorName?: string;
 }) {
   const initials = s.name
     .trim()
@@ -128,6 +136,7 @@ function StaffItem({
                 {s.name}
               </strong>
               <Badge variant="primary">{s.role}</Badge>
+              {supervisorName && <Badge variant="outline">Equipe de {supervisorName}</Badge>}
             </div>
             <div
               className="info-row-mobile"
@@ -203,6 +212,7 @@ export default function StaffPage() {
   const myContactId = session?.user?.internalContactId;
   const [name, setName] = useState('');
   const [role, setRole] = useState('');
+  const [supervisorId, setSupervisorId] = useState('');
   const [emailPrefix, setEmailPrefix] = useState('');
   const [phone, setPhone] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -232,6 +242,7 @@ export default function StaffPage() {
   const resetForm = () => {
     setName('');
     setRole('');
+    setSupervisorId('');
     setEmailPrefix('');
     setPhone('');
     setEditingId(null);
@@ -242,7 +253,7 @@ export default function StaffPage() {
     e.preventDefault();
     const fullEmail = emailPrefix ? `${emailPrefix.split('@')[0]}@${EMAIL_DOMAIN}` : '';
 
-    if (UNIQUE_ROLES.includes(role)) {
+    if (isAdmin && UNIQUE_ROLES.includes(role)) {
       const existing = staff.find((s) => s.role === role && s.id !== editingId);
       if (existing) {
         showToast(`Atenção: O cargo de ${role} já está ocupado por ${existing.name}.`, 'error');
@@ -250,7 +261,15 @@ export default function StaffPage() {
       }
     }
 
-    const payload = { name, role, email: fullEmail, phone };
+    const payload = {
+      name,
+      email: fullEmail,
+      phone,
+      ...(isAdmin && {
+        role,
+        supervisorId: role === TECHNICAL_LEADER_ROLE ? supervisorId || null : null,
+      }),
+    };
 
     try {
       const res = editingId
@@ -278,6 +297,7 @@ export default function StaffPage() {
     setEditingId(full.id);
     setName(full.name);
     setRole(migrateRole(full.role || ''));
+    setSupervisorId(full.supervisorId || '');
     setEmailPrefix(full.email?.split('@')[0] || '');
     setPhone(formatPhone(full.phone || ''));
     setIsModalOpen(true);
@@ -302,6 +322,9 @@ export default function StaffPage() {
   const escGroup = staff
     .filter((s) => !MAINT_ROLES.includes(s.role))
     .sort((a, b) => getRank(a.role) - getRank(b.role));
+  const supervisors = staff
+    .filter((member) => member.role === 'Supervisor' && member.id !== editingId)
+    .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
 
   return (
     <div style={{ padding: '4rem 2rem', maxWidth: '1000px', margin: '0 auto' }}>
@@ -376,14 +399,18 @@ export default function StaffPage() {
               id="staff-role"
               className="form-input"
               value={role}
-              onChange={(e) => setRole(e.target.value)}
+              onChange={(e) => {
+                setRole(e.target.value);
+                if (e.target.value !== TECHNICAL_LEADER_ROLE) setSupervisorId('');
+              }}
+              disabled={!isAdmin}
               required
               style={{ cursor: 'pointer' }}
             >
               <option value="" disabled>
                 Selecione um Cargo
               </option>
-              <option value="Técnico de Sistemas (Líder)">Técnico de Sistemas (Líder)</option>
+              <option value={TECHNICAL_LEADER_ROLE}>{TECHNICAL_LEADER_ROLE}</option>
               <option value="Supervisor">Supervisor</option>
               <option value="Coordenador">Coordenador</option>
               <option value="Comercial Obras/Peça">Comercial Obras/Peça</option>
@@ -393,6 +420,27 @@ export default function StaffPage() {
               <option value="Outros">Outros</option>
             </select>
           </div>
+          {role === TECHNICAL_LEADER_ROLE && (
+            <div className="form-field">
+              <label htmlFor="staff-supervisor" className="form-label">
+                Supervisor da equipe
+              </label>
+              <select
+                id="staff-supervisor"
+                className="form-input"
+                value={supervisorId}
+                onChange={(e) => setSupervisorId(e.target.value)}
+                disabled={!isAdmin}
+              >
+                <option value="">Sem supervisor vinculado</option>
+                {supervisors.map((member) => (
+                  <option key={member.id} value={member.id}>
+                    {member.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <div className="form-field">
             <label htmlFor="staff-email" className="form-label">
               E-mail (Opcional)
@@ -443,6 +491,7 @@ export default function StaffPage() {
                   onEdit={handleEdit}
                   onDelete={handleDelete}
                   canEdit={isAdmin || s.id === myContactId}
+                  supervisorName={staff.find((member) => member.id === s.supervisorId)?.name}
                 />
               ))}
             </ul>

@@ -1,3 +1,4 @@
+import type { Prisma } from '@prisma/client';
 import { NextResponse } from 'next/server';
 import { getServerSession, type Session } from 'next-auth';
 
@@ -76,10 +77,21 @@ export async function getScopedProfessionalIds(auth: AuthScope): Promise<string[
 
   const { default: prisma } = await import('./prisma');
   const profs = await prisma.professional.findMany({
-    where: { supervisorId: auth.internalContactId },
+    where: professionalScopeWhere(auth),
     select: { id: true },
   });
   return profs.map((p) => p.id);
+}
+
+export function professionalScopeWhere(auth: AuthScope): Prisma.ProfessionalWhereInput | undefined {
+  if (auth.scope === 'all') return undefined;
+
+  return {
+    OR: [
+      { supervisorId: auth.internalContactId },
+      { supervisor: { supervisorId: auth.internalContactId } },
+    ],
+  };
 }
 
 export async function requireProfessionalInScope(

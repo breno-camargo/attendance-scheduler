@@ -1,4 +1,10 @@
-import { ApiUtils, getClientIp, parsePagination, requireAuthWithScope } from '@/lib/api-utils';
+import {
+  ApiUtils,
+  getClientIp,
+  parsePagination,
+  professionalScopeWhere,
+  requireAuthWithScope,
+} from '@/lib/api-utils';
 import prisma from '@/lib/prisma';
 import { checkApiRateLimit } from '@/lib/rate-limit';
 import { professionalSchema } from '@/lib/schemas';
@@ -21,7 +27,7 @@ export async function GET(request: Request) {
   try {
     const { skip, take } = parsePagination(request.url);
     const professionals = await prisma.professional.findMany({
-      where: auth.scope === 'filtered' ? { supervisorId: auth.internalContactId } : undefined,
+      where: professionalScopeWhere(auth),
       include: { supervisor: { select: { id: true, name: true, role: true } } },
       // orderBy via localeCompare abaixo — Postgres default é case-sensitive e não trata acentos
       skip,

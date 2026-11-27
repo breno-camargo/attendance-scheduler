@@ -56,16 +56,16 @@ describe('migrateRole', () => {
 // UNIQUE_ROLES
 // ─────────────────────────────────────────────
 describe('UNIQUE_ROLES', () => {
-  it('has exactly 4 entries', () => {
-    expect(UNIQUE_ROLES).toHaveLength(4);
+  it('has exactly 2 entries', () => {
+    expect(UNIQUE_ROLES).toHaveLength(2);
   });
 
-  it('contains "Técnico de Sistemas (Líder)"', () => {
-    expect(UNIQUE_ROLES).toContain('Técnico de Sistemas (Líder)');
+  it('allows technical leaders in different teams', () => {
+    expect(UNIQUE_ROLES).not.toContain('Técnico de Sistemas (Líder)');
   });
 
-  it('contains "Supervisor"', () => {
-    expect(UNIQUE_ROLES).toContain('Supervisor');
+  it('allows multiple supervisors', () => {
+    expect(UNIQUE_ROLES).not.toContain('Supervisor');
   });
 
   it('contains "Gerente"', () => {
@@ -107,11 +107,5 @@ describe('MAINT_ROLES', () => {
 
   it('is an array', () => {
     expect(Array.isArray(MAINT_ROLES)).toBe(true);
-  });
-
-  it('is a strict subset of UNIQUE_ROLES', () => {
-    for (const role of MAINT_ROLES) {
-      expect(UNIQUE_ROLES).toContain(role);
-    }
   });
 });

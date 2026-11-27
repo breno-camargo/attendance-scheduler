@@ -6,7 +6,7 @@ import {
 } from '@/lib/api-utils';
 import { writeAuditLog } from '@/lib/audit-log';
 import prisma from '@/lib/prisma';
-import { clientSchema } from '@/lib/schemas';
+import { updateClientSchema } from '@/lib/schemas';
 
 /**
  * PUT /api/clients/[id]
@@ -26,7 +26,7 @@ export async function PUT(request: Request, props: { params: Promise<{ id: strin
     }
     const body = await request.json();
 
-    const validation = clientSchema.safeParse(body);
+    const validation = updateClientSchema.safeParse(body);
     if (!validation.success) {
       return ApiUtils.error('Dados inválidos', validation.error.format(), 400);
     }
@@ -52,7 +52,7 @@ export async function PUT(request: Request, props: { params: Promise<{ id: strin
       where: { id },
       data: {
         name: ApiUtils.capitalizeName(data.name),
-        phone: data.phone || null,
+        phone: data.phone === '' ? null : data.phone,
         contracts: contractId
           ? {
               update: {

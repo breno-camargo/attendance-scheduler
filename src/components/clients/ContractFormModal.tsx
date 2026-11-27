@@ -149,7 +149,7 @@ export default function ContractFormModal({
     setSaving(true);
     const payload = {
       name: capitalizeName(name),
-      phone,
+      phone: editingId && phone === initialPhone && phone.includes('*') ? undefined : phone,
       visitsPerMonth,
       frequency,
       targetMonths: isMonthly ? '' : targetMonths.join(','),

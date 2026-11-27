@@ -246,8 +246,15 @@ export const staffApi = {
   create: (data: Record<string, unknown>) =>
     withInvalidation(() => post<InternalContact>('/api/internal-contacts', data), ['staff']),
   update: (id: string, data: Record<string, unknown>) =>
-    withInvalidation(() => put<InternalContact>(`/api/internal-contacts/${id}`, data), ['staff']),
-  delete: (id: string) => withInvalidation(() => del(`/api/internal-contacts/${id}`), ['staff']),
+    withInvalidation(
+      () => put<InternalContact>(`/api/internal-contacts/${id}`, data),
+      ['staff', 'professionals', 'clients', 'schedule', 'stats'],
+    ),
+  delete: (id: string) =>
+    withInvalidation(
+      () => del(`/api/internal-contacts/${id}`),
+      ['staff', 'professionals', 'clients', 'schedule', 'stats'],
+    ),
 };
 
 // schedule é o mais complexo — generate, listagem por ano, CRUD manual e limpeza.

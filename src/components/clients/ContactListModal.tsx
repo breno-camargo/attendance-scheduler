@@ -6,7 +6,7 @@ import { createPortal } from 'react-dom';
 import ContactRow from '@/components/clients/ContactRow';
 import { useToast } from '@/components/ui/toast';
 import { contactsApi } from '@/lib/api-client';
-import { UNIQUE_ROLES, MAINT_ROLES, migrateRole } from '@/lib/constants';
+import { MAINT_ROLES, migrateRole, TECHNICAL_LEADER_ROLE, UNIQUE_ROLES } from '@/lib/constants';
 import type { Contact, InternalContact } from '@/types';
 
 interface ContactListModalProps {
@@ -302,7 +302,7 @@ export default function ContactListModal({
         localStorage.setItem(storageKey, JSON.stringify(filtered));
       }
     } else {
-      if (val !== '+++' && val !== '---' && UNIQUE_ROLES.includes(val)) {
+      if (val === 'Supervisor' || val === TECHNICAL_LEADER_ROLE || UNIQUE_ROLES.includes(val)) {
         const alreadyInMaint = contacts.maintenance.find(
           (r, i) => r.role === val && (table !== 'maintenance' || i !== idx),
         );

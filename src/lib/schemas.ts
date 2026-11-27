@@ -28,6 +28,13 @@ export const clientSchema = z.object({
   preferredDays: z.string().max(20).optional(),
 });
 
+export const updateClientSchema = clientSchema.extend({
+  phone: clientSchema.shape.phone.refine(
+    (phone) => !phone?.includes('*'),
+    'Informe o telefone completo',
+  ),
+});
+
 // Esquema para Profissionais (Técnicos)
 export const professionalSchema = z.object({
   name: z.string().min(2, 'Nome do profissional é obrigatório').max(200),
@@ -43,6 +50,7 @@ export const internalContactSchema = z.object({
   role: z.string().max(100).optional().or(z.literal('')),
   phone: z.string().max(20).optional().or(z.literal('')),
   email: z.string().max(200).optional().or(z.literal('')),
+  supervisorId: cuidSchema.optional().nullable().or(z.literal('')),
 });
 
 // Esquema para Agendamentos Manuais
